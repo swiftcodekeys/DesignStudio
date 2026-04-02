@@ -553,8 +553,9 @@ FenceRenderer.prototype.buildFence = function(config) {
                         grpf.add(mesh);
                     });
                 });
-                // Gate section finials
+                // Gate section finials — filter to gate model width (gpupcl X max = 1.127)
                 finPositions.forEach(function(fp) {
+                    if (fp[0] > 1.127) return;
                     var mesh = new THREE.Mesh(geo, mat3);
                     mesh.position.set(fp[2], fp[1], gateZ + fp[0]);
                     mesh.rotation.y = gateRotRad;
