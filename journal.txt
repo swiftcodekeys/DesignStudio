@@ -46,7 +46,15 @@ What a fix would require:
   1.127]. Approximately the first 10 of 16 positions (X <= 1.0815).
   Filter FENCE_PUPPY_FINIAL_POSITIONS to exclude entries with X > 1.127.
 
-Reproduction:
+Fix applied (commit 1c68e74):
+  Added `if (fp[0] > 1.127) return;` to the gate section finial loop
+  at FenceRenderer.js line 558. Filters out finial positions beyond
+  the gate model's X extent. One line change.
+
+  Verified: Classic Spear and Staggered Quad-Finial — no overflow
+  finials on the panel left of the gate in either variant.
+
+Reproduction (before fix):
   1. Open Design Studio, Front Yard view
   2. Pick Horizon (or any puppy-eligible style)
   3. Go to Puppy tab, select any Classic variant (Classic Spear, etc.)
