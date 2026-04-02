@@ -441,3 +441,22 @@ export var PANEL_LENGTH_FT = {
   commercial: 6,
   industrial: 8,
 };
+
+// ---------------------------------------------------------------------------
+// STYLE_ID_MAP — configData/fenceConfigData styleId → retailPricing key
+// ---------------------------------------------------------------------------
+export var STYLE_ID_MAP = {
+  'uaf_200': 'horizon',
+  'uaf_201': 'horizon',      // Pro spacing variant, same style
+  'uab_200': 'haven',
+  'uaf_250': 'vanguard',
+  'uaf_251': 'vanguard',
+  'uas_100': 'charleston',
+  'uas_101': 'charleston',
+  'uas_150': 'savannah',
+  'uas_151': 'savannah',
+  'uas_350': 'lexington',
+  'uas_351': 'lexington',
+  'uad_100': 'defender',
+  'uad_101': 'defender',
+};
