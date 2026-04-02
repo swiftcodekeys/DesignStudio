@@ -277,11 +277,11 @@ FenceRenderer.prototype.buildFence = function(config) {
 
     var loader = new THREE.JSONLoader();
 
-    // Same layout for both views, back yard gets a position offset
-    var poArr = PO_ARR;
-    var pcPo = PC_PO;
-    var gateZ = GATE_Z;
-    var gateRotRad = (GATE_ROT * Math.PI) / 180;
+    // Use view-specific panel positions, post caps, and gate placement
+    var poArr = view === 'ba' ? PO_ARR_BACK : PO_ARR;
+    var pcPo = view === 'ba' ? PC_PO_BACK : PC_PO;
+    var gateZ = view === 'ba' ? GATE_Z_BACK : GATE_Z;
+    var gateRotRad = ((view === 'ba' ? GATE_ROT_BACK : GATE_ROT) * Math.PI) / 180;
 
     // View-specific fence offsets (tuned 2026-03-31)
     if (view === 'ba') {
