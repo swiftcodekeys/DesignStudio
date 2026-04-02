@@ -193,6 +193,16 @@ var DesignStudio = function() {
         setView('quote-builder');
     };
 
+    var handleSkipToManualEntry = function() {
+        handleOpenQuoteBuilder();
+        // QuoteBuilder will read initialStep from localStorage
+        try {
+            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
+            existing.initialStep = 1; // Step 1 = Layout (manual footage entry)
+            localStorage.setItem('gv_quote_builder', JSON.stringify(existing));
+        } catch (e) { /* */ }
+    };
+
     var handleReset = function() {
         if (window.confirm('Reset all selections to defaults?')) {
             setConfig(defaultConfig);
@@ -230,7 +240,7 @@ var DesignStudio = function() {
             <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
-                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} />
+                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} onSkipToManualEntry={handleSkipToManualEntry} />
                     <BacklinksFooter config={config} />
                 </div>
             ) : (
