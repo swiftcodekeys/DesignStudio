@@ -132,6 +132,7 @@ var DesignStudio = function() {
     var defaultFenceConfig = {
         styleId: 'uaf_200',
         height: '48',
+        grade: 'residential',
         color: FENCE_COLORS[5],  // Gloss Black (matches Ultra default)
         finialType: null,
         postCap: 'pcf',
