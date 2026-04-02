@@ -5,7 +5,11 @@ import TopNav from './TopNav';
 import FloatingPanel from './FloatingPanel';
 import BacklinksFooter from './BacklinksFooter';
 import SocialProof from './SocialProof';
+import QuoteModal from './QuoteModal';
+import DrawYardView from './DrawYardView';
+import QuoteBuilder from './QuoteBuilder';
 import { COLORS, FENCE_STYLES } from './configData';
+import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import QuizPage from './quiz/QuizPage';
 
 var STORAGE_KEY = 'gv_config';
@@ -116,7 +120,7 @@ var DesignStudio = function() {
     var config = configState[0];
     var setConfig = configState[1];
 
-    var tabState = useState('gates');
+    var tabState = useState('fencing');
     var activeTab = tabState[0];
     var setActiveTab = tabState[1];
 
@@ -124,13 +128,72 @@ var DesignStudio = function() {
     var activeConfigTab = configTabState[0];
     var setActiveConfigTab = configTabState[1];
 
+    // ---- FENCE CONFIG STATE ----
+    var defaultFenceConfig = {
+        styleId: 'uaf_200',
+        height: '48',
+        color: FENCE_COLORS[5],  // Gloss Black (matches Ultra default)
+        finialType: null,
+        postCap: 'pcf',
+        accessories: {},
+        pupType: null,
+        privacyPostColor: 'white',
+        privacyPanelColor: 'white',
+    };
+    var fenceConfigState = useState(defaultFenceConfig);
+    var fenceConfig = fenceConfigState[0];
+    var setFenceConfig = fenceConfigState[1];
+
     var panelState = useState(false);
     var panelCollapsed = panelState[0];
     var setPanelCollapsed = panelState[1];
 
+    var quoteModalState = useState(false);
+    var quoteModalOpen = quoteModalState[0];
+    var setQuoteModalOpen = quoteModalState[1];
+
+    var viewState = useState('studio');
+    var view = viewState[0];
+    var setView = viewState[1];
+
+    var handleGetQuote = function() {
+        setQuoteModalOpen(true);
+    };
+
+    var handleOpenQuoteBuilder = function() {
+        setQuoteModalOpen(false);
+        // Pre-fill quote builder with current design studio config
+        try {
+            var isFenceMode = activeTab === 'fencing' || activeTab === 'backyard';
+            var activeConfig = isFenceMode ? fenceConfig : config;
+            var colorMap = {
+                5: 'textured-black', 6: 'textured-black',
+                3: 'textured-white', 4: 'textured-white',
+                1: 'textured-bronze', 2: 'textured-bronze',
+                0: 'textured-khaki', 7: 'silver',
+            };
+            var styleMap = {
+                'uaf_200': 'horizon', 'uaf_201': 'horizon-pro',
+                'uab_200': 'haven', 'uaf_250': 'vanguard',
+                'uas_100': 'charleston', 'uas_101': 'charleston-pro',
+                'uas_150': 'savannah', 'uas_300': 'cambridge', 'uas_350': 'lexington',
+            };
+            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
+            var prefill = Object.assign({}, existing, {
+                style: styleMap[activeConfig.styleId] || existing.style || '',
+                height: parseInt(activeConfig.height) || existing.height || 60,
+                color: (activeConfig.color && colorMap[activeConfig.color.id]) || existing.color || 'textured-black',
+            });
+            localStorage.setItem('gv_quote_builder', JSON.stringify(prefill));
+        } catch (e) { console.error('[App] Quote prefill error:', e); }
+        setView('quote-builder');
+    };
+
     var handleReset = function() {
-        setConfig(defaultConfig);
-        setActiveConfigTab('style');
+        if (window.confirm('Reset all selections to defaults?')) {
+            setConfig(defaultConfig);
+            setActiveConfigTab('style');
+        }
     };
 
     var handleSaveImage = function() {
@@ -148,22 +211,46 @@ var DesignStudio = function() {
         window.history.replaceState(null, '', '#' + hashString);
     }, [config]);
 
+    var isDraw = activeTab === 'draw';
+
+    if (view === 'quote-builder') {
+        return (
+            <div className="app-shell">
+                <QuoteBuilder onClose={function() { setView('studio'); }} />
+            </div>
+        );
+    }
+
     return (
         <div className="app-shell">
-            <TopNav activeScene={activeTab} onSceneChange={setActiveTab} onReset={handleReset} onSaveImage={handleSaveImage} />
-            <div className="viewport-wrap">
-                <UnifiedCanvas config={config} panelCollapsed={panelCollapsed} />
-                {!panelCollapsed && <SocialProof />}
-                <BacklinksFooter />
-                <FloatingPanel
-                    activeTab={activeConfigTab}
-                    onTabChange={setActiveConfigTab}
-                    config={config}
-                    onConfigChange={setConfig}
-                    collapsed={panelCollapsed}
-                    onToggleCollapse={function() { setPanelCollapsed(!panelCollapsed); }}
-                />
-            </div>
+            <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
+            {isDraw ? (
+                <div className="viewport-wrap">
+                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} />
+                    <BacklinksFooter config={config} />
+                </div>
+            ) : (
+                <div className="viewport-wrap">
+                    <div className="viewport-scene">
+                        <SocialProof />
+                        <UnifiedCanvas config={config} fenceConfig={fenceConfig} panelCollapsed={panelCollapsed} activeScene={activeTab} />
+                        <BacklinksFooter config={config} />
+                    </div>
+                    <FloatingPanel
+                        activeTab={activeConfigTab}
+                        onTabChange={setActiveConfigTab}
+                        config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
+                        onConfigChange={(activeTab === 'fencing' || activeTab === 'backyard') ? setFenceConfig : setConfig}
+                        collapsed={panelCollapsed}
+                        onToggleCollapse={function() { setPanelCollapsed(!panelCollapsed); }}
+                        isFence={activeTab === 'fencing' || activeTab === 'backyard'}
+                        onGetQuote={handleGetQuote}
+                        activeScene={activeTab}
+                        onSceneChange={setActiveTab}
+                    />
+                </div>
+            )}
+            <QuoteModal isOpen={quoteModalOpen} onClose={function() { setQuoteModalOpen(false); }} config={config} onOpenBuilder={handleOpenQuoteBuilder} />
         </div>
     );
 };
