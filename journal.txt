@@ -1,0 +1,173 @@
+================================================================================
+JOURNAL — Grandview Design Studio Fence Tool
+================================================================================
+
+2026-04-02 — Diagnostic Investigation
+──────────────────────────────────────
+
+BUG 1: Extra Pickets Rendering Above Puppy Rail — LEFT OF GATE ONLY
+====================================================================
+
+Files involved:
+  - FenceRenderer.js:557-561 (gate section finial placement — THE BUG)
+  - fenceSpatialConstants.js FENCE_PUPPY_FINIAL_POSITIONS (16 positions)
+  - fence_tool/m/6/gpupcl.json (gate section puppy model, X 0.031-1.127)
+
+Root cause (CORRECTED — previous diagnosis was wrong):
+  Gate section puppy finials overflow into the adjacent panel's space.
+
+  FenceRenderer.js lines 557-561 place gate section finials using the
+  full FENCE_PUPPY_FINIAL_POSITIONS array (16 positions, X 0.0815 to
+  1.7485). But the gate section puppy model (gpupcl.json) is only
+  1.096m wide (X 0.031 to 1.127) — NOT a full 1.8288m panel.
+
+  Finials 10-15 (at local X = 1.1925, 1.3035, 1.4145, 1.5255, 1.6375,
+  1.7485) are placed BEYOND the gate section geometry, overflowing into
+  world Z range 4.939 to 5.495.
+
+  Panel poArr[4] (z=4.9911) — which is RIGHT of the gate in world Z —
+  starts at world Z 5.022. The overflow finials land right at its near
+  edge, appearing as extra picket-like geometry on that panel.
+
+  Due to the front yard camera angle (position -7.05, 1.42, -1.85 with
+  rotation.y=-120°), panel poArr[4] appears to the LEFT of the gate
+  on screen. This is why Sarah sees "extra pickets left of the gate."
+
+What was ruled out:
+  - Gate geometry does NOT overlap adjacent panels (0.152m gap, clean)
+  - No gap-fill, connector, or bridge geometry exists
+  - All panels get identical geometry from placeMeshes (no index logic)
+  - FenceRenderer and GateRenderer never run simultaneously
+  - No shared materials or clip planes between renderers
+
+What a fix would require:
+  Use a separate, shorter finial position array for the gate section
+  that only covers positions within the gate model's X range [0.031 to
+  1.127]. Approximately the first 10 of 16 positions (X <= 1.0815).
+  Filter FENCE_PUPPY_FINIAL_POSITIONS to exclude entries with X > 1.127.
+
+Reproduction:
+  1. Open Design Studio, Front Yard view
+  2. Pick Horizon (or any puppy-eligible style)
+  3. Go to Puppy tab, select any Classic variant (Classic Spear, etc.)
+  4. Look at the panel that appears LEFT of the gate on screen
+  5. Extra finials visible above the puppy rail on that panel only
+
+
+BUG 2: Quote Form Not Receiving Data from Fence Builder / Draw Tool
+===================================================================
+
+Files involved:
+  - app.js:159-161 (handleGetQuote — opens QuoteModal)
+  - app.js:163-190 (handleOpenQuoteBuilder — pre-fills QuoteBuilder)
+  - app.js:253 (QuoteModal receives config — THE PRIMARY BUG)
+  - app.js:242-243 (FloatingPanel correctly switches config — shows the
+    pattern that QuoteModal should follow)
+  - QuoteModal.js:80 (buildConfigSummary reads config)
+  - QuoteModal.js:4-33 (buildConfigSummary uses gate-specific lookups)
+  - QuoteBuilder.js:133-179 (GPS draw data import — manual, not auto)
+  - QuoteTab.js:45-46 (both buttons route to handleGetQuote)
+  - DrawYardView.js:573-604 (handleGetQuoteForLayout saves to localStorage)
+  - TopNav.js:59 (Get Quote button calls onGetQuote)
+
+Root cause:
+  PRIMARY — app.js line 253:
+    <QuoteModal ... config={config} ... />
+
+  QuoteModal ALWAYS receives the gate `config` object, never `fenceConfig`.
+  When the user is on the fencing/backyard tab, they configure fenceConfig,
+  but the modal is hardcoded to show gate config. Compare with line 242:
+    config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
+
+  FloatingPanel already uses the correct pattern. QuoteModal does not.
+
+  SECONDARY — app.js lines 163-190 (handleOpenQuoteBuilder):
+  1. Only transfers 3 fields (style, height, color) out of ~10+ config fields.
+     Missing: postCap, finialType, pupType, accessories, privacy options.
+  2. Color ID mapping may not match FENCE_COLORS numeric IDs.
+  3. Style ID mapping is hardcoded and may miss fence-specific styles.
+  4. When coming from Draw tool (activeTab === 'draw'), isFenceMode = false,
+     so it picks gate config instead of fence config.
+
+  TERTIARY — QuoteModal.js buildConfigSummary (lines 4-33):
+  Uses gate-specific lookup tables (FENCE_STYLES, ARCH_STYLES, POST_CAPS,
+  FINIALS from configData.js). Even if fenceConfig were passed, the function
+  wouldn't resolve fence-specific style IDs against fenceConfigData.js.
+
+  QUATERNARY — QuoteBuilder.js GPS import (lines 133-179):
+  The GPS draw data is saved to localStorage under 'gv_draw_layout', but the
+  QuoteBuilder requires the user to manually click "Use This Layout" on Step 2.
+  The button is not visible on Step 0 (Project) where the QuoteBuilder opens.
+  The import is not automatic.
+
+Data flow diagram:
+
+  [FloatingPanel QuoteTab] --"Get Instant Quote"--> handleGetQuote()
+       |                                                |
+       v                                                v
+  [TopNav "Get Quote"]  ----onGetQuote()------>  setQuoteModalOpen(true)
+                                                        |
+                                                        v
+                                               [QuoteModal config={config}]
+                                                   ^^^ ALWAYS GATE CONFIG
+                                                        |
+                                               "build your quote step by step"
+                                                        |
+                                                        v
+                                               handleOpenQuoteBuilder()
+                                               - picks gate/fence config ✓
+                                               - only transfers 3 fields ✗
+                                               - saves to localStorage
+                                                        |
+                                                        v
+                                               [QuoteBuilder]
+                                               - reads localStorage
+                                               - GPS data needs manual import
+
+  [DrawYardView] --"Get Quote for Layout"--> handleOpenQuoteBuilder()
+                                             ^^^ isFenceMode=false (activeTab='draw')
+                                             saves GPS layout to localStorage
+                                             QuoteBuilder opens at Step 0
+                                             GPS banner only visible at Step 2
+
+Reproduction:
+  1. Open Design Studio, select Front Yard
+  2. Configure a fence: pick Horizon style, White color, 60" height
+  3. Go to Puppy tab, select Classic Spear
+  4. Click "Get Quote" in the nav bar (or "Get Instant Quote" in Quote tab)
+  5. QuoteModal opens — shows gate config (wrong style, wrong color, etc.)
+  6. Click "build your quote step by step" — QuoteBuilder opens
+  7. Only style/height/color are pre-filled, all other selections are lost
+
+  For Draw tool:
+  1. Click "Draw Your Yard" tab
+  2. Draw a fence layout
+  3. Click "Get Quote for This Layout"
+  4. QuoteBuilder opens at Step 0 — no fence config visible
+  5. User must advance to Step 2 and manually click "Use This Layout"
+
+What a fix would require:
+  1. app.js line 253: Change config={config} to use the same ternary as
+     FloatingPanel (line 242):
+       config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
+  2. QuoteModal.js buildConfigSummary: Add fence-mode awareness — import
+     FENCE_TOOL_STYLES and FENCE_COLORS from fenceConfigData.js, and use
+     them when config has fence-specific shape.
+  3. handleOpenQuoteBuilder: Transfer all config fields, not just 3.
+     Add: postCap, finialType, pupType, accessories, privacy options.
+  4. handleOpenQuoteBuilder: When activeTab === 'draw', set isFenceMode
+     based on what the draw tool was configuring (always fence).
+  5. QuoteBuilder GPS import: Auto-apply GPS data when opening from
+     the Draw tool, or at least open on Step 2 (Layout) instead of Step 0.
+  6. Pass an isFence prop to QuoteModal so it knows which lookup tables
+     to use for the config summary.
+
+Questions before fixing:
+  - Should the QuoteModal show the fence config summary in fence mode, or
+    should it just be a pass-through to QuoteBuilder?
+  - Is the QuoteBuilder meant to be the primary quote path (replacing the
+    modal), or are both paths needed?
+  - Should GPS draw data auto-import or require manual confirmation?
+  - Should the "Get Instant Quote" and "Request Custom Quote" buttons in
+    QuoteTab do different things, or is it intentional that both open the
+    same QuoteModal?

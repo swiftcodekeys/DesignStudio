@@ -164,7 +164,7 @@ var DesignStudio = function() {
         setQuoteModalOpen(false);
         // Pre-fill quote builder with current design studio config
         try {
-            var isFenceMode = activeTab === 'fencing' || activeTab === 'backyard';
+            var isFenceMode = activeTab === 'fencing' || activeTab === 'backyard' || activeTab === 'draw';
             var activeConfig = isFenceMode ? fenceConfig : config;
             var colorMap = {
                 5: 'textured-black', 6: 'textured-black',
@@ -183,6 +183,9 @@ var DesignStudio = function() {
                 style: styleMap[activeConfig.styleId] || existing.style || '',
                 height: parseInt(activeConfig.height) || existing.height || 60,
                 color: (activeConfig.color && colorMap[activeConfig.color.id]) || existing.color || 'textured-black',
+                isFence: isFenceMode,
+                postCap: activeConfig.postCap || existing.postCap || '',
+                finial: activeConfig.finial || activeConfig.finialType || existing.finial || '',
             });
             localStorage.setItem('gv_quote_builder', JSON.stringify(prefill));
         } catch (e) { console.error('[App] Quote prefill error:', e); }
@@ -250,7 +253,7 @@ var DesignStudio = function() {
                     />
                 </div>
             )}
-            <QuoteModal isOpen={quoteModalOpen} onClose={function() { setQuoteModalOpen(false); }} config={config} onOpenBuilder={handleOpenQuoteBuilder} />
+            <QuoteModal isOpen={quoteModalOpen} onClose={function() { setQuoteModalOpen(false); }} config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config} isFence={activeTab === 'fencing' || activeTab === 'backyard'} onOpenBuilder={handleOpenQuoteBuilder} />
         </div>
     );
 };
