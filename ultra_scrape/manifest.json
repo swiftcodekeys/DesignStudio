@@ -1,0 +1,117 @@
+{
+  "scrape_date": "2026-03-19",
+  "source_url": "https://www.ultrafence.com/design-studio/gates/index.html",
+  "source_js_version": "ultra_dsg_min.js?cpc-495",
+
+  "summary": {
+    "total_assets": 140,
+    "models": { "count": 57, "format": "Three.js JSON (JSONLoader)", "all_local": true },
+    "textures": { "count": 64, "formats": ["jpg", "png", "hdr"] },
+    "thumbnails": { "count": 44, "format": "jpg" },
+    "js_bundles": { "count": 12, "main_bundle": "ultra_dsg_min.js (75KB)" },
+    "css": { "count": 1 }
+  },
+
+  "models": {
+    "posts": {
+      "directory": "m/0/",
+      "files": [
+        { "file": "po12.json", "size": 4075, "purpose": "Single-leaf outer posts" },
+        { "file": "po14.json", "size": 4099, "purpose": "Double-leaf outer posts" },
+        { "file": "po23.json", "size": 4095, "purpose": "Center seam post (double-leaf)" },
+        { "file": "po40d.json", "size": 3827, "purpose": "Inner posts for double-leaf" },
+        { "file": "po40s.json", "size": 3951, "purpose": "Inner posts for single-leaf" }
+      ]
+    },
+    "rails": {
+      "directory": "m/1/",
+      "naming_pattern": "rt{leaf}{arch}.json for top rails, rb{leaf}.json for bottom rails",
+      "files": [
+        { "file": "rt1s.json", "size": 3064, "purpose": "Top rail, 1-leaf, standard" },
+        { "file": "rt1a.json", "size": 126851, "purpose": "Top rail, 1-leaf, arched" },
+        { "file": "rt1e.json", "size": 126552, "purpose": "Top rail, 1-leaf, estate" },
+        { "file": "rt1r.json", "size": 128156, "purpose": "Top rail, 1-leaf, reverse" },
+        { "file": "rt2s.json", "size": 6058, "purpose": "Top rail, 2-leaf, standard" },
+        { "file": "rt2a.json", "size": 123348, "purpose": "Top rail, 2-leaf, arched" },
+        { "file": "rt2e.json", "size": 123193, "purpose": "Top rail, 2-leaf, estate" },
+        { "file": "rt2r.json", "size": 124313, "purpose": "Top rail, 2-leaf, reverse" },
+        { "file": "rb1.json", "size": 3064, "purpose": "Bottom rail, 1-leaf" },
+        { "file": "rb2.json", "size": 6058, "purpose": "Bottom rail, 2-leaf" }
+      ],
+      "_note": "Standard rails are much smaller (~3-6KB) vs arched (~123-128KB) due to curved geometry"
+    },
+    "pickets": {
+      "directory": "m/2/",
+      "naming_pattern": "pt{leaf}{arch}{type}.json for top, pb{leaf}{type}.json for bottom. type: e=even, o=odd, x=extra(Pro)",
+      "top_pickets": 24,
+      "bottom_pickets": 6,
+      "total": 30
+    },
+    "finials_accents": {
+      "directory": "m/3/",
+      "files": [
+        { "file": "fs.json", "size": 15389, "purpose": "Spear finial" },
+        { "file": "ft.json", "size": 18509, "purpose": "Tri-finial" },
+        { "file": "fq.json", "size": 21438, "purpose": "Quad-finial" },
+        { "file": "fp.json", "size": 912, "purpose": "Plugged cap (flat finial)" },
+        { "file": "pcf.json", "size": 4116, "purpose": "Flat post cap" },
+        { "file": "pcb.json", "size": 30241, "purpose": "Ball post cap" },
+        { "file": "hng.json", "size": 89491, "purpose": "Hinge" },
+        { "file": "acc.json", "size": "exists", "purpose": "Circle accent geometry" },
+        { "file": "acb.json", "size": 47849, "purpose": "Butterfly accent geometry" },
+        { "file": "acs.json", "size": 97045, "purpose": "Scroll accent geometry" },
+        { "file": "ufr1.json", "size": 2198, "purpose": "U-frame rail, 1-leaf" },
+        { "file": "ufr2.json", "size": 3923, "purpose": "U-frame rail, 2-leaf" }
+      ]
+    }
+  },
+
+  "textures": {
+    "hdr_cubemap": ["t/hdr/px.hdr", "t/hdr/nx.hdr", "t/hdr/py.hdr", "t/hdr/ny.hdr", "t/hdr/pz.hdr", "t/hdr/nz.hdr"],
+    "maps": {
+      "bm.jpg": "Bump map (2048x2048)",
+      "mnao.jpg": "AO map",
+      "ulg.png": "Ultra logo"
+    },
+    "rail_textures": {
+      "naming": "r{rail}{arch}{type}.jpg — rail=1|2, arch=s|a|e|r, type=e|o|x",
+      "count": 24,
+      "purpose": "Shadow/highlight textures applied to rail canvas for curved rail effects"
+    },
+    "shadow_textures": {
+      "naming": "{prefix}{height}{side}.jpg — prefix=dd|dp|sd|sp, height=4|5|6, side=l|r",
+      "count": 24,
+      "dd": "Driveway shadow double gate",
+      "dp": "Driveway shadow post mount",
+      "sd": "Single gate driveway shadow",
+      "sp": "Single gate post shadow"
+    },
+    "scene": {
+      "shrl.jpg": "Shadow rail texture",
+      "shpo.jpg": "Shadow post texture",
+      "hing.jpg": "Hinge texture",
+      "grdv.jpg": "Ground/driveway texture",
+      "fgdp.png": "Foreground double post (alpha)",
+      "fgsp.png": "Foreground single post (alpha)",
+      "sigr.png": "Signature/watermark overlay"
+    }
+  },
+
+  "configuration_data_extracted": {
+    "stlArr": "config/stlArr.json — 8 styles with option/accent gating",
+    "clrs": "config/clrs.json — 8 colors with full PBR values",
+    "position_arrays": "config/position_arrays.json — 52 position arrays for finials, accents, puppy finials",
+    "constants": "config/constants.json — all height/dimension/camera/hinge/postCap constants",
+    "renderer_functions": "Extracted dClr, dfin, dpfin, dact, dacb, dacs, dpo, dpt, dpb, drt, drb, dpc, dufr, dHngs, viz, movY, movX, stl, kOpt, kGrp, trM, mY, mX, cmF, iSc, mCv, mNv, rndr, rgi, mnFt, cimg"
+  },
+
+  "local_repo_status": {
+    "all_models_present": true,
+    "model_count_match": "57/57",
+    "model_directory": "gate_tool/m/",
+    "textures_present": true,
+    "texture_directory": "gate_tool/t/",
+    "thumbnails_present": true,
+    "thumbnail_directory": "gate_tool/th/"
+  }
+}

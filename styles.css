@@ -837,6 +837,185 @@ html, body {
   border-color: #E05A2B;
   color: #E05A2B;
 }
+.quote-btn-measure {
+  flex: 1;
+  padding: 10px 16px;
+  background: #78AFCF;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+.quote-btn-measure:hover {
+  background: #6a9fbe;
+}
+.quote-cta-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quote-btn-tertiary {
+  flex: 1;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  color: var(--navy);
+  border: 1.5px solid var(--navy);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+.quote-btn-tertiary:hover {
+  border-color: #E05A2B;
+  color: #E05A2B;
+}
+
+/* --- Contact Modal --- */
+.contact-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.contact-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  max-width: 480px;
+  width: calc(100% - 32px);
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.contact-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+}
+.contact-close:hover {
+  color: #333;
+}
+.contact-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1B3A5C;
+  margin-bottom: 4px;
+}
+.contact-subtitle {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.contact-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+.contact-req {
+  color: #E05A2B;
+}
+.contact-optional {
+  color: #999;
+  font-weight: 400;
+}
+.contact-input {
+  width: 100%;
+  border: 1px solid #DDD;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+.contact-input:focus {
+  border-color: #1B3A5C;
+}
+.contact-select {
+  appearance: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
+  cursor: pointer;
+}
+.contact-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+.contact-submit {
+  width: 100%;
+  height: 48px;
+  background: #1B3A5C;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 150ms ease;
+}
+.contact-submit:hover:not(:disabled) {
+  background: #142d49;
+}
+.contact-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.contact-error {
+  font-size: 13px;
+  color: #dc2626;
+  line-height: 1.4;
+}
+.contact-error a {
+  color: #dc2626;
+  font-weight: 600;
+}
+.contact-success {
+  text-align: center;
+  padding: 24px 0;
+}
+.contact-success-icon {
+  font-size: 48px;
+  color: #16a34a;
+  margin-bottom: 12px;
+}
+.contact-success-msg {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1B3A5C;
+  margin-bottom: 8px;
+}
+.contact-phone-fallback {
+  font-size: 13px;
+  color: #718096;
+}
+
 .quote-contact-compact {
   font-size: 12px;
   color: var(--text-secondary);
@@ -1162,8 +1341,6 @@ html, body {
 }
 .backlinks-trust-link:hover {
   color: rgba(255,255,255,0.9);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 .backlinks-sep {
   color: rgba(255,255,255,0.15);
@@ -2065,6 +2242,38 @@ html, body {
   overflow-y: auto;
   z-index: 10;
 }
+.draw-config-thumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.draw-config-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.draw-config-info {
+  flex: 1;
+  min-width: 0;
+}
+.draw-config-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.draw-config-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
 .draw-panel-header {
   padding: 20px;
   border-bottom: 1px solid var(--border);
@@ -2370,7 +2579,7 @@ html, body {
   width: 40px;
   height: 40px;
   border: 3px solid rgba(255,255,255,0.2);
-  border-top-color: #C9A84C;
+  border-top-color: #1B3A5C;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -2378,13 +2587,398 @@ html, body {
   to { transform: rotate(360deg); }
 }
 
+/* --- DRAW 5: Floating action buttons --- */
+.draw-map-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+.draw-map-wrap .draw-map {
+  width: 100%;
+  height: 100%;
+}
+.draw-float-actions {
+  position: absolute;
+  bottom: 20px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+}
+.draw-float-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 44px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: all 150ms ease;
+  border: none;
+}
+.draw-float-primary {
+  background: #1B3A5C;
+  color: #fff;
+}
+.draw-float-primary:hover {
+  background: #142d49;
+}
+.draw-float-secondary {
+  background: #fff;
+  color: #1B3A5C;
+  border: 1.5px solid #1B3A5C;
+}
+.draw-float-secondary:hover {
+  background: #f0f4f8;
+}
+.draw-float-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.draw-instruction-overlay {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1B3A5C;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  z-index: 20;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* --- DRAW 6: Gate popup --- */
+.draw-gate-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.draw-gate-popup {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 340px;
+  width: calc(100% - 32px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+}
+.draw-gate-popup-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1B3A5C;
+  margin-bottom: 16px;
+}
+.draw-gate-popup-field {
+  margin-bottom: 14px;
+}
+.draw-gate-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  display: block;
+}
+.draw-gate-type-row {
+  display: flex;
+  gap: 8px;
+}
+.draw-gate-type-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+.draw-gate-type-btn.selected {
+  border-color: #D4753A;
+  background: #FFF5EE;
+  color: #D4753A;
+}
+.draw-gate-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #DDD;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.draw-gate-popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.draw-gate-confirm {
+  flex: 1;
+  padding: 10px;
+  background: #D4753A;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 150ms ease;
+}
+.draw-gate-confirm:hover {
+  background: #c46830;
+}
+.draw-gate-cancel {
+  background: none;
+  border: none;
+  color: #1B3A5C;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.draw-gate-cancel:hover {
+  text-decoration: underline;
+}
+.draw-gate-summary {
+  padding: 8px 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.draw-gate-hint {
+  font-size: 11px;
+  color: var(--text-hint);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* --- DRAW 7: Follow-up questions --- */
+.draw-followup-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.draw-followup-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 520px;
+  width: calc(100% - 32px);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.draw-followup-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1B3A5C;
+  margin-bottom: 4px;
+}
+.draw-followup-subtitle {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 24px;
+}
+.draw-followup-q {
+  margin-bottom: 20px;
+}
+.draw-followup-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+.draw-followup-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.draw-followup-option {
+  padding: 10px 16px;
+  border: 1.5px solid #E8E8E8;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+.draw-followup-option.selected {
+  border-color: #D4753A;
+  background: #FFF5EE;
+  color: #D4753A;
+  font-weight: 600;
+}
+.draw-followup-option:hover:not(.selected) {
+  border-color: #CBD5E0;
+}
+.draw-followup-gate-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.draw-followup-select {
+  padding: 8px 10px;
+  border: 1px solid #DDD;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  flex: 1;
+}
+.draw-followup-remove {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.draw-followup-remove:hover {
+  color: #dc2626;
+}
+.draw-followup-add-gate {
+  background: none;
+  border: 1.5px dashed #CBD5E0;
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  color: #718096;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 4px;
+}
+.draw-followup-add-gate:hover {
+  border-color: #1B3A5C;
+  color: #1B3A5C;
+}
+.draw-followup-styles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.draw-followup-style-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border: 1.5px solid #E8E8E8;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+.draw-followup-style-card.selected {
+  border-color: #D4753A;
+  background: #FFF5EE;
+}
+.draw-followup-style-card:hover:not(.selected) {
+  border-color: #CBD5E0;
+}
+.draw-followup-style-img {
+  width: 100%;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+.draw-followup-style-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+}
+.draw-followup-style-card.selected .draw-followup-style-name {
+  color: #D4753A;
+}
+.draw-followup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+.draw-followup-continue {
+  width: 100%;
+  padding: 14px;
+  background: #D4753A;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 150ms ease;
+}
+.draw-followup-continue:hover:not(:disabled) {
+  background: #c46830;
+}
+.draw-followup-continue:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.draw-followup-back {
+  background: none;
+  border: none;
+  color: #1B3A5C;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+}
+.draw-followup-back:hover {
+  text-decoration: underline;
+}
+
 /* Draw tool mobile */
 @media (max-width: 767px) {
   .draw-container {
     flex-direction: column;
   }
-  .draw-map {
+  .draw-map-wrap, .draw-map {
     min-height: 50vh;
+  }
+  .draw-float-actions {
+    bottom: 10px;
+    left: 8px;
+    gap: 4px;
+  }
+  .draw-float-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+  .draw-instruction-overlay {
+    font-size: 11px;
+    padding: 8px 14px;
+    white-space: normal;
+    max-width: 80%;
+    text-align: center;
+  }
+  .draw-followup-styles {
+    grid-template-columns: repeat(2, 1fr);
   }
   .draw-panel {
     width: 100%;

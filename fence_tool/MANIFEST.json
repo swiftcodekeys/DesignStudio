@@ -1,0 +1,689 @@
+{
+  "downloaded": "2026-03-31",
+  "source": "https://www.ultrafence.com/design-studio/fence/",
+  "total": 114,
+  "ok": 97,
+  "failed": 17,
+  "notes": {
+    "plug_finials": "fn{mod}p.json all 404 — Ultra fence tool does not offer plug finials (only s/t/q). Gate tool has fp.json but with different naming.",
+    "flush_puppy": "pupfl.json 404 — Ultra fence tool may not offer flush puppy on fence. Only classic (pupcl) and standard (pupst) confirmed.",
+    "puppy_finials_m7": "Entire m/7/ directory 404 — puppy finials on fence likely reuse m/5/ finials at Y=0.025, not separate models.",
+    "bump_map": "t/bm.jpg downloaded from gate tool path (design-studio/gates/t/bm.jpg) — fence tool shares this asset."
+  },
+  "files": [
+    {
+      "path": "m/0/pot.json",
+      "size": 13994,
+      "status": "ok",
+      "vertices": 252,
+      "faces": 1547
+    },
+    {
+      "path": "m/0/pob.json",
+      "size": 14213,
+      "status": "ok",
+      "vertices": 252,
+      "faces": 1547
+    },
+    {
+      "path": "m/0/pors.jpg",
+      "size": 10488,
+      "status": "ok"
+    },
+    {
+      "path": "m/1/rtf2.json",
+      "size": 6472,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/gsrtf2.json",
+      "size": 6346,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/rts1.json",
+      "size": 6477,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/gsrts1.json",
+      "size": 6351,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/rtb2.json",
+      "size": 6541,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/gsrtb2.json",
+      "size": 6407,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/rtf2c.json",
+      "size": 6337,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/gsrtf2c.json",
+      "size": 6227,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/rts1c.json",
+      "size": 6331,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/gsrts1c.json",
+      "size": 6205,
+      "status": "ok",
+      "vertices": 144,
+      "faces": 910
+    },
+    {
+      "path": "m/1/grd128T.jpg",
+      "size": 8667,
+      "status": "ok"
+    },
+    {
+      "path": "m/1/grd128L.jpg",
+      "size": 8652,
+      "status": "ok"
+    },
+    {
+      "path": "m/1/grd128R.jpg",
+      "size": 8648,
+      "status": "ok"
+    },
+    {
+      "path": "m/2/rbs.json",
+      "size": 3540,
+      "status": "ok",
+      "vertices": 72,
+      "faces": 455
+    },
+    {
+      "path": "m/2/grbs.json",
+      "size": 3530,
+      "status": "ok",
+      "vertices": 72,
+      "faces": 455
+    },
+    {
+      "path": "m/3/ptf200.json",
+      "size": 14782,
+      "status": "ok",
+      "vertices": 300,
+      "faces": 1755
+    },
+    {
+      "path": "m/3/gsptf200.json",
+      "size": 8937,
+      "status": "ok",
+      "vertices": 180,
+      "faces": 1053
+    },
+    {
+      "path": "m/3/ptf250.json",
+      "size": 15172,
+      "status": "ok",
+      "vertices": 300,
+      "faces": 1755
+    },
+    {
+      "path": "m/3/gsptf250.json",
+      "size": 9221,
+      "status": "ok",
+      "vertices": 180,
+      "faces": 1053
+    },
+    {
+      "path": "m/3/ptf201.json",
+      "size": 30890,
+      "status": "ok",
+      "vertices": 620,
+      "faces": 3627
+    },
+    {
+      "path": "m/3/gsptf201.json",
+      "size": 19104,
+      "status": "ok",
+      "vertices": 380,
+      "faces": 2223
+    },
+    {
+      "path": "m/3/pts100.json",
+      "size": 14850,
+      "status": "ok",
+      "vertices": 300,
+      "faces": 1755
+    },
+    {
+      "path": "m/3/gspts100.json",
+      "size": 8999,
+      "status": "ok",
+      "vertices": 180,
+      "faces": 1053
+    },
+    {
+      "path": "m/3/ptb200.json",
+      "size": 14750,
+      "status": "ok",
+      "vertices": 300,
+      "faces": 1755
+    },
+    {
+      "path": "m/3/gsptb200.json",
+      "size": 8945,
+      "status": "ok",
+      "vertices": 180,
+      "faces": 1053
+    },
+    {
+      "path": "m/3/ptf201c.json",
+      "size": 30762,
+      "status": "ok",
+      "vertices": 620,
+      "faces": 3627
+    },
+    {
+      "path": "m/3/gsptf201c.json",
+      "size": 19002,
+      "status": "ok",
+      "vertices": 380,
+      "faces": 2223
+    },
+    {
+      "path": "m/3/gashd.jpg",
+      "size": 10905,
+      "status": "ok"
+    },
+    {
+      "path": "m/4/pbs.json",
+      "size": 14484,
+      "status": "ok",
+      "vertices": 300,
+      "faces": 1755
+    },
+    {
+      "path": "m/4/pbd.json",
+      "size": 29648,
+      "status": "ok",
+      "vertices": 620,
+      "faces": 3627
+    },
+    {
+      "path": "m/4/gpbs.json",
+      "size": 8767,
+      "status": "ok",
+      "vertices": 180,
+      "faces": 1053
+    },
+    {
+      "path": "m/4/gpbd.json",
+      "size": 18242,
+      "status": "ok",
+      "vertices": 380,
+      "faces": 2223
+    },
+    {
+      "path": "m/5/fn100s.json",
+      "size": 160827,
+      "status": "ok",
+      "vertices": 2790,
+      "faces": 23760
+    },
+    {
+      "path": "m/5/fn100t.json",
+      "size": 188698,
+      "status": "ok",
+      "vertices": 3585,
+      "faces": 27615
+    },
+    {
+      "path": "m/5/fn100q.json",
+      "size": 165465,
+      "status": "ok",
+      "vertices": 3315,
+      "faces": 24075
+    },
+    {
+      "path": "m/5/fn100p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/5/gsfn100s.json",
+      "size": 97765,
+      "status": "ok",
+      "vertices": 1674,
+      "faces": 14256
+    },
+    {
+      "path": "m/5/gsfn100t.json",
+      "size": 115563,
+      "status": "ok",
+      "vertices": 2151,
+      "faces": 16569
+    },
+    {
+      "path": "m/5/gsfn100q.json",
+      "size": 99965,
+      "status": "ok",
+      "vertices": 1989,
+      "faces": 14445
+    },
+    {
+      "path": "m/5/gsfn100p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/5/fn250s.json",
+      "size": 88694,
+      "status": "ok",
+      "vertices": 1488,
+      "faces": 12672
+    },
+    {
+      "path": "m/5/fn250t.json",
+      "size": 100396,
+      "status": "ok",
+      "vertices": 1904,
+      "faces": 14168
+    },
+    {
+      "path": "m/5/fn250q.json",
+      "size": 90553,
+      "status": "ok",
+      "vertices": 1768,
+      "faces": 12840
+    },
+    {
+      "path": "m/5/fn250p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/5/gsfn250s.json",
+      "size": 56567,
+      "status": "ok",
+      "vertices": 930,
+      "faces": 7920
+    },
+    {
+      "path": "m/5/gsfn250t.json",
+      "size": 63924,
+      "status": "ok",
+      "vertices": 1190,
+      "faces": 8855
+    },
+    {
+      "path": "m/5/gsfn250q.json",
+      "size": 56795,
+      "status": "ok",
+      "vertices": 1105,
+      "faces": 8025
+    },
+    {
+      "path": "m/5/gsfn250p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/5/fn150s.json",
+      "size": 168377,
+      "status": "ok",
+      "vertices": 2790,
+      "faces": 23760
+    },
+    {
+      "path": "m/5/fn150t.json",
+      "size": 193153,
+      "status": "ok",
+      "vertices": 3585,
+      "faces": 27615
+    },
+    {
+      "path": "m/5/fn150q.json",
+      "size": 168822,
+      "status": "ok",
+      "vertices": 3315,
+      "faces": 24075
+    },
+    {
+      "path": "m/5/fn150p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/5/fn300s.json",
+      "size": 172599,
+      "status": "ok",
+      "vertices": 2790,
+      "faces": 23760
+    },
+    {
+      "path": "m/5/fn300t.json",
+      "size": 199800,
+      "status": "ok",
+      "vertices": 3585,
+      "faces": 27615
+    },
+    {
+      "path": "m/5/fn300q.json",
+      "size": 171580,
+      "status": "ok",
+      "vertices": 3315,
+      "faces": 24075
+    },
+    {
+      "path": "m/5/fn300p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/5/fn350s.json",
+      "size": 173927,
+      "status": "ok",
+      "vertices": 2790,
+      "faces": 23760
+    },
+    {
+      "path": "m/5/fn350t.json",
+      "size": 201732,
+      "status": "ok",
+      "vertices": 3585,
+      "faces": 27615
+    },
+    {
+      "path": "m/5/fn350q.json",
+      "size": 172055,
+      "status": "ok",
+      "vertices": 3315,
+      "faces": 24075
+    },
+    {
+      "path": "m/5/fn350p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/6/pupcl.json",
+      "size": 19801,
+      "status": "ok",
+      "vertices": 392,
+      "faces": 2327
+    },
+    {
+      "path": "m/6/gpupcl.json",
+      "size": 13900,
+      "status": "ok",
+      "vertices": 272,
+      "faces": 1625
+    },
+    {
+      "path": "m/6/pupst.json",
+      "size": 19793,
+      "status": "ok",
+      "vertices": 392,
+      "faces": 2327
+    },
+    {
+      "path": "m/6/gpupst.json",
+      "size": 13914,
+      "status": "ok",
+      "vertices": 272,
+      "faces": 1625
+    },
+    {
+      "path": "m/6/pupfl.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/6/gpupfl.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/fn100s.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/gfn100s.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/fn100t.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/gfn100t.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/fn100q.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/gfn100q.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/fn100p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/7/gfn100p.json",
+      "status": "error-404"
+    },
+    {
+      "path": "m/8/pcf.json",
+      "size": 5260,
+      "status": "ok",
+      "vertices": 44,
+      "faces": 733
+    },
+    {
+      "path": "m/8/accir.json",
+      "size": 101309,
+      "status": "ok",
+      "vertices": 2368,
+      "faces": 14976
+    },
+    {
+      "path": "m/8/gsaccir.json",
+      "size": 63643,
+      "status": "ok",
+      "vertices": 1480,
+      "faces": 9360
+    },
+    {
+      "path": "m/8/acbut.json",
+      "size": 210343,
+      "status": "ok",
+      "vertices": 4680,
+      "faces": 28860
+    },
+    {
+      "path": "m/8/gsacbut.json",
+      "size": 128705,
+      "status": "ok",
+      "vertices": 2808,
+      "faces": 17316
+    },
+    {
+      "path": "m/8/acscr.json",
+      "size": 50488,
+      "status": "ok",
+      "vertices": 1280,
+      "faces": 5404
+    },
+    {
+      "path": "t/hdr_fr/px.hdr",
+      "size": 224783,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_fr/nx.hdr",
+      "size": 222088,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_fr/py.hdr",
+      "size": 227446,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_fr/ny.hdr",
+      "size": 204304,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_fr/pz.hdr",
+      "size": 222708,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_fr/nz.hdr",
+      "size": 225470,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_ba/px.hdr",
+      "size": 220546,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_ba/nx.hdr",
+      "size": 234856,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_ba/py.hdr",
+      "size": 206556,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_ba/ny.hdr",
+      "size": 223343,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_ba/pz.hdr",
+      "size": 231498,
+      "status": "ok"
+    },
+    {
+      "path": "t/hdr_ba/nz.hdr",
+      "size": 221707,
+      "status": "ok"
+    },
+    {
+      "path": "t/fb.jpg",
+      "size": 388781,
+      "status": "ok"
+    },
+    {
+      "path": "t/bb.jpg",
+      "size": 449164,
+      "status": "ok"
+    },
+    {
+      "path": "t/ffs.png",
+      "size": 469330,
+      "status": "ok"
+    },
+    {
+      "path": "t/ffd.png",
+      "size": 469365,
+      "status": "ok"
+    },
+    {
+      "path": "t/fff.png",
+      "size": 462049,
+      "status": "ok"
+    },
+    {
+      "path": "t/ffp.png",
+      "size": 476278,
+      "status": "ok"
+    },
+    {
+      "path": "t/ffplt.png",
+      "size": 175888,
+      "status": "ok"
+    },
+    {
+      "path": "t/bfp.png",
+      "size": 680140,
+      "status": "ok"
+    },
+    {
+      "path": "t/bff.png",
+      "size": 679350,
+      "status": "ok"
+    },
+    {
+      "path": "t/bm.jpg",
+      "status": "error-404"
+    },
+    {
+      "path": "th/th_st_uaf_200.jpg",
+      "size": 31663,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uaf_250.jpg",
+      "size": 31962,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uaf_201.jpg",
+      "size": 37985,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uab_200.jpg",
+      "size": 30678,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uas_100.jpg",
+      "size": 31782,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uas_150.jpg",
+      "size": 31459,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uas_101.jpg",
+      "size": 38549,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uas_300.jpg",
+      "size": 31665,
+      "status": "ok"
+    },
+    {
+      "path": "th/th_st_uas_350.jpg",
+      "size": 31740,
+      "status": "ok"
+    }
+  ]
+}

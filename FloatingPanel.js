@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { FENCE_STYLES, COLORS, ARCH_STYLES } from './configData';
+import { FENCE_STYLES as FENCE_TOOL_STYLES, FENCE_COLORS, FENCE_HEIGHTS } from './fenceConfigData';
 import StyleTab from './tabs/StyleTab';
 import ColorTab from './tabs/ColorTab';
 import SizeTab from './tabs/SizeTab';
@@ -28,92 +29,48 @@ var STYLE_URLS = {
     uas_150: 'https://grandviewfence.com/fencing/savannah',
 };
 
-function getHeader(activeTab, config) {
-    var style = FENCE_STYLES.find(function(s) { return s.id === config.styleId; }) || FENCE_STYLES[0];
+function getHeader(activeTab, config, isFence) {
+    var styles = isFence ? FENCE_TOOL_STYLES : FENCE_STYLES;
+    var style = styles.find(function(s) { return s.id === config.styleId; }) || styles[0];
     var colorName = config.color ? config.color.displayName : 'Black';
     var archObj = ARCH_STYLES.find(function(a) { return a.id === config.arch; });
     var archName = archObj ? archObj.name : 'Estate';
     var leafLabel = config.leaf === '1' ? 'Single Gate' : 'Double Gate';
 
-    switch (activeTab) {
-        case 'style':
-            return {
-                step: 'Step 1 of 7',
-                title: 'Choose Your Gate Style',
-                subtitle: style.name + ' | ' + style.subtitle,
-                showProductLink: true,
-                linkLabel: 'View ' + style.name + ' Page',
-                linkUrl: STYLE_URLS[style.id] || 'https://grandviewfence.com/fencing',
-            };
-        case 'color':
-            return {
-                step: 'Step 2 of 7',
-                title: 'ProCoat Powder Coat Finish',
-                subtitle: colorName + ' | Premium Finish',
-                showProductLink: true,
-                linkLabel: 'All Finishes',
-                linkUrl: 'https://grandviewfence.com/accessories',
-            };
-        case 'size':
-            return {
-                step: 'Step 3 of 7',
-                title: 'Gate Dimensions',
-                subtitle: config.height + '" Height | ' + leafLabel,
-            };
-        case 'options':
-            return {
-                step: 'Step 4 of 7',
-                title: 'Gate Options',
-                subtitle: 'Customize | Arch, Rails & More',
-            };
-        case 'puppyPickets':
-            return {
-                step: 'Step 5 of 7',
-                title: 'Puppy Picket Styles',
-                subtitle: 'Keep Pets Safe | 10 Styles Available',
-                showProductLink: true,
-                linkLabel: 'Pet-Safe Fencing',
-                linkUrl: 'https://grandviewfence.com/pet-aluminum-fence',
-            };
-        case 'details':
-            return {
-                step: 'Step 6 of 7',
-                title: 'Fine Details',
-                subtitle: 'Post Caps, Finials & Accents',
-            };
-        case 'quote':
-            return {
-                step: 'Step 7 of 7',
-                title: 'Your Configuration',
-                subtitle: 'Ready to Order? | Get your instant quote',
-            };
-        default:
-            return {
-                step: 'Step 1 of 7',
-                title: 'Choose Your Gate Style',
-                subtitle: style.name + ' | ' + style.subtitle,
-            };
-    }
+    var labels = {
+        style: isFence ? 'Choose Your Fence Style' : 'Choose Your Gate Style',
+        color: 'ProCoat Finish',
+        size: 'Gate Dimensions',
+        options: 'Gate Options',
+        puppyPickets: 'Puppy Pickets',
+        details: 'Fine Details',
+        quote: 'Your Configuration',
+    };
+    var idx = ['style','color','size','options','puppyPickets','details','quote'].indexOf(activeTab);
+    if (idx < 0) idx = 0;
+    return {
+        line: 'Step ' + (idx + 1) + ' of 7 — ' + (labels[activeTab] || labels.style),
+    };
 }
 
-function renderTabContent(activeTab, config, onConfigChange) {
+function renderTabContent(activeTab, config, onConfigChange, isFence, onGetQuote, activeScene, onSceneChange) {
     switch (activeTab) {
         case 'style':
-            return <StyleTab config={config} onConfigChange={onConfigChange} />;
+            return <StyleTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
         case 'color':
-            return <ColorTab config={config} onConfigChange={onConfigChange} />;
+            return <ColorTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
         case 'size':
-            return <SizeTab config={config} onConfigChange={onConfigChange} />;
+            return <SizeTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
         case 'options':
-            return <OptionsTab config={config} onConfigChange={onConfigChange} />;
+            return <OptionsTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
         case 'puppyPickets':
-            return <PuppyPicketsTab config={config} onConfigChange={onConfigChange} />;
+            return <PuppyPicketsTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
         case 'details':
-            return <DetailsTab config={config} onConfigChange={onConfigChange} />;
+            return <DetailsTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
         case 'quote':
-            return <QuoteTab config={config} onConfigChange={onConfigChange} />;
+            return <QuoteTab config={config} onConfigChange={onConfigChange} onGetQuote={onGetQuote} activeScene={activeScene} onSceneChange={onSceneChange} />;
         default:
-            return <StyleTab config={config} onConfigChange={onConfigChange} />;
+            return <StyleTab config={config} onConfigChange={onConfigChange} isFence={isFence} />;
     }
 }
 
@@ -125,14 +82,51 @@ var FloatingPanel = function(props) {
     var collapsed = props.collapsed;
     var onToggleCollapse = props.onToggleCollapse;
 
-    var header = getHeader(activeTab, config);
+    var isFence = props.isFence;
+    var onGetQuote = props.onGetQuote;
+    var header = getHeader(activeTab, config, isFence);
+    var bodyRef = useRef(null);
 
-    var currentIndex = TABS.findIndex(function(t) { return t.id === activeTab; });
+    var sectionLabels = {
+        style: isFence ? 'Fence Style' : 'Gate Style',
+        color: 'ProCoat Finish',
+        size: 'Dimensions',
+        options: 'Gate Options',
+        puppyPickets: 'Puppy Pickets',
+        details: 'Fine Details',
+        quote: 'Your Configuration',
+    };
+
+    var visibleTabs = TABS.filter(function(tab) {
+        if (tab.id === 'options' && isFence) return false;
+        return true;
+    });
+
+    // Scroll-spy: update active tab based on scroll position
+    useEffect(function() {
+        var body = bodyRef.current;
+        if (!body) return;
+        var handleScroll = function() {
+            var scrollTop = body.scrollTop;
+            var found = visibleTabs[0].id;
+            for (var i = 0; i < visibleTabs.length; i++) {
+                var el = document.getElementById('section-' + visibleTabs[i].id);
+                if (el && (el.offsetTop - body.offsetTop) <= scrollTop + 60) {
+                    found = visibleTabs[i].id;
+                }
+            }
+            if (found !== activeTab) onTabChange(found);
+        };
+        body.addEventListener('scroll', handleScroll, { passive: true });
+        return function() { body.removeEventListener('scroll', handleScroll); };
+    });
+
+    var currentIndex = visibleTabs.findIndex(function(t) { return t.id === activeTab; });
     if (currentIndex < 0) currentIndex = 0;
 
     var isFirst = currentIndex === 0;
-    var isLast = currentIndex === TABS.length - 1;
-    var isBeforeLast = currentIndex === TABS.length - 2;
+    var isLast = currentIndex === visibleTabs.length - 1;
+    var isBeforeLast = currentIndex === visibleTabs.length - 2;
 
     var nextText = '';
     if (isLast) {
@@ -140,40 +134,40 @@ var FloatingPanel = function(props) {
     } else if (isBeforeLast) {
         nextText = 'Get Quote';
     } else {
-        nextText = 'Next: ' + TABS[currentIndex + 1].label;
+        nextText = 'Next: ' + visibleTabs[currentIndex + 1].label;
     }
 
     var panelClassName = 'float-panel' + (collapsed ? ' collapsed' : '');
 
     var handleNext = function() {
-        if (!isLast) {
-            onTabChange(TABS[currentIndex + 1].id);
+        if (isLast) {
+            if (onGetQuote) onGetQuote();
+        } else {
+            onTabChange(visibleTabs[currentIndex + 1].id);
         }
     };
 
     var handleBack = function() {
         if (!isFirst) {
-            onTabChange(TABS[currentIndex - 1].id);
+            onTabChange(visibleTabs[currentIndex - 1].id);
         }
     };
 
     return (
-        <div>
-            <button
-                className={'collapse-handle' + (collapsed ? ' panel-hidden' : '')}
-                onClick={onToggleCollapse}
-                title={collapsed ? 'Expand panel' : 'Collapse panel'}
-            >
-                {collapsed ? '\u203A' : '\u2039'}
-            </button>
-            <div className={panelClassName}>
-                <div className="panel-tabs">
-                    {TABS.map(function(tab) {
+        <div className={panelClassName}>
+            <div className="panel-tabs">
+                    {visibleTabs.map(function(tab) {
                         return (
                             <button
                                 key={tab.id}
                                 className={'panel-tab' + (activeTab === tab.id ? ' active' : '')}
-                                onClick={function() { onTabChange(tab.id); }}
+                                onClick={function() {
+                                    onTabChange(tab.id);
+                                    var el = document.getElementById('section-' + tab.id);
+                                    if (el && bodyRef.current) {
+                                        bodyRef.current.scrollTo({ top: el.offsetTop - bodyRef.current.offsetTop, behavior: 'smooth' });
+                                    }
+                                }}
                             >
                                 {tab.label}
                             </button>
@@ -181,59 +175,18 @@ var FloatingPanel = function(props) {
                     })}
                 </div>
 
-                <div className="panel-header">
-                    <div className="panel-step">{header.step}</div>
-                    <div className="panel-title">{header.title}</div>
-                    <div className="panel-subtitle">{header.subtitle}</div>
-                    {header.showProductLink && header.linkUrl && (
-                        <a
-                            href={header.linkUrl}
-                            className="btn-product"
-                            target="_blank"
-                            rel="noopener"
-                            style={{ marginTop: 4, display: 'inline-flex' }}
-                        >
-                            {header.linkLabel} <span className="arrow">&rarr;</span>
-                        </a>
-                    )}
-                </div>
-
-                <div className="panel-body">
-                    <div key={activeTab}>
-                        {renderTabContent(activeTab, config, onConfigChange)}
-                    </div>
-                </div>
-
-                <div className="footer-cta-hint">Complete your design and get instant quote</div>
-                <div className="panel-footer">
-                    <button
-                        className="btn-back"
-                        onClick={handleBack}
-                        disabled={isFirst}
-                        style={isFirst ? { opacity: 0.4, cursor: 'default' } : {}}
-                    >
-                        <span className="arrow-left">&larr;</span> Back
-                    </button>
-                    <div className="progress-dots">
-                        {TABS.map(function(tab, i) {
-                            return (
-                                <span
-                                    key={tab.id}
-                                    className={'progress-dot' + (i <= currentIndex ? ' done' : '')}
-                                    title={tab.label}
-                                />
-                            );
-                        })}
-                    </div>
-                    <button
-                        className={'btn-next' + (isLast ? ' cta-pulse' : '')}
-                        onClick={handleNext}
-                    >
-                        {nextText} <span className="arrow">&rarr;</span>
-                    </button>
+                <div className="panel-body" ref={bodyRef}>
+                    {visibleTabs.map(function(tab, i) {
+                        return (
+                            <div key={tab.id} id={'section-' + tab.id} className="panel-section">
+                                <div className="panel-section-label">{'Step ' + (i + 1) + ' of ' + visibleTabs.length + ' \u2014 ' + sectionLabels[tab.id]}</div>
+                                {renderTabContent(tab.id, config, onConfigChange, props.isFence, onGetQuote, props.activeScene, props.onSceneChange)}
+                                {i < visibleTabs.length - 1 && <div className="panel-section-divider" />}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
-        </div>
     );
 };
 

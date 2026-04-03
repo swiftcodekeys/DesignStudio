@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 var SCENES = [
-    { id: 'gates', label: 'Driveway Gates' },
     { id: 'fencing', label: 'Front Yard' },
     { id: 'backyard', label: 'Back Yard' },
+    { id: 'gates', label: 'Driveway Gates' },
     { id: 'draw', label: 'Draw Your Yard', badge: 'NEW' },
 ];
 
@@ -12,13 +12,28 @@ var TopNav = function(props) {
     var onSceneChange = props.onSceneChange;
     var onReset = props.onReset;
     var onSaveImage = props.onSaveImage;
+    var onGetQuote = props.onGetQuote;
+
+    var menuState = useState(false);
+    var menuOpen = menuState[0];
+    var setMenuOpen = menuState[1];
+
+    var handleSceneChange = function(id) {
+        onSceneChange(id);
+        setMenuOpen(false);
+    };
 
     return (
         <nav className="topnav">
             <div className="topnav-left">
-                <div className="topnav-logo">
+                <button className="hamburger" onClick={function() { setMenuOpen(!menuOpen); }} aria-label="Menu">
+                    <span className={'hamburger-icon' + (menuOpen ? ' open' : '')}>
+                        <span></span><span></span><span></span>
+                    </span>
+                </button>
+                <a className="topnav-logo" href="/" onClick={function(e) { e.preventDefault(); onSceneChange('fencing'); }}>
                     <img src="assets/logo-white.png" alt="Grandview" />
-                </div>
+                </a>
                 <div className="topnav-brand">
                     <span className="brand-name">Grandview <span className="brand-fence">Fence</span></span>
                     <span className="brand-sub">Design Studio</span>
@@ -30,7 +45,7 @@ var TopNav = function(props) {
                         <button
                             key={scene.id}
                             className={'topnav-tab' + (activeScene === scene.id ? ' active' : '')}
-                            onClick={function() { onSceneChange(scene.id); }}
+                            onClick={function() { handleSceneChange(scene.id); }}
                         >
                             {scene.label}
                             {scene.badge && <span className="badge">{scene.badge}</span>}
@@ -39,10 +54,30 @@ var TopNav = function(props) {
                 })}
             </div>
             <div className="topnav-right">
-                <button className="nav-btn" onClick={onReset}>{'\u21BA'} Reset</button>
-                <button className="nav-btn" onClick={onSaveImage}>{'\uD83D\uDCF7'} Save</button>
-                <button className="btn-quote-nav" onClick={function() { /* TODO */ }}>Get Quote <span className="arrow">&rarr;</span></button>
+                <button className="nav-btn nav-btn-desktop" onClick={onReset}>Reset</button>
+                <button className="nav-btn nav-btn-desktop" onClick={onSaveImage}>Save</button>
+                <button className="btn-quote-nav" onClick={onGetQuote}>Get Instant Quote <span className="arrow">&rarr;</span></button>
             </div>
+            {menuOpen && (
+                <div className="mobile-menu">
+                    {SCENES.map(function(scene) {
+                        return (
+                            <button
+                                key={scene.id}
+                                className={'mobile-menu-item' + (activeScene === scene.id ? ' active' : '')}
+                                onClick={function() { handleSceneChange(scene.id); }}
+                            >
+                                {scene.label}
+                                {scene.badge && <span className="badge">{scene.badge}</span>}
+                            </button>
+                        );
+                    })}
+                    <div className="mobile-menu-actions">
+                        <button className="mobile-menu-btn" onClick={function() { onReset(); setMenuOpen(false); }}>Reset Design</button>
+                        <button className="mobile-menu-btn" onClick={function() { onSaveImage(); setMenuOpen(false); }}>Save Image</button>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

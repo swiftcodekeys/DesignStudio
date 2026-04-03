@@ -2,6 +2,13 @@
 JOURNAL — Grandview Design Studio Fence Tool
 ================================================================================
 
+GIT REMOTE NOTE:
+  DesignStudio remote (swiftcodekeys/DesignStudio) uses main branch.
+  Always push: git push designstudio main
+  Local branch: main (working directory)
+  Remote name: designstudio
+
+
 2026-04-02 — Diagnostic Investigation
 ──────────────────────────────────────
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { FENCE_STYLES } from '../configData';
+import { FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
 
 var STYLE_BADGES = {
     uaf_200: { label: 'Popular', cls: 'b-popular' },
@@ -9,9 +10,12 @@ var STYLE_BADGES = {
     uas_100: { label: 'Classic', cls: 'b-classic' },
     uas_101: { label: 'Puppy Ready', cls: 'b-puppy' },
     uas_150: { label: 'Classic', cls: 'b-classic' },
+    uas_300: { label: 'Decorative', cls: 'b-classic' },
+    uas_350: { label: 'Decorative', cls: 'b-classic' },
+    uap_100: { label: 'Privacy', cls: 'b-pool' },
 };
 
-var STYLE_THUMBS = {
+var GATE_THUMBS = {
     uaf_200: 'assets/ifence_previews/gate_styles/san_marino_15.png',
     uaf_201: 'assets/ifence_previews/gate_styles/santa_monica_9.png',
     uaf_250: 'assets/ifence_previews/gate_styles/sanibel_12.png',
@@ -21,29 +25,57 @@ var STYLE_THUMBS = {
     uas_150: 'assets/ifence_previews/gate_styles/bella_terra_51.png',
 };
 
+var FENCE_THUMBS = {
+    uaf_200: 'assets/ifence_previews/gate_styles/san_marino_15.png',
+    uaf_201: 'assets/ifence_previews/gate_styles/santa_monica_9.png',
+    uaf_250: 'assets/ifence_previews/gate_styles/sanibel_12.png',
+    uab_200: 'assets/ifence_previews/gate_styles/boca_grande_45.png',
+    uas_100: 'assets/ifence_previews/gate_styles/bella_vista_48.png',
+    uas_101: 'assets/ifence_previews/gate_styles/charleston_pro.png',
+    uas_150: 'assets/ifence_previews/gate_styles/bella_terra_51.png',
+    uas_300: 'fence_tool/th/th_st_uas_300.jpg',
+    uas_350: 'fence_tool/th/th_st_uas_350.jpg',
+    uap_100: 'fence_tool/th/th_prv_2ra.jpg',
+};
+
 var StyleTab = function(props) {
     var config = props.config;
     var onConfigChange = props.onConfigChange;
-    var styles3D = FENCE_STYLES.filter(function(s) { return s.supports3D; });
+    var isFence = props.isFence;
+    var allStyles = isFence ? FENCE_TOOL_STYLES : FENCE_STYLES;
+    var styles3D = allStyles.filter(function(s) {
+        if (!isFence && (s.isPrivacy || s.category === 'privacy')) return false;
+        return s.supports3D || s.renderMode === 'overlay';
+    });
+    var thumbs = isFence ? FENCE_THUMBS : GATE_THUMBS;
 
     var handleStyleChange = function(styleId) {
-        var style = FENCE_STYLES.find(function(s) { return s.id === styleId; });
-        onConfigChange(function(prev) {
-            // Preserve puppy picket selection when switching styles
-            var newAccessories = {};
-            if (prev.accessories && prev.accessories.pup) {
-                newAccessories.pup = prev.accessories.pup;
-            }
-            return {
-                ...prev,
-                styleId: styleId,
-                post: style.postDefault,
-                // Preserve user's single/double gate choice when switching styles
-                leaf: prev.leaf,
-                finial: style.hasFinials ? 'fs' : null,
-                accessories: newAccessories,
-            };
-        });
+        var style = allStyles.find(function(s) { return s.id === styleId; });
+        if (isFence) {
+            onConfigChange(function(prev) {
+                return {
+                    ...prev,
+                    styleId: styleId,
+                    finialType: style.hasFinials ? 's' : null,
+                    accessories: {},
+                };
+            });
+        } else {
+            onConfigChange(function(prev) {
+                var newAccessories = {};
+                if (prev.accessories && prev.accessories.pup) {
+                    newAccessories.pup = prev.accessories.pup;
+                }
+                return {
+                    ...prev,
+                    styleId: styleId,
+                    post: style.postDefault,
+                    leaf: prev.leaf,
+                    finial: style.hasFinials ? 'fs' : null,
+                    accessories: newAccessories,
+                };
+            });
+        }
     };
 
     return (
@@ -59,9 +91,9 @@ var StyleTab = function(props) {
                     >
                         <div className="style-card-img">
                             <img
-                                src={STYLE_THUMBS[style.id]}
+                                src={thumbs[style.id]}
                                 alt={style.name}
-                                style={style.id === 'uas_101' ? { objectPosition: 'right 8%', transform: 'scale(1.6)', transformOrigin: 'right 8%', filter: 'contrast(1.8) brightness(1.1)' } : {}}
+                                style={{}}
                             />
                         </div>
                         <div className="style-card-info">

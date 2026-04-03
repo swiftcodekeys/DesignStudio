@@ -5,12 +5,14 @@ import TopNav from './TopNav';
 import FloatingPanel from './FloatingPanel';
 import BacklinksFooter from './BacklinksFooter';
 import SocialProof from './SocialProof';
-import QuoteModal from './QuoteModal';
+import ContactPopup from './ContactPopup';
 import DrawYardView from './DrawYardView';
 import QuoteBuilder from './QuoteBuilder';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import QuizPage from './quiz/QuizPage';
+import LandingPage from './LandingPage';
+import WizardShell from './WizardShell';
 
 var STORAGE_KEY = 'gv_config';
 
@@ -92,8 +94,8 @@ var DesignStudio = function() {
     var defaultStyle = FENCE_STYLES[0];
     var defaultConfig = {
         styleId: defaultStyle.id,
-        height: '60',
-        color: COLORS[5], // Gloss Black
+        height: '48',
+        color: COLORS[1], // Textured Black
         post: defaultStyle.postDefault,
         postCap: 'pcf',
         arch: 'e',
@@ -122,17 +124,17 @@ var DesignStudio = function() {
 
     var tabState = useState('fencing');
     var activeTab = tabState[0];
-    var setActiveTab = tabState[1];
+    var setActiveTabRaw = tabState[1];
 
     var configTabState = useState('style');
     var activeConfigTab = configTabState[0];
     var setActiveConfigTab = configTabState[1];
 
-    // ---- FENCE CONFIG STATE ----
-    var defaultFenceConfig = {
-        styleId: 'uaf_200',
+    // ---- PER-SCENE FENCE CONFIG DEFAULTS ----
+    var defaultFrontYardConfig = {
+        styleId: 'uaf_200', // Horizon
         height: '48',
-        color: FENCE_COLORS[5],  // Gloss Black (matches Ultra default)
+        color: FENCE_COLORS[1], // Textured Black
         finialType: null,
         postCap: 'pcf',
         accessories: {},
@@ -140,28 +142,55 @@ var DesignStudio = function() {
         privacyPostColor: 'white',
         privacyPanelColor: 'white',
     };
-    var fenceConfigState = useState(defaultFenceConfig);
-    var fenceConfig = fenceConfigState[0];
-    var setFenceConfig = fenceConfigState[1];
+    var defaultBackyardConfig = {
+        styleId: 'uab_200', // Haven
+        height: '54',
+        color: FENCE_COLORS[3], // Textured White
+        finialType: null,
+        postCap: 'pcf',
+        accessories: {},
+        pupType: null,
+        privacyPostColor: 'white',
+        privacyPanelColor: 'white',
+    };
+
+    // Separate config state per fence tab — preserves user selections when switching
+    var frontYardConfigState = useState(defaultFrontYardConfig);
+    var frontYardConfig = frontYardConfigState[0];
+    var setFrontYardConfig = frontYardConfigState[1];
+
+    var backyardConfigState = useState(defaultBackyardConfig);
+    var backyardConfig = backyardConfigState[0];
+    var setBackyardConfig = backyardConfigState[1];
+
+    // Active fence config derived from current tab
+    var fenceConfig = (activeTab === 'backyard') ? backyardConfig : frontYardConfig;
+    var setFenceConfig = (activeTab === 'backyard') ? setBackyardConfig : setFrontYardConfig;
+
+    var handleSceneChange = function(newTab) {
+        setActiveTabRaw(newTab);
+        setActiveConfigTab('style');
+    };
+    var setActiveTab = handleSceneChange;
 
     var panelState = useState(false);
     var panelCollapsed = panelState[0];
     var setPanelCollapsed = panelState[1];
 
-    var quoteModalState = useState(false);
-    var quoteModalOpen = quoteModalState[0];
-    var setQuoteModalOpen = quoteModalState[1];
+    var contactPopupState = useState(false);
+    var contactPopupOpen = contactPopupState[0];
+    var setContactPopupOpen = contactPopupState[1];
 
     var viewState = useState('studio');
     var view = viewState[0];
     var setView = viewState[1];
 
     var handleGetQuote = function() {
-        setQuoteModalOpen(true);
+        setContactPopupOpen(true);
     };
 
     var handleOpenQuoteBuilder = function() {
-        setQuoteModalOpen(false);
+        setContactPopupOpen(false);
         // Pre-fill quote builder with current design studio config
         try {
             var isFenceMode = activeTab === 'fencing' || activeTab === 'backyard' || activeTab === 'draw';
@@ -190,6 +219,16 @@ var DesignStudio = function() {
             localStorage.setItem('gv_quote_builder', JSON.stringify(prefill));
         } catch (e) { console.error('[App] Quote prefill error:', e); }
         setView('quote-builder');
+    };
+
+    var handleSkipToManualEntry = function() {
+        handleOpenQuoteBuilder();
+        // QuoteBuilder will read initialStep from localStorage
+        try {
+            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
+            existing.initialStep = 1; // Step 1 = Layout (manual footage entry)
+            localStorage.setItem('gv_quote_builder', JSON.stringify(existing));
+        } catch (e) { /* */ }
     };
 
     var handleReset = function() {
@@ -229,7 +268,7 @@ var DesignStudio = function() {
             <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
-                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} />
+                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
                     <BacklinksFooter config={config} />
                 </div>
             ) : (
@@ -237,7 +276,7 @@ var DesignStudio = function() {
                     <div className="viewport-scene">
                         <SocialProof />
                         <UnifiedCanvas config={config} fenceConfig={fenceConfig} panelCollapsed={panelCollapsed} activeScene={activeTab} />
-                        <BacklinksFooter config={config} />
+                        <BacklinksFooter config={config} onContactClick={function() { setContactPopupOpen(true); }} />
                     </div>
                     <FloatingPanel
                         activeTab={activeConfigTab}
@@ -253,7 +292,7 @@ var DesignStudio = function() {
                     />
                 </div>
             )}
-            <QuoteModal isOpen={quoteModalOpen} onClose={function() { setQuoteModalOpen(false); }} config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config} isFence={activeTab === 'fencing' || activeTab === 'backyard'} onOpenBuilder={handleOpenQuoteBuilder} />
+            <ContactPopup isOpen={contactPopupOpen} onClose={function() { setContactPopupOpen(false); }} />
         </div>
     );
 };
@@ -261,7 +300,10 @@ var DesignStudio = function() {
 var App = function() {
     return (
         <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/wizard" element={<WizardShell />} />
             <Route path="/fence-quiz" element={<QuizPage />} />
+            <Route path="/studio" element={<DesignStudio />} />
             <Route path="/*" element={<DesignStudio />} />
         </Routes>
     );

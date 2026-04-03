@@ -1,0 +1,46 @@
+[
+  { "dv": "200 Series" },
+  {
+    "th": "th_st_uaf_200", "nam": "UAF-200 Flat Top", "mt": "90px",
+    "st": "f2", "cat": "f", "mod": "200", "pi": "200", "fin": false,
+    "opt": "pcf,pcb,res,ufr,mdr,xlr,pup,rem",
+    "acc": "tcr,tbu,scr,bcr,bbu,rem"
+  },
+  {
+    "th": "th_st_uaf_250", "nam": "UAF-250 Flat Top w/ Spears", "mt": "65px",
+    "st": "f2", "cat": "f", "mod": "250", "pi": "250", "fin": true,
+    "opt": "pcf,pcb,fs,ft,fq,fp,res,ufr,mdr,xlr,pup,rem",
+    "acc": "scr,bcr,bbu,rem"
+  },
+  {
+    "th": "th_st_uaf_201", "nam": "UAF-201 Flat Top 1-1/2\" Spacing", "mt": "65px",
+    "st": "f2", "cat": "f", "mod": "201", "pi": "201", "fin": false,
+    "opt": "pcf,pcb,res,ufr,mdr,xlr,rem",
+    "acc": "tcr,tbu,bcr,bbu,rem"
+  },
+  {
+    "th": "th_st_uab_200", "nam": "UAB-200 Flat Top Flush",
+    "cat": "b", "st": "b2", "mod": "200", "pi": "200", "fin": false,
+    "opt": "pcf,pcb,res,ufr,mdr,xlr,pup,rem",
+    "acc": "scr,bcr,bbu,rem"
+  },
+  { "dv": "100 Series" },
+  {
+    "th": "th_st_uas_100", "nam": "UAS-100 Spear Top", "mt": "90px",
+    "st": "s1", "cat": "s", "mod": "100", "pi": "100", "fin": true,
+    "opt": "pcf,pcb,fs,ft,fq,fp,res,ufr,mdr,xlr,pup,rem",
+    "acc": "tcr,tbu,scr,bcr,bbu,rem"
+  },
+  {
+    "th": "th_st_uas_150", "nam": "UAS-150 Staggered Spear", "mt": "65px",
+    "st": "s1", "cat": "s", "mod": "150", "pi": "100", "fin": true,
+    "opt": "pcf,pcb,fs,ft,fq,fp,res,ufr,mdr,xlr,pup,rem",
+    "acc": "tcr,tbu,scr,bcr,bbu,rem"
+  },
+  {
+    "th": "th_st_uas_101", "nam": "UAS-101 Spear Top 1-1/2\" Spacing", "mt": "65px",
+    "st": "s1", "cat": "s", "mod": "100", "pi": "101", "fin": true,
+    "opt": "pcf,pcb,fs,ft,fq,fp,res,ufr,mdr,xlr,rem",
+    "acc": "tcr,tbu,bcr,bbu,rem"
+  }
+]

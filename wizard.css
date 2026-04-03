@@ -1,0 +1,524 @@
+/* ============================================================
+   WIZARD SHELL — Guided onboarding flow
+   ============================================================ */
+
+.wizard-shell {
+  --navy: #1B3A5C;
+  --white: #FFFFFF;
+  --offwhite: #F8F7F5;
+  --orange: #D4753A;
+  --light-gray: #E8E8E8;
+  --font-serif: 'Playfair Display', 'Noto Serif', Georgia, serif;
+  --font-sans: 'DM Sans', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  color: var(--navy);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Allow scroll on non-configure steps (zone select, gates question, measure) */
+.wizard-shell .wizard-content {
+  overflow-y: auto;
+}
+
+/* ---- Progress Bar ---- */
+.wizard-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--white);
+  border-bottom: 1px solid var(--light-gray);
+  position: relative;
+  z-index: 10;
+}
+
+.wizard-progress-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.wizard-logo-img {
+  height: 32px;
+  width: auto;
+}
+
+.wizard-step-label {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.wizard-step-name {
+  color: #5a6270;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.wizard-progress-bar {
+  flex: 1;
+  max-width: 320px;
+  height: 4px;
+  background: var(--light-gray);
+  border-radius: 2px;
+  margin: 0 32px;
+  overflow: hidden;
+}
+
+.wizard-progress-fill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 2px;
+  transition: width 0.4s ease-out;
+}
+
+.wizard-escape {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: #5a6270;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wizard-escape:hover {
+  background: var(--offwhite);
+  color: var(--navy);
+}
+
+/* ---- Wizard Content Area ---- */
+.wizard-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+/* ---- Zone Selection (Step 1) ---- */
+.zone-heading {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 3.5vw, 38px);
+  font-weight: 700;
+  color: var(--navy);
+  text-align: center;
+  margin: 0 0 12px;
+}
+
+.zone-subhead {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: #5a6270;
+  text-align: center;
+  margin: 0 0 48px;
+}
+
+.zone-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 900px;
+  width: 100%;
+}
+
+.zone-card {
+  position: relative;
+  background: var(--white);
+  border: 2px solid var(--light-gray);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.zone-card:hover {
+  border-color: #c0c8d0;
+  transform: translateY(-2px);
+}
+
+.zone-card.selected {
+  border-color: var(--navy);
+  background: #EEF3F8;
+}
+
+.zone-card-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.zone-card.selected .zone-card-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.zone-card-check svg {
+  width: 14px;
+  height: 14px;
+  color: var(--white);
+}
+
+.zone-card-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  color: var(--navy);
+}
+
+.zone-card-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.zone-card-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 8px;
+}
+
+.zone-card-desc {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: #5a6270;
+  line-height: 1.5;
+}
+
+/* ---- Wizard buttons ---- */
+.wizard-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+.wizard-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  height: 52px;
+  padding: 0 32px;
+  background: var(--orange);
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.wizard-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212,117,58,0.3);
+}
+
+.wizard-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wizard-btn-secondary {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: #5a6270;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: color 0.15s;
+}
+
+.wizard-btn-secondary:hover {
+  color: var(--navy);
+  text-decoration: underline;
+}
+
+.wizard-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--light-gray);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--navy);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.wizard-btn-back:hover {
+  background: var(--offwhite);
+  border-color: #c0c8d0;
+}
+
+.wizard-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 900px;
+  margin-top: 40px;
+}
+
+/* ---- Configure Step (Step 2) ---- */
+.wizard-configure {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wizard-configure-left {
+  width: 370px;
+  min-width: 370px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--light-gray);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.wizard-zone-pills {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--light-gray);
+  flex-wrap: wrap;
+}
+
+.wizard-zone-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--light-gray);
+  background: var(--white);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: #5a6270;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wizard-zone-pill.active {
+  background: var(--navy);
+  color: var(--white);
+  border-color: var(--navy);
+}
+
+.wizard-zone-pill.done {
+  border-color: #4ade80;
+  color: var(--navy);
+}
+
+.wizard-zone-pill-check {
+  width: 14px;
+  height: 14px;
+  color: #4ade80;
+}
+
+.wizard-config-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.wizard-config-header {
+  margin-bottom: 16px;
+}
+
+.wizard-config-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #8e95a0;
+  margin-bottom: 4px;
+}
+
+.wizard-config-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -0.3px;
+}
+
+.wizard-config-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--light-gray);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wizard-configure-right {
+  flex: 1;
+  position: relative;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wizard-renderer-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #5a6270;
+  font-family: var(--font-sans);
+  font-size: 15px;
+}
+
+.wizard-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--light-gray);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: wizardSpin 0.8s linear infinite;
+}
+
+@keyframes wizardSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Gates Question (Step 3) ---- */
+.gate-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 640px;
+  width: 100%;
+}
+
+.gate-card {
+  background: var(--white);
+  border: 2px solid var(--light-gray);
+  border-radius: 12px;
+  padding: 40px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.gate-card:hover {
+  border-color: #c0c8d0;
+  transform: translateY(-2px);
+}
+
+.gate-card.selected {
+  border-color: var(--navy);
+  background: #EEF3F8;
+}
+
+.gate-card-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  color: var(--navy);
+}
+
+.gate-card-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gate-card-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+/* ---- Measure Step (Step 4) ---- */
+.wizard-measure {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+  .wizard-progress {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wizard-progress-bar {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+    margin: 4px 0 0;
+  }
+
+  .wizard-content {
+    padding: 32px 20px;
+  }
+
+  .zone-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .gate-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .wizard-configure {
+    flex-direction: column;
+  }
+
+  .wizard-configure-left {
+    width: 100%;
+    min-width: 0;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  .wizard-nav-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .wizard-btn-primary {
+    width: 100%;
+  }
+}
