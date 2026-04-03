@@ -2,11 +2,20 @@ import React from 'react';
 import { HEIGHTS } from '../configData';
 import { FENCE_HEIGHTS } from '../fenceConfigData';
 
+var isHavenStyle = function(styleId) {
+    return styleId === 'uab_200';
+};
+
 var SizeTab = function(props) {
     var config = props.config;
     var onConfigChange = props.onConfigChange;
     var isFence = props.isFence;
     var heightList = isFence ? FENCE_HEIGHTS : HEIGHTS;
+    var isHaven = isFence && isHavenStyle(config.styleId);
+    // Haven available heights: 48, 54, 60 only (no 72)
+    var filteredHeightList = isHaven
+        ? heightList.filter(function(h) { return h.id !== '72'; })
+        : heightList;
 
     var update = function(key, value) {
         onConfigChange(function(prev) { return { ...prev, [key]: value }; });
@@ -17,7 +26,7 @@ var SizeTab = function(props) {
             <div className="section-group">
                 <div className="section-title">{isFence ? 'Fence Height' : 'Height'}</div>
                 <div className="controls-row">
-                    {heightList.map(function(h) {
+                    {filteredHeightList.map(function(h) {
                         return (
                             <div
                                 key={h.id}
@@ -29,6 +38,14 @@ var SizeTab = function(props) {
                         );
                     })}
                 </div>
+                {isHaven && (
+                    <div className="size-pool-notice">
+                        Haven features a flush bottom rail &mdash; required for pool barrier compliance in most jurisdictions.
+                        {config.height === '48' && (
+                            <span className="size-pool-warning"> At 48", this style may not meet pool barrier height requirements in all jurisdictions. Most codes require a minimum of 48"&ndash;54". Verify your local code before ordering.</span>
+                        )}
+                    </div>
+                )}
             </div>
             {!isFence && (
                 <div className="section-group">

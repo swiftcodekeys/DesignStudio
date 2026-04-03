@@ -51,10 +51,7 @@ var ContactPopup = function(props) {
 
     if (!GAS_ENDPOINT) {
       setStatus('error');
-      setErrorMsg(
-        'Contact form is not configured yet. ' +
-        'Please call us at (855) FENCE-30 | (855) 336-2330 or email sales@grandviewfence.com.'
-      );
+      setErrorMsg('not-configured');
       return;
     }
 
@@ -90,10 +87,7 @@ var ContactPopup = function(props) {
       })
       .catch(function(err) {
         setStatus('error');
-        setErrorMsg(
-          'Couldn\u2019t send your message. Please try again or call ' +
-          '(855) FENCE-30 | (855) 336-2330'
-        );
+        setErrorMsg('send-failed');
         console.error('[ContactPopup] Submit error:', err);
       });
   };
@@ -172,7 +166,12 @@ var ContactPopup = function(props) {
             </div>
 
             {status === 'error' && (
-              <div className="contact-error">{errorMsg}</div>
+              <div className="contact-error">
+                {errorMsg === 'not-configured'
+                  ? <span>Contact form is not configured yet. Please call us at <a href="tel:+18553362330">(855) FENCE-30 | (855) 336-2330</a>.</span>
+                  : <span>Couldn&rsquo;t send your message. Please try again or call <a href="tel:+18553362330">(855) FENCE-30 | (855) 336-2330</a>.</span>
+                }
+              </div>
             )}
 
             <button

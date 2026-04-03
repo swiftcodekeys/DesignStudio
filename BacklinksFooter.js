@@ -1,33 +1,44 @@
 import React from 'react';
+import { FENCE_STYLES } from './configData';
 
-const LINKS = [
-    { label: 'Home',          href: 'https://grandviewfence.com' },
-    { label: 'All Fencing',   href: 'https://grandviewfence.com/fencing' },
-    { label: 'Residential',   href: 'https://grandviewfence.com/residential-commercial' },
-    { label: 'Pool & Safety', href: 'https://grandviewfence.com/pool-safety' },
-    { label: 'Privacy',       href: 'https://grandviewfence.com/privacy' },
-    { label: 'Gates',         href: 'https://grandviewfence.com/walk-drive-gates' },
-    { label: 'Accessories',   href: 'https://grandviewfence.com/accessories' },
-    { label: 'Horizon',       href: 'https://grandviewfence.com/fencing/horizon' },
-    { label: 'Horizon Pro',   href: 'https://grandviewfence.com/fencing/horizon-pro' },
-    { label: 'Vanguard',      href: 'https://grandviewfence.com/fencing/vanguard' },
-    { label: 'Haven',         href: 'https://grandviewfence.com/fencing/haven' },
-    { label: 'Charleston',    href: 'https://grandviewfence.com/fencing/charleston' },
-    { label: 'Savannah',      href: 'https://grandviewfence.com/fencing/savannah' },
-    { label: 'Pet-Safe',      href: 'https://grandviewfence.com/pet-aluminum-fence' },
-    { label: 'Blog',          href: 'https://grandviewfence.com/blog' },
-    { label: 'About',         href: 'https://grandviewfence.com/about' },
-];
+var STYLE_SLUGS = {
+    uaf_200: 'horizon', uaf_201: 'horizon-pro', uaf_250: 'vanguard',
+    uab_200: 'haven', uas_100: 'charleston', uas_101: 'charleston-pro',
+    uas_150: 'savannah', uas_300: 'cambridge', uas_350: 'lexington',
+    uap_100: 'privacy',
+};
 
-const BacklinksFooter = () => {
+var BacklinksFooter = function(props) {
+    var config = props.config || {};
+    var onContactClick = props.onContactClick;
+    var style = FENCE_STYLES.find(function(s) { return s.id === config.styleId; });
+    var styleName = style ? style.name : 'Fence Styles';
+    var styleSlug = STYLE_SLUGS[config.styleId] || 'fencing';
+
     return (
-        <div className="backlinks">
-            {LINKS.map((link, i) => (
-                <React.Fragment key={link.label}>
-                    <a href={link.href} target="_blank" rel="noopener">{link.label}</a>
-                    {i < LINKS.length - 1 && <span className="sep">&middot;</span>}
-                </React.Fragment>
-            ))}
+        <div className="backlinks-bar">
+            <div className="backlinks-row1">
+                <a href={'https://grandviewfence.com/fencing/' + styleSlug} target="_blank" rel="noopener">Shop {styleName}</a>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/pool-safety" target="_blank" rel="noopener">Pool Safety</a>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/pet-aluminum-fence" target="_blank" rel="noopener">Pet Fence</a>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/residential-commercial" target="_blank" rel="noopener">Residential</a>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/installation-guide" target="_blank" rel="noopener">Installation Guide</a>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/shipping" target="_blank" rel="noopener">Shipping</a>
+            </div>
+            <div className="backlinks-row2">
+                <a href="https://grandviewfence.com/about" target="_blank" rel="noopener" className="backlinks-trust-link">Made in USA</a>
+                <span className="backlinks-sep">|</span>
+                <span className="backlinks-contact">
+                    <a href="tel:+18553362330"><strong>(855) FENCE-30 | (855) 336-2330</strong></a> | <a href="#" onClick={function(e) { e.preventDefault(); if (onContactClick) onContactClick(); }}>sales@grandviewfence.com</a>
+                </span>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/warranty" target="_blank" rel="noopener" className="backlinks-trust-link">Lifetime Warranty</a>
+            </div>
         </div>
     );
 };

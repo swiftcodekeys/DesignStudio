@@ -1162,8 +1162,6 @@ html, body {
 }
 .backlinks-trust-link:hover {
   color: rgba(255,255,255,0.9);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 .backlinks-sep {
   color: rgba(255,255,255,0.15);

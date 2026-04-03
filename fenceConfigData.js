@@ -100,15 +100,15 @@ export var FENCE_STYLES = [
         // Privacy has independent post/rail and panel color pickers
         // Overlay images at fence_tool/overlays/{front|back}/{post}-{panel}.png
         privacyPostColors: [
-            { id: 'black',   name: 'Black',       hex: '#0a0a0a' },
-            { id: 'white',   name: 'White',       hex: '#f0f0f0' },
-            { id: 'bronze',  name: 'Bronze',      hex: '#5a4d3e' },
-            { id: 'khaki',   name: 'Satin Khaki', hex: '#b8ac9f' },
-            { id: 'silver',  name: 'Silver',      hex: '#a8adb5' },
+            { id: 'black',   name: 'Textured Black',  hex: '#0a0a0a' },
+            { id: 'white',   name: 'Textured White',  hex: '#f0f0f0' },
+            { id: 'bronze',  name: 'Textured Bronze', hex: '#5a4d3e' },
+            { id: 'khaki',   name: 'Textured Khaki',  hex: '#b8ac9f' },
+            { id: 'silver',  name: 'Silver',          hex: '#a8adb5' },
         ],
         privacyPanelColors: [
-            { id: 'white',   name: 'White',       hex: '#f0f0f0' },
-            { id: 'khaki',   name: 'Satin Khaki', hex: '#b8ac9f' },
+            { id: 'white',   name: 'Textured White',  hex: '#f0f0f0' },
+            { id: 'khaki',   name: 'Textured Khaki',  hex: '#b8ac9f' },
         ],
     },
 ];

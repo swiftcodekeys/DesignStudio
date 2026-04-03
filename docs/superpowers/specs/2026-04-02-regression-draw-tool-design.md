@@ -26,9 +26,7 @@
 - `QuoteModal.js:119` — mailto submission → rewrite to POST to GAS (or open ContactPopup)
 - `QuoteModal.js:140` — same
 
-**Approach:** BacklinksFooter and QuoteTab get an `onContactClick` prop passed from app.js. Clicking the email link calls `onContactClick()` which sets `contactPopupOpen` state to true. ContactPopup.js (already built) renders when open.
-
-QuoteModal.js is more complex — its submit handler sends a mailto. Replace with POST to GAS_ENDPOINT using the same pattern as ContactPopup. If GAS_ENDPOINT not set, fall back to opening ContactPopup.
+**Approach:** Deprecate QuoteModal.js entirely. Remove the file. Replace every QuoteModal trigger with ContactPopup. BacklinksFooter and QuoteTab get an `onContactClick` prop from app.js. All email links open ContactPopup instead of mailto:.
 
 ### Fix 4 — Callable phone numbers
 **Files:** All instances of (855) already identified.
@@ -74,9 +72,12 @@ Gate tab: unchanged (current QuoteTab CTAs stay).
 **Verify:** FENCE_COLORS[5] maps to Textured Black, not Gloss Black. Check fenceConfigData.js color array index 5.
 
 ### Fix 8 — Backyard defaults
-**File:** `app.js` — need separate `defaultBackyardConfig` or per-tab config initialization.
-**Approach:** When user switches to backyard tab for the first time and fenceConfig hasn't been manually changed, set: styleId `uab_200`, height `54`, color = Textured White.
-**Implementation:** Add `backyardInitialized` ref. On first switch to backyard, if not initialized, set fenceConfig to backyard defaults.
+**File:** `app.js`
+**Approach:** Separate default config objects per scene:
+- `defaultFrontYardConfig` — Horizon (uaf_200), 48", Textured Black
+- `defaultBackyardConfig` — Haven (uab_200), 54", Textured White
+- `defaultGateConfig` — Horizon (uaf_200), 48", Textured Black
+Load scene defaults on first tab switch. Preserve user changes on subsequent switches. Track per-scene initialization with a `sceneInitialized` object: `{ fencing: false, backyard: false, gates: false }`.
 
 ### Fix 9 — Driveway gate defaults
 **File:** `app.js` line 93 (`defaultConfig`)
