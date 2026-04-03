@@ -96,6 +96,9 @@ var DetailsTab = function(props) {
                                     className={'opt-card' + (isActive ? ' active' : '')}
                                     onClick={function() { handlePostCapChange(pc.id); }}
                                 >
+                                    <div className="opt-card-img">
+                                        <img src={pc.thumb} alt={pc.name} />
+                                    </div>
                                     <div className="opt-card-label">{pc.name}</div>
                                 </div>
                             );

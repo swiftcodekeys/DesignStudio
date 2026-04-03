@@ -67,10 +67,10 @@ html, body {
   justify-content: space-between;
   position: relative;
   padding: 0 16px;
-  height: 48px;
-  min-height: 48px;
-  background: #78AFCF;
-  border-bottom: none;
+  height: 44px;
+  min-height: 44px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
   z-index: 100;
 }
 .topnav-left {
@@ -96,17 +96,17 @@ html, body {
 .brand-name {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: #1B3A5C;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 .brand-fence {
-  color: #fff;
+  color: #1B3A5C;
 }
 .brand-sub {
   font-size: 10px;
   font-weight: 700;
-  color: rgba(255,255,255,0.55);
+  color: #888;
   letter-spacing: 2.5px;
   text-transform: uppercase;
 }
@@ -119,10 +119,10 @@ html, body {
   gap: 0;
 }
 .topnav-tab {
-  padding: 14px 14px;
-  font-size: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255,255,255,0.5);
+  color: #555;
   border: none;
   background: none;
   border-bottom: 2px solid transparent;
@@ -130,21 +130,22 @@ html, body {
   transition: all 150ms ease;
   font-family: inherit;
   white-space: nowrap;
+  line-height: 1;
 }
 .topnav-tab:hover {
-  color: rgba(255,255,255,0.9);
-  border-bottom-color: rgba(212,117,58,0.5);
+  color: #D4753A;
 }
 .topnav-tab.active {
-  color: #fff;
+  color: #1B3A5C;
   border-bottom-color: #d4753a;
+  font-weight: 700;
 }
 .topnav-tab .badge {
   font-size: 7px;
   padding: 1px 4px;
   border-radius: 3px;
-  background: rgba(255,255,255,0.2);
-  color: #fff;
+  background: rgba(27,58,92,0.1);
+  color: #1B3A5C;
   font-weight: 700;
   margin-left: 4px;
   vertical-align: middle;
@@ -159,7 +160,7 @@ html, body {
 .nav-btn {
   padding: 6px 12px;
   background: none;
-  color: rgba(255,255,255,0.6);
+  color: #555;
   border: none;
   border-radius: 4px;
   font-weight: 500;
@@ -172,8 +173,8 @@ html, body {
   gap: 6px;
 }
 .nav-btn:hover {
-  background: rgba(255,255,255,0.2);
-  color: #fff;
+  background: rgba(0,0,0,0.05);
+  color: #D4753A;
 }
 .nav-btn.cta {
   background: var(--cta);
@@ -192,8 +193,8 @@ html, body {
 /* Get Quote nav button */
 .btn-quote-nav {
   padding: 7px 16px;
-  background: #fff;
-  color: #1B3A5C;
+  background: #D4753A;
+  color: #fff;
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -212,7 +213,7 @@ html, body {
   transition: transform 150ms ease;
 }
 .btn-quote-nav:hover {
-  background: #E05A2B;
+  background: #c0663a;
 }
 .btn-quote-nav:hover .arrow {
   transform: translateX(3px);
@@ -251,6 +252,59 @@ html, body {
 }
 
 /* --- Config Sidebar (fixed right) --- */
+/* --- Split Bar (promo LEFT | config tabs RIGHT) --- */
+.split-bar {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+.split-bar-left {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  font-size: 13px;
+  color: #555;
+  min-height: 40px;
+}
+.split-bar-right {
+  flex: 0 0 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: #ffffff;
+  min-height: 40px;
+}
+.config-tab {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: inherit;
+}
+.config-tab:hover {
+  color: #D4753A;
+}
+.config-tab.active {
+  color: #1B3A5C;
+  border-bottom-color: #D4753A;
+  font-weight: 700;
+}
+
 .float-panel {
   width: 340px;
   min-width: 340px;
@@ -271,8 +325,10 @@ html, body {
   display: flex;
   padding: 0;
   gap: 0;
-  background: #fff;
+  background: var(--card-bg);
   border-bottom: 1px solid var(--border);
+  height: 40px;
+  align-items: center;
   flex-shrink: 0;
 }
 .panel-tab {
@@ -292,7 +348,8 @@ html, body {
   text-transform: uppercase;
 }
 .panel-tab:hover {
-  color: var(--text-secondary);
+  color: #D4753A;
+  border-bottom-color: #D4753A;
 }
 .panel-tab.active {
   color: var(--navy);
@@ -389,7 +446,7 @@ html, body {
 /* --- Style Cards (grid layout) --- */
 .style-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 .style-card {
@@ -412,17 +469,18 @@ html, body {
   background: var(--active-bg);
 }
 .style-card-img {
-  max-height: 100px;
+  max-height: 80px;
   overflow: hidden;
   background: var(--card-bg);
   border-radius: 7px 7px 0 0;
 }
 .style-card-img img {
   width: 100%;
-  max-height: 100px;
+  max-height: 80px;
   object-fit: contain;
   display: block;
   padding: 4px;
+  margin: 0 auto;
   transition: transform 150ms ease;
 }
 .style-card:hover .style-card-img img {
@@ -691,16 +749,20 @@ html, body {
   background: var(--active-bg);
 }
 .opt-card-img {
-  max-height: 60px;
+  max-height: 50px;
   overflow: hidden;
   background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .opt-card-img img {
   width: auto;
-  max-height: 60px;
+  max-height: 50px;
   object-fit: contain;
   display: block;
   padding: 3px;
+  margin: 0 auto;
 }
 .opt-card-label {
   padding: 5px;
@@ -1159,18 +1221,10 @@ html, body {
 /* --- Viewport Overlays --- */
 /* Trust Bar (over viewport only, not sidebar) */
 .social-proof-pill {
-  position: relative;
-  width: 100%;
-  text-align: center;
-  background: #FFFFFF;
-  padding: 6px 16px;
   font-size: 12px;
   line-height: 1.4;
   color: #1B3A5C;
   white-space: nowrap;
-  box-sizing: border-box;
-  border-bottom: 1px solid #E8E8E8;
-  flex-shrink: 0;
   animation: pillFade 0.5s ease;
 }
 .social-proof-pill strong {
@@ -1181,6 +1235,11 @@ html, body {
   color: #1B3A5C;
   text-decoration: underline;
   text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+.social-proof-pill a:hover,
+.social-proof-pill strong:hover {
+  color: #D4753A;
 }
 @keyframes pillFade {
   0% { opacity: 0; transform: translateY(-6px); }
@@ -3048,7 +3107,7 @@ html, body {
   display: block;
   height: 2px;
   width: 100%;
-  background: #fff;
+  background: #1B3A5C;
   border-radius: 2px;
   transition: all 0.3s;
 }
@@ -3207,8 +3266,8 @@ html, body {
     gap: 8px;
   }
   .style-card { width: 100%; }
-  .style-card-img { max-height: 60px; }
-  .style-card-img img { max-height: 60px; }
+  .style-card-img { max-height: 45px; }
+  .style-card-img img { max-height: 45px; }
   .style-card-name { font-size: 10px; }
   .style-card-sub { font-size: 8px; }
 
@@ -3236,8 +3295,8 @@ html, body {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  .opt-card-img { max-height: 48px; }
-  .opt-card-img img { max-height: 48px; }
+  .opt-card-img { max-height: 30px; }
+  .opt-card-img img { max-height: 30px; }
   .opt-card-label { font-size: 9px; }
 
   /* Sections row: stack vertically */
@@ -3297,10 +3356,10 @@ html, body {
     gap: 8px;
   }
   .style-card { width: 100%; }
-  .style-card-img { max-height: 80px; }
-  .style-card-img img { max-height: 80px; }
+  .style-card-img { max-height: 55px; }
+  .style-card-img img { max-height: 55px; }
   .option-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
   }
   .panel-body { padding: 10px 12px; }
   .panel-tab { font-size: 9px; padding: 8px 2px; min-height: 44px; }
