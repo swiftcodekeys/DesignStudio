@@ -67,10 +67,10 @@ html, body {
   justify-content: space-between;
   position: relative;
   padding: 0 16px;
-  height: 44px;
-  min-height: 44px;
-  background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  height: 48px;
+  min-height: 48px;
+  background: #78AFCF;
+  border-bottom: none;
   z-index: 100;
 }
 .topnav-left {
@@ -96,17 +96,17 @@ html, body {
 .brand-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1B3A5C;
+  color: #fff;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 .brand-fence {
-  color: #1B3A5C;
+  color: #fff;
 }
 .brand-sub {
   font-size: 10px;
   font-weight: 700;
-  color: #888;
+  color: rgba(255,255,255,0.55);
   letter-spacing: 2.5px;
   text-transform: uppercase;
 }
@@ -119,10 +119,10 @@ html, body {
   gap: 0;
 }
 .topnav-tab {
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 14px 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: #555;
+  color: rgba(255,255,255,0.5);
   border: none;
   background: none;
   border-bottom: 2px solid transparent;
@@ -130,22 +130,21 @@ html, body {
   transition: all 150ms ease;
   font-family: inherit;
   white-space: nowrap;
-  line-height: 1;
 }
 .topnav-tab:hover {
-  color: #D4753A;
+  color: rgba(255,255,255,0.9);
+  border-bottom-color: rgba(212,117,58,0.5);
 }
 .topnav-tab.active {
-  color: #1B3A5C;
+  color: #fff;
   border-bottom-color: #d4753a;
-  font-weight: 700;
 }
 .topnav-tab .badge {
   font-size: 7px;
   padding: 1px 4px;
   border-radius: 3px;
-  background: rgba(27,58,92,0.1);
-  color: #1B3A5C;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
   font-weight: 700;
   margin-left: 4px;
   vertical-align: middle;
@@ -160,7 +159,7 @@ html, body {
 .nav-btn {
   padding: 6px 12px;
   background: none;
-  color: #555;
+  color: rgba(255,255,255,0.6);
   border: none;
   border-radius: 4px;
   font-weight: 500;
@@ -173,8 +172,8 @@ html, body {
   gap: 6px;
 }
 .nav-btn:hover {
-  background: rgba(0,0,0,0.05);
-  color: #D4753A;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
 }
 .nav-btn.cta {
   background: var(--cta);
@@ -214,6 +213,7 @@ html, body {
 }
 .btn-quote-nav:hover {
   background: #c0663a;
+  color: #fff;
 }
 .btn-quote-nav:hover .arrow {
   transform: translateX(3px);
@@ -252,59 +252,6 @@ html, body {
 }
 
 /* --- Config Sidebar (fixed right) --- */
-/* --- Split Bar (promo LEFT | config tabs RIGHT) --- */
-.split-bar {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  flex-shrink: 0;
-  border-bottom: 1px solid #e0e0e0;
-}
-.split-bar-left {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  background: #ffffff;
-  border-right: 1px solid #e0e0e0;
-  font-size: 13px;
-  color: #555;
-  min-height: 40px;
-}
-.split-bar-right {
-  flex: 0 0 340px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  background: #ffffff;
-  min-height: 40px;
-}
-.config-tab {
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #555;
-  cursor: pointer;
-  border: none;
-  background: none;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-family: inherit;
-}
-.config-tab:hover {
-  color: #D4753A;
-}
-.config-tab.active {
-  color: #1B3A5C;
-  border-bottom-color: #D4753A;
-  font-weight: 700;
-}
-
 .float-panel {
   width: 340px;
   min-width: 340px;
@@ -867,11 +814,12 @@ html, body {
 .quote-cta-row {
   display: flex;
   gap: 8px;
+  align-items: stretch;
 }
 .quote-btn-primary {
   flex: 1;
-  padding: 10px 16px;
-  background: #E05A2B;
+  padding: 10px 8px;
+  background: #D4753A;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -882,24 +830,24 @@ html, body {
   transition: all 150ms ease;
 }
 .quote-btn-primary:hover {
-  background: #c94e24;
+  background: #c0663a;
 }
 .quote-btn-secondary {
   flex: 1;
-  padding: 10px 16px;
+  padding: 10px 8px;
   background: none;
   color: var(--navy);
   border: 1.5px solid var(--navy);
   border-radius: 6px;
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
   font-family: inherit;
   transition: all 150ms ease;
 }
 .quote-btn-secondary:hover {
-  border-color: #E05A2B;
-  color: #E05A2B;
+  border-color: #D4753A;
+  color: #D4753A;
 }
 .quote-btn-measure {
   flex: 1;
@@ -923,22 +871,22 @@ html, body {
   gap: 8px;
 }
 .quote-btn-tertiary {
-  flex: 1;
   width: 100%;
-  padding: 10px 16px;
+  padding: 10px 8px;
   background: none;
   color: var(--navy);
   border: 1.5px solid var(--navy);
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
   font-size: 12px;
   cursor: pointer;
   font-family: inherit;
   transition: all 150ms ease;
 }
 .quote-btn-tertiary:hover {
-  border-color: #E05A2B;
-  color: #E05A2B;
+  border-color: #D4753A;
+  color: #D4753A;
 }
 
 /* --- Contact Modal --- */
@@ -1200,8 +1148,8 @@ html, body {
   z-index: 999;
   animation: popIn 0.15s ease;
   pointer-events: none;
-  width: 240px;
-  max-width: 280px;
+  width: 120px;
+  max-width: 140px;
 }
 .img-popup img {
   display: block;
@@ -1221,25 +1169,29 @@ html, body {
 /* --- Viewport Overlays --- */
 /* Trust Bar (over viewport only, not sidebar) */
 .social-proof-pill {
+  text-align: center;
+  background: var(--nav-bg);
+  padding: 6px 16px;
   font-size: 12px;
-  line-height: 1.4;
-  color: #1B3A5C;
+  color: rgba(255,255,255,0.75);
   white-space: nowrap;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
   animation: pillFade 0.5s ease;
+  transition: opacity 0.4s ease;
 }
 .social-proof-pill strong {
-  color: #D4753A;
+  color: #fff;
   font-weight: 700;
 }
 .social-proof-pill a {
-  color: #1B3A5C;
+  color: rgba(255,255,255,0.85);
   text-decoration: underline;
   text-underline-offset: 2px;
-  transition: color 0.2s;
-}
-.social-proof-pill a:hover,
-.social-proof-pill strong:hover {
-  color: #D4753A;
 }
 @keyframes pillFade {
   0% { opacity: 0; transform: translateY(-6px); }
@@ -3107,7 +3059,7 @@ html, body {
   display: block;
   height: 2px;
   width: 100%;
-  background: #1B3A5C;
+  background: #fff;
   border-radius: 2px;
   transition: all 0.3s;
 }

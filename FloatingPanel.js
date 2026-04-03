@@ -8,6 +8,7 @@ import OptionsTab from './tabs/OptionsTab';
 import PuppyPicketsTab from './tabs/PuppyPicketsTab';
 import DetailsTab from './tabs/DetailsTab';
 import QuoteTab from './tabs/QuoteTab';
+
 var TABS = [
     { id: 'style', label: 'Style' },
     { id: 'color', label: 'Color' },
@@ -101,14 +102,6 @@ var FloatingPanel = function(props) {
         return true;
     });
 
-    // Scroll to section when tab changes (tabs now rendered in split-bar)
-    useEffect(function() {
-        var el = document.getElementById('section-' + activeTab);
-        if (el && bodyRef.current) {
-            bodyRef.current.scrollTo({ top: el.offsetTop - bodyRef.current.offsetTop, behavior: 'smooth' });
-        }
-    }, [activeTab]);
-
     // Scroll-spy: update active tab based on scroll position
     useEffect(function() {
         var body = bodyRef.current;
@@ -162,6 +155,26 @@ var FloatingPanel = function(props) {
 
     return (
         <div className={panelClassName}>
+            <div className="panel-tabs">
+                    {visibleTabs.map(function(tab) {
+                        return (
+                            <button
+                                key={tab.id}
+                                className={'panel-tab' + (activeTab === tab.id ? ' active' : '')}
+                                onClick={function() {
+                                    onTabChange(tab.id);
+                                    var el = document.getElementById('section-' + tab.id);
+                                    if (el && bodyRef.current) {
+                                        bodyRef.current.scrollTo({ top: el.offsetTop - bodyRef.current.offsetTop, behavior: 'smooth' });
+                                    }
+                                }}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
                 <div className="panel-body" ref={bodyRef}>
                     {visibleTabs.map(function(tab, i) {
                         return (

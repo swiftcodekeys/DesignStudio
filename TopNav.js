@@ -32,7 +32,7 @@ var TopNav = function(props) {
                     </span>
                 </button>
                 <a className="topnav-logo" href="/" onClick={function(e) { e.preventDefault(); onSceneChange('fencing'); }}>
-                    <img src="assets/logo.png" alt="Grandview" />
+                    <img src="assets/logo-white.png" alt="Grandview" />
                 </a>
                 <div className="topnav-brand">
                     <span className="brand-name">Grandview <span className="brand-fence">Fence</span></span>

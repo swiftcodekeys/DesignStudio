@@ -87,7 +87,7 @@ var DetailsTab = function(props) {
             {filteredPostCaps.length > 0 && (
                 <div className="section-group">
                     <div className="section-title">Post Caps</div>
-                    <div className="option-row">
+                    <div className="option-row" style={{ gridTemplateColumns: 'repeat(2, 1fr)', maxWidth: '200px', margin: '0 auto' }}>
                         {filteredPostCaps.map(function(pc) {
                             var isActive = (config.postCap || 'pcf') === pc.id;
                             return (

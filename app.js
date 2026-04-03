@@ -14,16 +14,6 @@ import QuizPage from './quiz/QuizPage';
 import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';
 
-var CONFIG_TABS = [
-    { id: 'style', label: 'Style' },
-    { id: 'color', label: 'Color' },
-    { id: 'size', label: 'Size' },
-    { id: 'options', label: 'Options' },
-    { id: 'puppyPickets', label: 'Puppy' },
-    { id: 'details', label: 'Details' },
-    { id: 'quote', label: 'Quote' },
-];
-
 var STORAGE_KEY = 'gv_config';
 
 function buildHashString(config) {
@@ -282,45 +272,25 @@ var DesignStudio = function() {
                     <BacklinksFooter config={config} />
                 </div>
             ) : (
-                <React.Fragment>
-                    <div className="split-bar">
-                        <div className="split-bar-left">
-                            <SocialProof />
-                        </div>
-                        <div className="split-bar-right">
-                            {CONFIG_TABS.filter(function(tab) {
-                                if (tab.id === 'options' && (activeTab === 'fencing' || activeTab === 'backyard')) return false;
-                                return true;
-                            }).map(function(tab) {
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        className={'config-tab' + (activeConfigTab === tab.id ? ' active' : '')}
-                                        onClick={function() { setActiveConfigTab(tab.id); }}
-                                    >{tab.label}</button>
-                                );
-                            })}
-                        </div>
+                <div className="viewport-wrap">
+                    <div className="viewport-scene">
+                        <SocialProof />
+                        <UnifiedCanvas config={config} fenceConfig={fenceConfig} panelCollapsed={panelCollapsed} activeScene={activeTab} />
+                        <BacklinksFooter config={config} onContactClick={function() { setContactPopupOpen(true); }} />
                     </div>
-                    <div className="viewport-wrap">
-                        <div className="viewport-scene">
-                            <UnifiedCanvas config={config} fenceConfig={fenceConfig} panelCollapsed={panelCollapsed} activeScene={activeTab} />
-                            <BacklinksFooter config={config} onContactClick={function() { setContactPopupOpen(true); }} />
-                        </div>
-                        <FloatingPanel
-                            activeTab={activeConfigTab}
-                            onTabChange={setActiveConfigTab}
-                            config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
-                            onConfigChange={(activeTab === 'fencing' || activeTab === 'backyard') ? setFenceConfig : setConfig}
-                            collapsed={panelCollapsed}
-                            onToggleCollapse={function() { setPanelCollapsed(!panelCollapsed); }}
-                            isFence={activeTab === 'fencing' || activeTab === 'backyard'}
-                            onGetQuote={handleGetQuote}
-                            activeScene={activeTab}
-                            onSceneChange={setActiveTab}
-                        />
-                    </div>
-                </React.Fragment>
+                    <FloatingPanel
+                        activeTab={activeConfigTab}
+                        onTabChange={setActiveConfigTab}
+                        config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
+                        onConfigChange={(activeTab === 'fencing' || activeTab === 'backyard') ? setFenceConfig : setConfig}
+                        collapsed={panelCollapsed}
+                        onToggleCollapse={function() { setPanelCollapsed(!panelCollapsed); }}
+                        isFence={activeTab === 'fencing' || activeTab === 'backyard'}
+                        onGetQuote={handleGetQuote}
+                        activeScene={activeTab}
+                        onSceneChange={setActiveTab}
+                    />
+                </div>
             )}
             <ContactPopup isOpen={contactPopupOpen} onClose={function() { setContactPopupOpen(false); }} />
         </div>
