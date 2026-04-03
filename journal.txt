@@ -179,3 +179,208 @@ Questions before fixing:
   - Should the "Get Instant Quote" and "Request Custom Quote" buttons in
     QuoteTab do different things, or is it intentional that both open the
     same QuoteModal?
+
+
+2026-04-02 — Quote Funnel Spec Research
+──────────────────────────────────────
+
+GOAL: Research configurator UX best practices, audit current quote flow,
+diagnose "I already know my footage" bug, write QUOTE_FUNNEL_SPEC.md.
+
+WHAT WAS DONE:
+1. Full audit of all 4 quote entry points and 2 quote paths (QuoteModal
+   and QuoteBuilder) in this repo. Traced every CTA button and handler.
+2. Web research on configurator-to-quote conversion funnels:
+   - GreatFence.com, WamBam, Lowe's, Home Depot flows
+   - Progressive disclosure and multi-step form best practices
+   - Mobile-first quote forms (63% of traffic is mobile)
+   - Trust signals near CTAs (42% conversion lift)
+   - "Fast path" patterns for users who already know their specs
+3. Diagnosed "Skip — I'll enter measurements manually" bug in detail.
+4. Wrote QUOTE_FUNNEL_SPEC.md with full architecture.
+
+KEY FINDINGS:
+
+"Skip" button broken path:
+  DrawYardView.js:181 "Skip" button → onSkip → handleSkip (line 529)
+  → onGetQuote() → handleGetQuote() → opens QuoteModal
+  QuoteModal shows config summary, NOT a manual footage entry form.
+  Fix: Route to QuoteBuilder at Step 2 (Layout) instead.
+  Needs: new prop (initialStep) on QuoteBuilder + rewired handler.
+
+QuoteBuilder is the better path but buried:
+  Only reachable via small link in QuoteModal: "Or build your quote
+  step by step" (QuoteModal.js:206). Should be the PRIMARY path.
+  QuoteModal (4-field quick email) should be eliminated or demoted.
+
+mailto: is unreliable:
+  Both submission paths use window.location.href = 'mailto:...'
+  Fails silently if user has no desktop email client configured.
+  Recommended: form-to-email service (Formspree, EmailJS, or
+  Grandview's existing WordPress contact form handler).
+
+Proposed: 5-step funnel (down from 8):
+  Step 1: Project overview (what + where)
+  Step 2: Layout (footage — GPS import, manual, or request site visit)
+  Step 3: Style & options (SKIP if coming from configurator)
+  Step 4: Review + contact (name/email/phone + trust signals)
+  Step 5: Confirmation (reference ID + next steps)
+
+Smart routing pre-fills and skips steps based on entry point:
+  - From configurator: skip to Step 2 or 4
+  - From Draw Tool with GPS: skip to Step 3
+  - From "I know my footage": start at Step 2
+  - Cold entry: start at Step 1
+
+DELIVERABLE:
+  QUOTE_FUNNEL_SPEC.md — complete spec with:
+  - Current state audit (4 entry points, 2 paths, all broken bits)
+  - Industry research (GreatFence, WamBam, Lowe's, HD)
+  - 5-step funnel architecture with smart routing
+  - "I already know my footage" diagnosis and fix
+  - Backend submission recommendation
+  - Implementation priority table (P0/P1/P2/P3)
+
+
+2026-04-02 — Quote Engine Spec (Foundation Document)
+──────────────────────────────────────────────────────
+
+GOAL: Build the foundation document for the real-time pricing and
+instant checkout system. Research only, no code changes.
+
+SOURCES READ:
+  - Ultra Fence May 2025 Retail Price Book (fence_pricebook_full.txt)
+  - Price book corrections (pricebook_changes.txt)
+  - Existing pricing module: grandview-quote-system/shared/pricing.js
+  - DrawYardView.js (670 lines — full draw tool code)
+  - QuoteBuilder.js (749 lines — multi-step quote form)
+  - QuoteModal.js (221 lines — quick email form)
+  - configData.js, fenceConfigData.js
+
+KEY DISCOVERY:
+  A complete pricing module already exists at:
+    C:\Users\sarah\Desktop\grandview-quote-system\shared\pricing.js
+
+  It contains ALL retail prices from the price book, already structured:
+  - PANEL_PRICING (all grades, all models, all heights)
+  - POST_PRICING (all sizes, wall thicknesses, post lengths)
+  - GATE_PRICING (walk + drive, all grades, all widths)
+  - ACCESSORY_PRICING (caps, finials, hardware, puppy surcharge)
+  - GATE_SURCHARGES (arch, u-frame, estate, v-trac)
+  - Helper functions: getPanelPrice(), getGatePrice(), getPostPrice()
+  - customerPriceRange() — already computes estimates from config
+
+  This module also contains DEALER COST info (0.51 multiplier, margins).
+  The Design Studio version must strip those out — customer-facing code
+  sees RETAIL PRICES ONLY. Dealer cost/margin lives in admin tool only.
+
+
+2026-04-02 — Quote Engine Build Session
+──────────────────────────────────────────
+
+GOAL: Build pricing engine and checkout system per QUOTE_ENGINE_SPEC.md.
+
+FILES CREATED:
+  - retailPricing.js — Retail list prices from Ultra May 2025 price book
+    with errata corrections. STYLE_ID_MAP added for configData→pricing lookup.
+    Zero dealer cost references. Cambridge excluded.
+  - pricingEngine.js — calculateQuote() with null safety, post breakdown,
+    gate surcharges, puppy/finial/circle accessories, terrain slope handling.
+    Unit tests: Test A = $5,793.75, Test B = $23,468.25.
+  - QuoteDisplay.js — Itemized quote component with grade/height selectors,
+    CYA language, no-returns policy, trust badges, dual CTAs.
+    Owns the recalculation loop (calls calculateQuote() internally).
+  - ContactPopup.js — POST to Google Apps Script, graceful fallback,
+    30s cooldown, error handling preserves user input.
+  - scripts/gas/ContactHandler.gs — doPost() routes contact/quote submissions,
+    writes to Google Sheets, emails sales@grandviewfence.com.
+  - scripts/gas/appsscript.json, .clasp.json, deploy.sh — automated deploy.
+  - .env.example — placeholder env vars.
+
+FILES MODIFIED:
+  - DrawYardView.js — handleSkip uses onSkipToManualEntry (not onGetQuote)
+  - app.js — added handleSkipToManualEntry, wired to DrawYardView
+  - QuoteBuilder.js — reads initialStep from localStorage, opens at Step 2
+
+REVERTED:
+  - tabs/SizeTab.js — REVERTED grade/height selectors back to original.
+    Grade and extended heights belong ONLY in QuoteDisplay.js (quote engine),
+    NOT in the Design Studio configurator. Configurator heights stay 48/54/60/72.
+  - app.js — removed grade from fenceConfig (configurator doesn't need it).
+
+PHASE STATUS:
+  Phase 1 (retailPricing.js) — COMPLETE, committed
+  Phase 2 (pricingEngine.js) — COMPLETE, committed, tests passing
+  Phase 3 (UI conditional) — REVERTED. Grade/height selectors belong in
+    QuoteDisplay.js only, not the configurator SizeTab.
+  Phase 4 (Skip button fix) — COMPLETE, committed (3 files)
+  Phase 5 (QuoteDisplay.js) — COMPLETE, committed
+  Phase 6 (ContactPopup.js) — COMPLETE, committed
+  Phase 7 (Google Apps Script) — COMPLETE, committed
+  Phase 8 (Stripe checkout) — IN PROGRESS. Plan updated to use GAS as
+    backend for Stripe session creation (dynamic pricing requires server-side).
+    Approved approach: client POSTs to GAS, GAS calls Stripe API,
+    returns sessionUrl, client redirects. NOT YET WRITTEN.
+
+CRITICAL LEARNING:
+  The Design Studio configurator and the Quote Engine are TWO SEPARATE SYSTEMS.
+  The configurator has fixed heights (48/54/60/72") that the 3D renderer supports.
+  The quote engine has all heights from the price book (36-120").
+  Grade selectors appear ONLY in QuoteDisplay.js, never in the configurator.
+
+NEXT SESSION:
+  1. Write Phase 8 Stripe checkout (GAS backend + StripeCheckout.js + OrderConfirmed.js)
+  2. Regression fixes from HANDOFF_SESSION_FIX.md (safe ones only — no configurator changes)
+  3. Wire QuoteDisplay into the app (replace or augment QuoteTab)
+  4. Wire ContactPopup into TopNav / QuoteDisplay
+  5. Deploy GAS via clasp
+  6. Test end-to-end: configure → quote → checkout
+
+DELIVERABLE: QUOTE_ENGINE_SPEC.md — 7 parts:
+
+  Part 1: Product Matrix
+    - All styles × grades × heights × spacings, JSON + markdown tables
+    - Post sizes by grade, gate widths, pool code compliance, rackability
+    - Residential, commercial, industrial panel pricing tables
+
+  Part 2: Pricing Calculation Logic
+    - Panel count from linear footage (ceil(LF / 6))
+    - Post count formula (panels + 1 + gate posts)
+    - Gate pricing with surcharges (arch, u-frame, estate)
+    - Hardware packages (sold separately per gate)
+    - Accessory costs (caps, finials, circles, puppy surcharge)
+    - Two fully worked examples:
+      A: 150LF Horizon 48" residential — $5,794
+      B: 300LF Charleston 60" commercial — $25,661
+    - Full pseudocode for calculateQuote()
+
+  Part 3: Draw Tool Audit
+    - Complete field inventory of current GPS capture
+    - 8 identified missing data points (gates, slope, terrain, etc.)
+    - Minimum viable per-segment interaction design
+    - Proposed enhanced output JSON (version 2)
+
+  Part 4: Manual Entry Question Set
+    - 6 questions, all mobile-friendly (steppers/dropdowns)
+    - Each maps directly to a calculation input
+    - Terrain question with racking/stair-step implications
+
+  Part 5: Quote Display Spec
+    - Full itemized breakdown layout (ASCII wireframe)
+    - Grade selector with plain-English tooltips
+    - Height selector showing all available heights per style
+    - Exact CYA copy (4 paragraphs — reassuring, not scary)
+    - Dual CTAs: "Reserve Materials" (Stripe) + "Schedule Consultation"
+
+  Part 6: Contact Popup Spec
+    - 4 fields, POST to Google Apps Script, no Formspree
+    - Full doPost() handler structure documented
+    - Google Sheet columns specified
+    - Error handling: never lose user's message
+
+  Part 7: System Architecture
+    - ASCII diagram: Design Studio → Quote Engine → Stripe → GAS → Sheets
+    - Grandview Website → same GAS endpoint
+    - Admin Tool (separate codebase, separate data layer)
+    - Security boundary: dealer costs NEVER in customer-facing code
+    - Data flow diagrams for quote and contact paths
