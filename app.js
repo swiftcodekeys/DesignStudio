@@ -274,7 +274,6 @@ var DesignStudio = function() {
             ) : (
                 <div className="viewport-wrap">
                     <div className="viewport-scene">
-                        <SocialProof />
                         <UnifiedCanvas config={config} fenceConfig={fenceConfig} panelCollapsed={panelCollapsed} activeScene={activeTab} />
                         <BacklinksFooter config={config} onContactClick={function() { setContactPopupOpen(true); }} />
                     </div>

@@ -1,13 +1,31 @@
+<!-- ============================================================ -->
+<!-- CRITICAL — WORKING DIRECTORY                                 -->
+<!-- This is the ONLY correct working directory:                  -->
+<!--   C:\Users\sarah\Desktop\App Repos\fence-tool                -->
+<!--                                                              -->
+<!-- NEVER work in:                                               -->
+<!--   C:\Users\sarah\Desktop\App Repos\Testing-VS code\...      -->
+<!--   or any other directory                                     -->
+<!--                                                              -->
+<!-- If you are not in fence-tool, stop immediately               -->
+<!-- and cd to it before doing anything.                           -->
+<!--                                                              -->
+<!-- Verify at session start:                                     -->
+<!--   cd "C:\Users\sarah\Desktop\App Repos\fence-tool"           -->
+<!--   git log --oneline -3                                       -->
+<!-- ============================================================ -->
+
 # Grandview Design Studio — CLAUDE.md
 
 ## Working Directory
 ```
-C:\Users\sarah\Desktop\App Repos\Testing-VS code\designstudio\designstudio\designstudioworkingmvp
+WORKING DIRECTORY: C:\Users\sarah\Desktop\App Repos\fence-tool
+Never work in any other directory.
 ```
 GitHub: https://github.com/swiftcodekeys/designstudioworkingmvp
-Branch: `feat/fence-quiz`
+Branch: `main`
 
-**This is the ONLY repo to work in.** Do NOT use `grandview_design_studio_gates` or `Downloads/.../designstudioworkingmvp`.
+**This is the ONLY repo to work in.** Do NOT use `Testing-VS code\designstudio\...`, `grandview_design_studio_gates`, or `Downloads/.../designstudioworkingmvp`.
 
 ---
 

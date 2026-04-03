@@ -8,6 +8,7 @@ import OptionsTab from './tabs/OptionsTab';
 import PuppyPicketsTab from './tabs/PuppyPicketsTab';
 import DetailsTab from './tabs/DetailsTab';
 import QuoteTab from './tabs/QuoteTab';
+import SocialProof from './SocialProof';
 
 var TABS = [
     { id: 'style', label: 'Style' },
@@ -155,6 +156,7 @@ var FloatingPanel = function(props) {
 
     return (
         <div className={panelClassName}>
+            <SocialProof />
             <div className="panel-tabs">
                     {visibleTabs.map(function(tab) {
                         return (

@@ -193,14 +193,14 @@ export var STYLE_FEATURE_GATE = {
     archStyles: ['e', 'a', 'r', 's'],
     postCaps: ['pcf', 'pcb'],
     options: ['res', 'ufr', 'mdr', 'xlr', 'pup'],
-    accessories: ['tcr', 'tbu', 'scr', 'bcr', 'bbu'],
+    accessories: ['cir', 'but', 'scr', 'bcr', 'bbu'],
   },
   uaf_201: {
     finials: [],
     archStyles: ['e', 'a', 'r', 's'],
     postCaps: ['pcf', 'pcb'],
     options: ['res', 'ufr', 'mdr', 'xlr'],
-    accessories: ['tcr', 'tbu', 'bcr', 'bbu'],
+    accessories: ['cir', 'but', 'bcr', 'bbu'],
   },
   uaf_250: {
     finials: ['fs', 'ft', 'fq', 'fp'],
@@ -225,21 +225,21 @@ export var STYLE_FEATURE_GATE = {
     archStyles: ['e', 'a', 'r', 's'],
     postCaps: ['pcf', 'pcb'],
     options: ['res', 'ufr', 'mdr', 'xlr', 'pup'],
-    accessories: ['tcr', 'tbu', 'scr', 'bcr', 'bbu'],
+    accessories: ['cir', 'but', 'scr', 'bcr', 'bbu'],
   },
   uas_101: {
     finials: ['fs', 'ft', 'fq', 'fp'],
     archStyles: ['e', 'a', 'r', 's'],
     postCaps: ['pcf', 'pcb'],
     options: ['res', 'ufr', 'mdr', 'xlr'],
-    accessories: ['tcr', 'tbu', 'bcr', 'bbu'],
+    accessories: ['cir', 'but', 'bcr', 'bbu'],
   },
   uas_150: {
     finials: ['fs', 'ft', 'fq', 'fp'],
     archStyles: ['e', 'a', 'r', 's'],
     postCaps: ['pcf', 'pcb'],
     options: ['res', 'ufr', 'mdr', 'xlr', 'pup'],
-    accessories: ['tcr', 'tbu', 'scr', 'bcr', 'bbu'],
+    accessories: ['cir', 'but', 'scr', 'bcr', 'bbu'],
   },
 };
 

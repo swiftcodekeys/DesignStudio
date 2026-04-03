@@ -15,8 +15,8 @@ var FINIAL_ITEMS = [
 ];
 
 var ACCENT_ITEMS = [
-    { id: 'tcr', name: 'Circle',    thumb: 'assets/ifence_previews/gate_accent_choices/circles_at_base_151.png' },
-    { id: 'tbu', name: 'Butterfly', thumb: 'assets/ifence_previews/gate_accent_choices/butterflies_at_base_154.png' },
+    { id: 'cir', name: 'Circle',    thumb: 'assets/ifence_previews/gate_accent_choices/circles_at_base_151.png' },
+    { id: 'but', name: 'Butterfly', thumb: 'assets/ifence_previews/gate_accent_choices/butterflies_at_base_154.png' },
     { id: 'scr', name: 'Scroll',    thumb: 'assets/ifence_previews/gate_accent_choices/estate_scrolls_136.png' },
 ];
 
@@ -95,12 +95,7 @@ var DetailsTab = function(props) {
                                     key={pc.id}
                                     className={'opt-card' + (isActive ? ' active' : '')}
                                     onClick={function() { handlePostCapChange(pc.id); }}
-                                    onMouseEnter={function(e) { handleMouseEnter(pc.thumb, pc.name, e); }}
-                                    onMouseLeave={handleMouseLeave}
                                 >
-                                    <div className="opt-card-img">
-                                        <img src={pc.thumb} alt={pc.name} />
-                                    </div>
                                     <div className="opt-card-label">{pc.name}</div>
                                 </div>
                             );
