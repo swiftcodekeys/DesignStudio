@@ -9,9 +9,14 @@
 // Expects Script Property: GAS_SHEET_ID (Google Sheet ID)
 // Set via: Project Settings → Script Properties → Add
 //
+// Expects Script Property: STRIPE_SECRET_KEY (Stripe secret key)
+// Set via: Project Settings → Script Properties → Add
+// NEVER put Stripe secret key in client code.
+//
 // Endpoints (same URL, routed by source field in POST body):
 //   source: "design-studio-contact" → handleContact()
 //   source: "design-studio-quote"   → handleQuote()
+//   source: "stripe-session"        → handleStripeSession()
 // ============================================================================
 
 function doPost(e) {
@@ -20,7 +25,9 @@ function doPost(e) {
     var source = body.source || '';
 
     var response;
-    if (source === 'design-studio-quote') {
+    if (source === 'stripe-session') {
+      response = handleStripeSession(body);
+    } else if (source === 'design-studio-quote') {
       response = handleQuote(body);
     } else {
       response = handleContact(body);
@@ -184,6 +191,98 @@ function handleQuote(body) {
   });
 
   return { status: 'ok', quoteRef: quoteRef };
+}
+
+// ---------------------------------------------------------------------------
+// handleStripeSession — create a Stripe Checkout Session (full payment)
+// Client POSTs items + customer info, GAS calls Stripe API, returns sessionUrl.
+// Stripe secret key lives in Script Properties — never in client code.
+// ---------------------------------------------------------------------------
+function handleStripeSession(body) {
+  var stripeKey = PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY');
+  if (!stripeKey) {
+    return { status: 'error', message: 'Stripe is not configured. Please call (855) FENCE-30.' };
+  }
+
+  var items = body.items || [];
+  if (items.length === 0) {
+    return { status: 'error', message: 'No items in quote.' };
+  }
+
+  // Build form-encoded line_items for Stripe API
+  var params = [];
+  params.push('mode=payment');
+  params.push('success_url=' + encodeURIComponent('https://designstudio.grandviewfence.com/order-confirmed?ref={CHECKOUT_SESSION_ID}'));
+  params.push('cancel_url=' + encodeURIComponent(body.cancelUrl || 'https://designstudio.grandviewfence.com/'));
+
+  if (body.customerEmail) {
+    params.push('customer_email=' + encodeURIComponent(body.customerEmail));
+  }
+
+  // Line items
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var prefix = 'line_items[' + i + ']';
+    params.push(prefix + '[price_data][currency]=usd');
+    params.push(prefix + '[price_data][unit_amount]=' + Math.round((item.unitPrice || 0) * 100));
+    params.push(prefix + '[price_data][product_data][name]=' + encodeURIComponent(item.label || 'Fence Materials'));
+    if (item.note) {
+      params.push(prefix + '[price_data][product_data][description]=' + encodeURIComponent(item.note));
+    }
+    params.push(prefix + '[quantity]=' + (item.qty || 1));
+  }
+
+  // Metadata for order tracking
+  var quoteRef = body.quoteRef || ('GV-' + Math.random().toString(36).substr(2, 6).toUpperCase());
+  params.push('metadata[quoteRef]=' + encodeURIComponent(quoteRef));
+  if (body.style) params.push('metadata[style]=' + encodeURIComponent(body.style));
+  if (body.grade) params.push('metadata[grade]=' + encodeURIComponent(body.grade));
+  if (body.height) params.push('metadata[height]=' + encodeURIComponent(String(body.height)));
+  if (body.linearFeet) params.push('metadata[linearFeet]=' + encodeURIComponent(String(body.linearFeet)));
+
+  var options = {
+    method: 'post',
+    headers: {
+      'Authorization': 'Bearer ' + stripeKey,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    payload: params.join('&'),
+    muteHttpExceptions: true,
+  };
+
+  var response = UrlFetchApp.fetch('https://api.stripe.com/v1/checkout/sessions', options);
+  var code = response.getResponseCode();
+  var json = JSON.parse(response.getContentText());
+
+  if (code !== 200) {
+    Logger.log('Stripe error: ' + response.getContentText());
+    return {
+      status: 'error',
+      message: json.error ? json.error.message : 'Stripe returned HTTP ' + code,
+    };
+  }
+
+  // Log the session to Quotes sheet
+  var ss = getOrCreateSheet();
+  var tab = getOrCreateTab(ss, 'Deposits');
+  if (tab.getLastRow() === 0) {
+    tab.appendRow(['Timestamp', 'Quote Ref', 'Stripe Session ID', 'Amount', 'Customer Email', 'Style', 'Grade', 'Height', 'Linear Feet', 'Status']);
+    tab.getRange(1, 1, 1, 10).setFontWeight('bold');
+  }
+  tab.appendRow([
+    new Date().toISOString(),
+    quoteRef,
+    json.id || '',
+    (body.subtotal || 0).toFixed(2),
+    body.customerEmail || '',
+    body.style || '',
+    body.grade || '',
+    body.height || '',
+    body.linearFeet || '',
+    'checkout_created'
+  ]);
+
+  return { status: 'ok', sessionUrl: json.url, quoteRef: quoteRef };
 }
 
 // ---------------------------------------------------------------------------
