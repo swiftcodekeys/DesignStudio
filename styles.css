@@ -3145,9 +3145,9 @@ html, body {
 }
 
 /* ============================================================
-   RESPONSIVE — Mobile (< 768px)
+   RESPONSIVE — Mobile (<= 768px)
    ============================================================ */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   html, body {
     overflow: auto;
     overflow-x: hidden;
@@ -3179,7 +3179,7 @@ html, body {
   .float-panel {
     position: relative;
     width: 100%;
-    min-width: 100%;
+    min-width: unset;
     max-height: none;
     border-left: none;
     border-top: 1px solid var(--border);
@@ -3294,7 +3294,7 @@ html, body {
 /* ============================================================
    RESPONSIVE — Tablet (768px – 1023px)
    ============================================================ */
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (max-width: 1024px) {
   .float-panel {
     width: 300px;
     min-width: 300px;
@@ -3313,6 +3313,8 @@ html, body {
   .option-row {
     grid-template-columns: repeat(3, 1fr);
   }
+  .opt-card-img { max-height: 28px; }
+  .opt-card-img img { max-height: 28px; }
   .panel-body { padding: 10px 12px; }
   .panel-tab { font-size: 9px; padding: 8px 2px; min-height: 44px; }
   .swatch { width: 42px; height: 42px; }

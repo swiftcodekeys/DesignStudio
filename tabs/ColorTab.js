@@ -35,7 +35,7 @@ var ColorTab = function(props) {
         var rect = event.currentTarget.getBoundingClientRect();
         var src = COLOR_PREVIEWS[colorId];
         if (!src) return;
-        setPopup({ src: src, name: name, position: { top: rect.top - 40, left: rect.left - 260 } });
+        setPopup({ src: src, name: name, position: { top: rect.top - 40, left: rect.left - 104 } });
     };
 
     var handleMouseLeave = function() { setPopup(null); };

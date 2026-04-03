@@ -73,7 +73,7 @@ var DetailsTab = function(props) {
             alt: alt,
             position: {
                 top: rect.top - 10,
-                left: rect.left - 290,
+                left: rect.left - 116,
             }
         });
     };
