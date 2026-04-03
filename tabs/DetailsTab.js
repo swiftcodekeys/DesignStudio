@@ -8,10 +8,10 @@ var POST_CAP_ITEMS = [
 ];
 
 var FINIAL_ITEMS = [
-    { id: 'fs', name: 'Spear',   thumb: 'assets/ifence_previews/gate_feature_options/concave_spear_109.png' },
-    { id: 'ft', name: 'Trident', thumb: 'assets/ifence_previews/gate_feature_options/convex_spear_106.png' },
-    { id: 'fq', name: 'Quad',    thumb: 'assets/ifence_previews/gate_feature_options/staggered_spear_67.png' },
-    { id: 'fp', name: 'Plug',    thumb: 'assets/ifence_previews/post_caps/flat_cap_71.png' },
+    { id: 'fs', name: 'Spear',   thumb: 'gate_tool/th/th_pc_spe.jpg' },
+    { id: 'ft', name: 'Trident', thumb: 'gate_tool/th/th_pc_tri.jpg' },
+    { id: 'fq', name: 'Quad',    thumb: 'gate_tool/th/th_pc_qua.jpg' },
+    { id: 'fp', name: 'Plug',    thumb: 'gate_tool/th/th_pc_plg.jpg' },
 ];
 
 var ACCENT_ITEMS = [
@@ -51,11 +51,7 @@ var DetailsTab = function(props) {
     };
 
     var handleFinialChange = function(finId) {
-        if (config.finial === finId) {
-            onConfigChange({ ...config, finial: null });
-        } else {
-            onConfigChange({ ...config, finial: finId });
-        }
+        onConfigChange({ ...config, finial: finId });
     };
 
     var toggleAccent = function(accId) {
@@ -110,24 +106,13 @@ var DetailsTab = function(props) {
                 <div className="section-group">
                     <div className="section-title">Finials</div>
                     <div className="option-row">
-                        <div
-                            className={'opt-card' + (config.finial === null ? ' active' : '')}
-                            onClick={function() { handleFinialChange(null); }}
-                        >
-                            <div className="opt-card-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <span style={{ color: '#8e95a0', fontSize: '20px' }}>-</span>
-                            </div>
-                            <div className="opt-card-label">None</div>
-                        </div>
                         {filteredFinials.map(function(f) {
-                            var isActive = config.finial === f.id;
+                            var isActive = (config.finial || 'fs') === f.id;
                             return (
                                 <div
                                     key={f.id}
                                     className={'opt-card' + (isActive ? ' active' : '')}
                                     onClick={function() { handleFinialChange(f.id); }}
-                                    onMouseEnter={function(e) { handleMouseEnter(f.thumb, f.name, e); }}
-                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <div className="opt-card-img">
                                         <img src={f.thumb} alt={f.name} />
@@ -150,8 +135,6 @@ var DetailsTab = function(props) {
                                     key={acc.id}
                                     className={'opt-card' + (isActive ? ' active' : '')}
                                     onClick={function() { toggleAccent(acc.id); }}
-                                    onMouseEnter={function(e) { handleMouseEnter(acc.thumb, acc.name, e); }}
-                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <div className="opt-card-img">
                                         <img src={acc.thumb} alt={acc.name} />

@@ -3321,10 +3321,14 @@ html, body {
     width: 300px;
     min-width: 300px;
   }
+  .topnav-center { gap: 2px; }
   .topnav-tab {
-    padding: 14px 10px;
-    font-size: 11px;
+    padding: 8px 5px;
+    font-size: 10px;
   }
+  .nav-btn { padding: 4px 8px; font-size: 10px; }
+  .btn-quote-nav { padding: 5px 10px; font-size: 10px; }
+  .brand-name { font-size: 11px; }
   .style-grid {
     grid-template-columns: 1fr 1fr;
     gap: 8px;

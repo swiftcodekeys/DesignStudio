@@ -409,10 +409,10 @@ GateRenderer.prototype.buildGate = function(config) {
     // TOP RAILS — per-leaf Y positions
     // Haven (UAB-200, gN==4): r1 rail sits at -0.07 offset (compressed top gap)
     // vs standard -0.1905 offset. SPATIAL_TRUTH.json → rails → r1_second_rail_y → haven_gN4
-    // When top circles (tcr) are active, Ultra bumps r1 UP by _2_5 (0.0635m) to close the
+    // When top circles (cir) are active, Ultra bumps r1 UP by _2_5 (0.0635m) to close the
     // gap between the rail and the bottom of the circle geometry.
-    // Ultra: if(tcr==true){ r1y = htY-_7_5+rH+fsv+_2_5; }
-    var hasTopCircles = config.accessories && config.accessories.tcr;
+    // Ultra: if(cir==true){ r1y = htY-_7_5+rH+fsv+_2_5; }
+    var hasTopCircles = config.accessories && config.accessories.cir;
     var railT1Final = (styleDef && styleDef.code === 'UAB-200') ? offsetY(HAVEN_RAIL_T1, 0, hOff) : railT1;
     if (hasTopCircles) {
         railT1Final = offsetY(railT1Final, ACCENT_CIRCLE_RAIL_BUMP, 0);
@@ -489,7 +489,7 @@ GateRenderer.prototype.buildGate = function(config) {
     //   UAS-101 with circles: Y = tY + _7_5 + fsv (same bump)
     // pbRes uses separate clip plane for puppy support.
     var isProSpacing = styleDef && (styleDef.code === 'UAF-201' || styleDef.code === 'UAS-101');
-    // Ultra: if(tcr){ mY(grptx, tY+_7_5+fsv); } — pro pickets move up when circles active
+    // Ultra: if(cir){ mY(grptx, tY+_7_5+fsv); } — pro pickets move up when circles active
     var ptResTransform;
     if (styleDef && styleDef.code === 'UAF-201') {
         if (hasTopCircles) {
@@ -610,7 +610,7 @@ GateRenderer.prototype.buildGate = function(config) {
         }
         // CIRCLE (top) — position arrays from Ultra, per leaf+arch
         // Ultra: grpac.position.y = acY which varies with fsv and height
-        if (config.accessories.tcr) {
+        if (config.accessories.cir) {
             var circlePositions = ACCENT_POSITIONS.circle[leaf] && ACCENT_POSITIONS.circle[leaf][archId];
             if (circlePositions) {
                 loader.load(getModelPath('circle', config), function(geo) {
@@ -636,7 +636,7 @@ GateRenderer.prototype.buildGate = function(config) {
             }
         }
         // BUTTERFLY (top) — position arrays from Ultra, per leaf+arch
-        if (config.accessories.tbu) {
+        if (config.accessories.but) {
             var butterflyPositions = ACCENT_POSITIONS.butterfly[leaf] && ACCENT_POSITIONS.butterfly[leaf][archId];
             if (butterflyPositions) {
                 loader.load(getModelPath('butterfly', config), function(geo) {

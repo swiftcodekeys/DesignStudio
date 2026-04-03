@@ -241,6 +241,22 @@ export var STYLE_FEATURE_GATE = {
     options: ['res', 'ufr', 'mdr', 'xlr', 'pup'],
     accessories: ['cir', 'but', 'scr', 'bcr', 'bbu'],
   },
+
+  // --- Unsupported 3D but feature-gated for preview mode ---
+  uas_300: {
+    finials: ['fs', 'ft', 'fq', 'fp'],
+    archStyles: ['e', 'a', 'r', 's'],
+    postCaps: ['pcf', 'pcb'],
+    options: ['res', 'ufr', 'mdr', 'xlr', 'pup'],
+    accessories: ['cir', 'but', 'scr', 'bcr', 'bbu'],
+  },
+  uas_350: {
+    finials: ['fs', 'ft', 'fq', 'fp'],
+    archStyles: ['e', 'a', 'r', 's'],
+    postCaps: ['pcf', 'pcb'],
+    options: ['res', 'ufr', 'mdr', 'xlr', 'pup'],
+    accessories: ['cir', 'but', 'scr', 'bcr', 'bbu'],
+  },
 };
 
 // ============================================================
