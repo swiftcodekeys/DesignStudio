@@ -317,10 +317,10 @@ PHASE STATUS:
   Phase 5 (QuoteDisplay.js) — COMPLETE, committed
   Phase 6 (ContactPopup.js) — COMPLETE, committed
   Phase 7 (Google Apps Script) — COMPLETE, committed
-  Phase 8 (Stripe checkout) — IN PROGRESS. Plan updated to use GAS as
-    backend for Stripe session creation (dynamic pricing requires server-side).
-    Approved approach: client POSTs to GAS, GAS calls Stripe API,
-    returns sessionUrl, client redirects. NOT YET WRITTEN.
+  Phase 8 (Stripe checkout) — COMPLETE, committed. GAS backend creates
+    Stripe Checkout Session with dynamic price_data. Client redirects to
+    sessionUrl. Deposits logged to "Deposits" sheet tab.
+    success_url: .../order-confirmed?ref={CHECKOUT_SESSION_ID}
 
 CRITICAL LEARNING:
   The Design Studio configurator and the Quote Engine are TWO SEPARATE SYSTEMS.
@@ -328,13 +328,21 @@ CRITICAL LEARNING:
   The quote engine has all heights from the price book (36-120").
   Grade selectors appear ONLY in QuoteDisplay.js, never in the configurator.
 
+ADDITIONAL FILES CREATED (Phase 8):
+  - StripeCheckout.js — client utility, POSTs to GAS, redirects to Stripe
+  - OrderConfirmed.js — post-checkout confirmation with reference number
+  - scripts/gas/ContactHandler.gs — updated with handleStripeSession()
+
 NEXT SESSION:
-  1. Write Phase 8 Stripe checkout (GAS backend + StripeCheckout.js + OrderConfirmed.js)
-  2. Regression fixes from HANDOFF_SESSION_FIX.md (safe ones only — no configurator changes)
-  3. Wire QuoteDisplay into the app (replace or augment QuoteTab)
-  4. Wire ContactPopup into TopNav / QuoteDisplay
-  5. Deploy GAS via clasp
-  6. Test end-to-end: configure → quote → checkout
+  1. Wire QuoteDisplay into the app (replace or augment QuoteTab)
+  2. Wire ContactPopup into TopNav / QuoteDisplay "Schedule Consultation" CTA
+  3. Wire StripeCheckout into QuoteDisplay "Buy Now" CTA
+  4. Add /order-confirmed route (React Router or hash-based)
+  5. Deploy GAS via clasp (scripts/gas/deploy.sh)
+  6. Add STRIPE_SECRET_KEY to GAS Script Properties
+  7. Test end-to-end: configure → quote → checkout → confirmation
+  8. Regression fixes from HANDOFF_SESSION_FIX.md (safe ones only)
+  9. Verify retailPricing.js has zero dealer cost references (CONFIRMED — grep clean)
 
 DELIVERABLE: QUOTE_ENGINE_SPEC.md — 7 parts:
 
