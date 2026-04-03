@@ -75,7 +75,7 @@ export var FENCE_STYLES = [
         stlI: 's1', cat: 's', mod: '100', pi: '101',
         hasFinials: true, isSpear: true, isFlush: false, isPro: true,
         supports3D: true,
-        acc: ['cir', 'but', 'scr'],
+        acc: [],
     },
     {
         id: 'uas_300', code: 'UAS-300', name: 'Cambridge', subtitle: 'Concave',

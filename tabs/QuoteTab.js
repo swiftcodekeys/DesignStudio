@@ -34,19 +34,28 @@ var QuoteTab = function(props) {
     var renderCTAs = function() {
         if (activeScene === 'fencing') {
             return (
-                <div className="quote-cta-row">
-                    <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('gates'); }}>Add Driveway Gate</button>
-                    <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('backyard'); }}>Add Backyard Fence</button>
-                    <button className="quote-btn-primary" onClick={function() { if (onSceneChange) onSceneChange('draw'); }}>Get Instant Quote</button>
+                <div className="quote-cta-stack">
+                    <div className="quote-cta-row">
+                        <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('gates'); }}>Add Driveway Gate</button>
+                        <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('backyard'); }}>Add Backyard Fence</button>
+                        <button className="quote-btn-primary" onClick={function() { if (onSceneChange) onSceneChange('draw'); }}>Get Instant Quote</button>
+                    </div>
+                    <div className="quote-cta-row">
+                        <button className="quote-btn-tertiary" onClick={onGetQuote}>Talk to an Expert</button>
+                    </div>
                 </div>
             );
         }
         if (activeScene === 'backyard') {
             return (
-                <div className="quote-cta-row">
-                    <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('gates'); }}>Add Driveway Gate</button>
-                    <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('fencing'); }}>Add Front Yard Fence</button>
-                    <button className="quote-btn-primary" onClick={function() { if (onSceneChange) onSceneChange('draw'); }}>Get Instant Quote</button>
+                <div className="quote-cta-stack">
+                    <div className="quote-cta-row">
+                        <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('gates'); }}>Add Driveway Gate</button>
+                        <button className="quote-btn-primary" onClick={function() { if (onSceneChange) onSceneChange('draw'); }}>Get Instant Quote</button>
+                    </div>
+                    <div className="quote-cta-row">
+                        <button className="quote-btn-tertiary" onClick={onGetQuote}>Talk to an Expert</button>
+                    </div>
                 </div>
             );
         }
@@ -54,7 +63,7 @@ var QuoteTab = function(props) {
         return (
             <div className="quote-cta-stack">
                 <div className="quote-cta-row">
-                    <button className="quote-btn-secondary" onClick={function() { if (onSceneChange) onSceneChange('draw'); }}>Measure My Property</button>
+                    <button className="quote-btn-measure" onClick={function() { if (onSceneChange) onSceneChange('draw'); }}>Measure My Property</button>
                     <button className="quote-btn-primary" onClick={onGetQuote}>Get Instant Quote</button>
                 </div>
                 <div className="quote-cta-row">

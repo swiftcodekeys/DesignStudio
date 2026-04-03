@@ -268,7 +268,7 @@ GateRenderer.prototype.buildGate = function(config) {
 
     // Dynamic height clipping (validated against Ultra live tool)
     clips.post.constant = CLIP_POST + hOff;
-    if (config.height === '72') {
+    if (config.height === '72' && (archId === 'e' || archId === 'a')) {
         clips.post23.constant = POST_CLIP_72;
     } else {
         clips.post23.constant = (CLIP_PO23[archId] || CLIP_PO23.e) + hOff;

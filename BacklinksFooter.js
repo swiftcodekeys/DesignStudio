@@ -29,10 +29,10 @@ var BacklinksFooter = function(props) {
                 <a href="https://grandviewfence.com/installation-guide" target="_blank" rel="noopener">Installation Guide</a>
                 <span className="backlinks-sep">|</span>
                 <a href="https://grandviewfence.com/shipping" target="_blank" rel="noopener">Shipping</a>
+                <span className="backlinks-sep">|</span>
+                <a href="https://grandviewfence.com/about" target="_blank" rel="noopener" className="backlinks-trust-link">Made in USA</a>
             </div>
             <div className="backlinks-row2">
-                <a href="https://grandviewfence.com/about" target="_blank" rel="noopener" className="backlinks-trust-link">Made in USA</a>
-                <span className="backlinks-sep">|</span>
                 <span className="backlinks-contact">
                     <a href="tel:+18553362330"><strong>(855) FENCE-30 | (855) 336-2330</strong></a> | <a href="#" onClick={function(e) { e.preventDefault(); if (onContactClick) onContactClick(); }}>sales@grandviewfence.com</a>
                 </span>

@@ -124,17 +124,6 @@ var DesignStudio = function() {
     var activeTab = tabState[0];
     var setActiveTabRaw = tabState[1];
 
-    var handleSceneChange = function(newTab) {
-        // Load scene defaults on first visit to that scene
-        if (newTab === 'backyard' && sceneInitRef.current && !sceneInitRef.current.backyard) {
-            setFenceConfig(defaultBackyardConfig);
-            sceneInitRef.current.backyard = true;
-        }
-        setActiveTabRaw(newTab);
-        setActiveConfigTab('style');
-    };
-    var setActiveTab = handleSceneChange;
-
     var configTabState = useState('style');
     var activeConfigTab = configTabState[0];
     var setActiveConfigTab = configTabState[1];
@@ -162,12 +151,25 @@ var DesignStudio = function() {
         privacyPostColor: 'white',
         privacyPanelColor: 'white',
     };
-    var fenceConfigState = useState(defaultFrontYardConfig);
-    var fenceConfig = fenceConfigState[0];
-    var setFenceConfig = fenceConfigState[1];
 
-    // Track which scenes have been initialized (load defaults only on first visit)
-    var sceneInitRef = React.useRef({ fencing: true, backyard: false, gates: true });
+    // Separate config state per fence tab — preserves user selections when switching
+    var frontYardConfigState = useState(defaultFrontYardConfig);
+    var frontYardConfig = frontYardConfigState[0];
+    var setFrontYardConfig = frontYardConfigState[1];
+
+    var backyardConfigState = useState(defaultBackyardConfig);
+    var backyardConfig = backyardConfigState[0];
+    var setBackyardConfig = backyardConfigState[1];
+
+    // Active fence config derived from current tab
+    var fenceConfig = (activeTab === 'backyard') ? backyardConfig : frontYardConfig;
+    var setFenceConfig = (activeTab === 'backyard') ? setBackyardConfig : setFrontYardConfig;
+
+    var handleSceneChange = function(newTab) {
+        setActiveTabRaw(newTab);
+        setActiveConfigTab('style');
+    };
+    var setActiveTab = handleSceneChange;
 
     var panelState = useState(false);
     var panelCollapsed = panelState[0];
@@ -264,7 +266,7 @@ var DesignStudio = function() {
             <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
-                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} onSkipToManualEntry={handleSkipToManualEntry} />
+                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
                     <BacklinksFooter config={config} />
                 </div>
             ) : (
