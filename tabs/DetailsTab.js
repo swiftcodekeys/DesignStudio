@@ -38,7 +38,9 @@ var DetailsTab = function(props) {
         return availablePostCaps.indexOf(pc.id) !== -1;
     });
 
+    var isFence = props.isFence;
     var filteredFinials = FINIAL_ITEMS.filter(function(f) {
+        if (isFence && f.id === 'fp') return false;
         return availableFinials.indexOf(f.id) !== -1;
     });
 
@@ -51,7 +53,7 @@ var DetailsTab = function(props) {
     };
 
     var handleFinialChange = function(finId) {
-        onConfigChange({ ...config, finial: finId });
+        onConfigChange({ ...config, finial: finId, finialType: finId });
     };
 
     var toggleAccent = function(accId) {
@@ -107,12 +109,14 @@ var DetailsTab = function(props) {
                     <div className="section-title">Finials</div>
                     <div className="option-row">
                         {filteredFinials.map(function(f) {
-                            var isActive = (config.finial || 'fs') === f.id;
+                            var isActive = (config.finial || config.finialType || 'fs') === f.id;
                             return (
                                 <div
                                     key={f.id}
                                     className={'opt-card' + (isActive ? ' active' : '')}
                                     onClick={function() { handleFinialChange(f.id); }}
+                                    onMouseEnter={function(e) { handleMouseEnter(f.thumb, f.name, e); }}
+                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <div className="opt-card-img">
                                         <img src={f.thumb} alt={f.name} />

@@ -129,7 +129,9 @@ export function getFenceModelPath(type, config) {
     var cat = styleDef.cat;
     var pi = styleDef.pi;
     var mod = styleDef.mod;
-    var finT = config.finialType || 's';
+    var rawFin = config.finialType || 'fs';
+    var finT = rawFin.length > 1 ? rawFin.slice(1) : rawFin;
+    if (finT === 'p') finT = 's';
     var hasCir = config.accessories && config.accessories.cir;
 
     switch (type) {
