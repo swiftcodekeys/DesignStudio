@@ -2,6 +2,79 @@
 JOURNAL — Grandview Design Studio Fence Tool
 ================================================================================
 
+2026-04-02 — UI Bug Fixes + Draw Tool Overhaul
+──────────────────────────────────────────────────
+
+SESSION GOAL:
+  Part 1: Apply diagnosed fixes (12, 14) + Sarah's QA bugs (A-I)
+  Part 2: Draw tool overhaul (DRAW 1-7)
+
+FILES CHANGED:
+  GateRenderer.js — Fix 12: POST_CLIP_72 now guarded by arch type
+  fenceConfigData.js — Fix 14: Charleston Pro acc set to []
+  configData.js — Fix 14: Charleston Pro gate acc set to []
+  BacklinksFooter.js — Fix A: pipe separator, moved "Made in USA" to row1
+  ContactPopup.js — Fix B: full redesign with topic dropdown, styled modal
+  tabs/QuoteTab.js — Fix C: backyard CTAs corrected, Fix D: Talk to Expert
+                     Fix E: Measure My Property button color
+  TopNav.js — Fix F: "Get Instant Quote", Fix G: logo click → home
+  app.js — Fix H: per-tab config state (frontYardConfig, backyardConfig)
+  tabs/StyleTab.js — Fix I: privacy styles hidden on gate tab
+  styles.css — Contact modal CSS, button styles, draw tool CSS (DRAW 5-7)
+  DrawYardView.js — Polyline green #22C55E, markers navy, zoom 18,
+                    Center button removed, config thumbnail (DRAW 1),
+                    floating action buttons (DRAW 5), gate markers (DRAW 6),
+                    follow-up questions (DRAW 7), adjustedLinearFeet export
+
+DRAW 5-7 PLAN (approved by Sarah):
+  DRAW 5: Floating action buttons on map canvas (bottom-left):
+    - "Draw New Line" (navy bg), "Undo" (white/navy), "Clear All" (white/navy)
+    - Instruction overlay (navy bg, white text) dismisses on first click
+    - Buttons call existing handlers — no new data flow
+  DRAW 6: Gate markers on drawn segments:
+    - Click polyline → popup with gate type + width selector
+    - Width options from retailPricing.js GATE_COMPATIBLE_WIDTHS
+    - Orange markers (#D4753A) on map, click to remove
+    - Export: adjustedLinearFeet = totalLengthFt - gate opening widths
+    - Undo removes affected gate markers
+  DRAW 7: Follow-up questions after "Get Quote for This Layout":
+    - Q1: Terrain (flat/gentle/steep/mixed) — always
+    - Q2: Manual gates — only if 0 gate markers placed
+    - Q3: Install plan (DIY/contractor/referral) — always
+    - Q4: Fence style — only if cold entry (no configurator session)
+    - Answers stored in localStorage gv_draw_layout
+    - "Continue to Quote" button (orange #D4753A)
+
+COLOR SCHEME (draw tool only):
+  Polyline: #22C55E (green) — satellite contrast
+  Node markers: #1B3A5C (navy)
+  Gate markers: #D4753A (orange) — action item
+  Floating buttons: navy primary, white secondary
+  Instruction overlay: #1B3A5C
+  Follow-up selected: #D4753A border, #FFF5EE bg
+  "Continue to Quote": #D4753A
+
+VERIFICATION:
+  - Webpack build: compiles successfully, zero errors
+  - Dealer cost check: clean (only "never use" comments)
+  - Configurator heights: 48/54/60/72 only (FENCE_HEIGHTS unchanged)
+  - No grade selector in configurator (SizeTab, configData untouched)
+  - No changes to configData.js FENCE_STYLES beyond Charleston Pro acc fix
+  - ProCoat spelling correct throughout
+
+BUGS FOUND DURING SESSION:
+  - None — all changes compiled clean on first build
+
+WHAT'S NEXT:
+  1. Wire QuoteDisplay into app.js (replace or augment QuoteTab)
+  2. Wire ContactPopup into TopNav "Get Instant Quote" CTA
+  3. Wire StripeCheckout into QuoteDisplay "Buy Now" CTA
+  4. End-to-end test: configure → draw → follow-up → quote → checkout
+  5. Test gate markers: place, remove, undo interaction
+  6. Test follow-up questions: all 4 conditions (cold, warm, with/without gates)
+  7. Deploy GAS backend and connect to ContactPopup
+
+
 2026-04-02 — Diagnostic Investigation
 ──────────────────────────────────────
 

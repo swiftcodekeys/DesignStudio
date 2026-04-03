@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { FENCE_STYLES as FENCE_TOOL_STYLES, FENCE_COLORS } from './fenceConfigData';
+import { GATE_COMPATIBLE_WIDTHS } from './retailPricing';
 
 var GOOGLE_MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 if (GOOGLE_MAPS_KEY) {
@@ -6,6 +8,19 @@ if (GOOGLE_MAPS_KEY) {
 } else {
     console.warn('[DrawYard] No Google Maps API key found in process.env.GOOGLE_MAPS_API_KEY');
 }
+
+// Style thumbnail map for follow-up Q4
+var STYLE_THUMBS = {
+    uaf_200: 'assets/ifence_previews/gate_styles/san_marino_15.png',
+    uaf_201: 'assets/ifence_previews/gate_styles/santa_monica_9.png',
+    uaf_250: 'assets/ifence_previews/gate_styles/sanibel_12.png',
+    uab_200: 'assets/ifence_previews/gate_styles/boca_grande_45.png',
+    uas_100: 'assets/ifence_previews/gate_styles/bella_vista_48.png',
+    uas_101: 'assets/ifence_previews/gate_styles/charleston_pro.png',
+    uas_150: 'assets/ifence_previews/gate_styles/bella_terra_51.png',
+    uas_300: 'assets/ifence_previews/gate_styles/castile_36.png',
+    uas_350: 'assets/ifence_previews/gate_styles/camelot_39.png',
+};
 
 // ============================================================
 // Google Maps Script Loader
@@ -74,7 +89,6 @@ var AddressEntry = function(props) {
     var serviceRef = useRef(null);
     var debounceRef = useRef(null);
 
-    // Autocomplete via AutocompleteService (no widget)
     var handleChange = function(e) {
         var val = e.target.value;
         setAddress(val);
@@ -95,7 +109,6 @@ var AddressEntry = function(props) {
                     if (status === 'OK' && predictions) {
                         setSuggestions(predictions.slice(0, 5));
                     } else {
-                        console.warn('[DrawYard] Places autocomplete status:', status);
                         setSuggestions([]);
                     }
                 }
@@ -106,7 +119,6 @@ var AddressEntry = function(props) {
     var selectSuggestion = function(prediction) {
         setAddress(prediction.description);
         setSuggestions([]);
-        // Geocode the selected prediction
         geocodeAddress(prediction.description);
     };
 
@@ -119,7 +131,6 @@ var AddressEntry = function(props) {
         var geocoder = new window.google.maps.Geocoder();
         geocoder.geocode({ address: addr }, function(results, status) {
             setLoading(false);
-            console.log('[DrawYard] Geocode status:', status, 'results:', results ? results.length : 0);
             if (status === 'OK' && results[0]) {
                 onAddressSelect({
                     address: results[0].formatted_address,
@@ -127,7 +138,6 @@ var AddressEntry = function(props) {
                     lng: results[0].geometry.location.lng(),
                 });
             } else {
-                console.error('[DrawYard] Geocode failed:', status);
                 setError('Geocode error: ' + status + '. Check that the Maps API key has Geocoding API enabled.');
             }
         });
@@ -179,7 +189,7 @@ var AddressEntry = function(props) {
                     </button>
                 </form>
                 <button className="draw-skip-link" onClick={onSkip}>
-                    Skip — I'll enter measurements manually
+                    Skip &mdash; I'll enter measurements manually
                 </button>
             </div>
         </div>
@@ -187,7 +197,7 @@ var AddressEntry = function(props) {
 };
 
 // ============================================================
-// Drawing Map
+// Drawing Map (with floating action buttons + instruction overlay)
 // ============================================================
 var DrawingMap = function(props) {
     var location = props.location;
@@ -200,12 +210,37 @@ var DrawingMap = function(props) {
     var setUndoStack = props.setUndoStack;
     var redoStack = props.redoStack;
     var setRedoStack = props.setRedoStack;
+    var onNewLine = props.onNewLine;
+    var onUndo = props.onUndo;
+    var onClear = props.onClear;
+    var canUndo = props.canUndo;
+    // DRAW 6 props
+    var gateMarkers = props.gateMarkers;
+    var onAddGateMarker = props.onAddGateMarker;
+    var onRemoveGateMarker = props.onRemoveGateMarker;
 
     var mapRef = useRef(null);
     var mapInstanceRef = useRef(null);
     var markersRef = useRef([]);
     var polylinesRef = useRef([]);
     var labelsRef = useRef([]);
+    var gateMarkersRef = useRef([]);
+
+    // DRAW 5: instruction overlay
+    var instructionState = useState(true);
+    var showInstructions = instructionState[0];
+    var setShowInstructions = instructionState[1];
+
+    // DRAW 6: gate popup state
+    var gatePopupState = useState(null); // { lineIndex, segmentIndex, lat, lng }
+    var gatePopup = gatePopupState[0];
+    var setGatePopup = gatePopupState[1];
+    var gateTypeState = useState('walk');
+    var gateType = gateTypeState[0];
+    var setGateType = gateTypeState[1];
+    var gateWidthState = useState(48);
+    var gateWidth = gateWidthState[0];
+    var setGateWidth = gateWidthState[1];
 
     // Initialize map
     useEffect(function() {
@@ -214,7 +249,7 @@ var DrawingMap = function(props) {
 
         mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
             center: { lat: location.lat, lng: location.lng },
-            zoom: 20,
+            zoom: 18,
             mapTypeId: 'satellite',
             tilt: 0,
             disableDefaultUI: true,
@@ -232,6 +267,8 @@ var DrawingMap = function(props) {
             var lat = e.latLng.lat();
             var lng = e.latLng.lng();
             window.__drawMapClick({ lat: lat, lng: lng });
+            // Dismiss instructions on first click
+            setShowInstructions(false);
         });
     }, [location]);
 
@@ -242,7 +279,6 @@ var DrawingMap = function(props) {
                 var updated = prev.slice();
                 var idx = activeLineIndex;
                 if (idx < 0 || idx >= updated.length) {
-                    // Create new line
                     updated.push({
                         label: 'Line ' + (updated.length + 1),
                         points: [point],
@@ -253,7 +289,6 @@ var DrawingMap = function(props) {
                         points: updated[idx].points.concat([point]),
                     });
                 }
-                // Push to undo
                 setUndoStack(function(u) { return u.concat([prev]); });
                 setRedoStack([]);
                 return updated;
@@ -262,7 +297,7 @@ var DrawingMap = function(props) {
         return function() { delete window.__drawMapClick; delete window.__drawMapInstance; };
     }, [activeLineIndex, setLines, setActiveLineIndex, setUndoStack, setRedoStack]);
 
-    // Render markers, polylines, and distance labels
+    // Render markers, polylines, distance labels, and gate markers
     useEffect(function() {
         if (!mapInstanceRef.current || !window.google) return;
 
@@ -270,28 +305,59 @@ var DrawingMap = function(props) {
         markersRef.current.forEach(function(m) { m.setMap(null); });
         polylinesRef.current.forEach(function(p) { p.setMap(null); });
         labelsRef.current.forEach(function(l) { l.setMap(null); });
+        gateMarkersRef.current.forEach(function(m) { m.setMap(null); });
         markersRef.current = [];
         polylinesRef.current = [];
         labelsRef.current = [];
+        gateMarkersRef.current = [];
 
         lines.forEach(function(line, lineIdx) {
             var path = line.points.map(function(p) {
                 return new window.google.maps.LatLng(p.lat, p.lng);
             });
 
-            // Polyline
+            // Polyline — green for satellite contrast
             if (path.length >= 2) {
                 var polyline = new window.google.maps.Polyline({
                     path: path,
-                    strokeColor: '#1B3A5C',
-                    strokeOpacity: 0.8,
+                    strokeColor: '#22C55E',
+                    strokeOpacity: 0.9,
                     strokeWeight: 3,
                     map: mapInstanceRef.current,
+                    clickable: true,
                 });
                 polylinesRef.current.push(polyline);
+
+                // DRAW 6: Click polyline segment to add gate
+                polyline.addListener('click', function(e) {
+                    if (drawMode) return; // don't intercept during draw mode
+                    var clickLat = e.latLng.lat();
+                    var clickLng = e.latLng.lng();
+                    // Find nearest segment
+                    var bestSeg = 0;
+                    var bestDist = Infinity;
+                    for (var si = 0; si < line.points.length - 1; si++) {
+                        var midLat = (line.points[si].lat + line.points[si + 1].lat) / 2;
+                        var midLng = (line.points[si].lng + line.points[si + 1].lng) / 2;
+                        var d = distanceFt(clickLat, clickLng, midLat, midLng);
+                        if (d < bestDist) { bestDist = d; bestSeg = si; }
+                    }
+                    // Compute position along segment in feet
+                    var segStart = line.points[bestSeg];
+                    var posFt = distanceFt(segStart.lat, segStart.lng, clickLat, clickLng);
+                    setGatePopup({
+                        lineIndex: lineIdx,
+                        segmentIndex: bestSeg,
+                        positionFt: Math.round(posFt),
+                        lat: clickLat,
+                        lng: clickLng,
+                    });
+                    setGateType('walk');
+                    setGateWidth(48);
+                });
             }
 
-            // Markers
+            // Node markers
             line.points.forEach(function(point, ptIdx) {
                 var marker = new window.google.maps.Marker({
                     position: { lat: point.lat, lng: point.lng },
@@ -299,7 +365,7 @@ var DrawingMap = function(props) {
                     draggable: true,
                     icon: {
                         path: window.google.maps.SymbolPath.CIRCLE,
-                        fillColor: '#C9A84C',
+                        fillColor: '#1B3A5C',
                         fillOpacity: 1,
                         strokeColor: '#1B3A5C',
                         strokeWeight: 2,
@@ -337,7 +403,7 @@ var DrawingMap = function(props) {
                         path: 'M -20,-10 L 20,-10 L 20,10 L -20,10 Z',
                         fillColor: '#fff',
                         fillOpacity: 0.9,
-                        strokeColor: '#1B3A5C',
+                        strokeColor: '#22C55E',
                         strokeWeight: 1,
                         scale: 1,
                     },
@@ -352,10 +418,125 @@ var DrawingMap = function(props) {
                 labelsRef.current.push(label);
             }
         });
-    }, [lines, setLines]);
+
+        // DRAW 6: Render gate markers on map (orange)
+        gateMarkers.forEach(function(gm, gmIdx) {
+            var line = lines[gm.lineIndex];
+            if (!line || !line.points[gm.segmentIndex] || !line.points[gm.segmentIndex + 1]) return;
+            var seg0 = line.points[gm.segmentIndex];
+            var seg1 = line.points[gm.segmentIndex + 1];
+            var segLen = distanceFt(seg0.lat, seg0.lng, seg1.lat, seg1.lng);
+            var frac = segLen > 0 ? Math.min(gm.positionFt / segLen, 1) : 0.5;
+            var gateLat = seg0.lat + (seg1.lat - seg0.lat) * frac;
+            var gateLng = seg0.lng + (seg1.lng - seg0.lng) * frac;
+
+            var gateLabel = gm.type === 'walk' ? 'W' : 'D';
+            var gateMapMarker = new window.google.maps.Marker({
+                position: { lat: gateLat, lng: gateLng },
+                map: mapInstanceRef.current,
+                icon: {
+                    path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    fillColor: '#D4753A',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2,
+                    scale: 7,
+                },
+                label: {
+                    text: gateLabel,
+                    color: '#fff',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                },
+                title: (gm.type === 'walk' ? 'Walk' : 'Drive') + ' Gate — ' + gm.widthInches + '"',
+            });
+            gateMapMarker.addListener('click', function() {
+                if (window.confirm('Remove this ' + (gm.type === 'walk' ? 'walk' : 'drive') + ' gate (' + gm.widthInches + '")?')) {
+                    onRemoveGateMarker(gmIdx);
+                }
+            });
+            gateMarkersRef.current.push(gateMapMarker);
+        });
+    }, [lines, setLines, gateMarkers, drawMode]);
+
+    var handleConfirmGate = function() {
+        if (!gatePopup) return;
+        onAddGateMarker({
+            lineIndex: gatePopup.lineIndex,
+            segmentIndex: gatePopup.segmentIndex,
+            positionFt: gatePopup.positionFt,
+            type: gateType,
+            widthInches: gateWidth,
+        });
+        setGatePopup(null);
+    };
+
+    var walkWidths = GATE_COMPATIBLE_WIDTHS.residential.walk;
+    var driveWidths = GATE_COMPATIBLE_WIDTHS.residential.drive;
+    var widthOptions = gateType === 'walk' ? walkWidths : driveWidths;
 
     return (
-        <div ref={mapRef} className="draw-map" />
+        <div className="draw-map-wrap">
+            <div ref={mapRef} className="draw-map" />
+
+            {/* DRAW 5: Instruction overlay */}
+            {showInstructions && (
+                <div className="draw-instruction-overlay">
+                    Click to place points along your fence line. Double-click to finish a section.
+                </div>
+            )}
+
+            {/* DRAW 5: Floating action buttons */}
+            <div className="draw-float-actions">
+                <button className="draw-float-btn draw-float-primary" onClick={onNewLine} title="Start a new fence line">
+                    &#9998; Draw New Line
+                </button>
+                <button className="draw-float-btn draw-float-secondary" onClick={onUndo} disabled={!canUndo} title="Undo last point">
+                    &#8617; Undo
+                </button>
+                <button className="draw-float-btn draw-float-secondary" onClick={onClear} title="Clear all lines">
+                    &#128465; Clear All
+                </button>
+            </div>
+
+            {/* DRAW 6: Gate popup */}
+            {gatePopup && (
+                <div className="draw-gate-popup-overlay" onClick={function() { setGatePopup(null); }}>
+                    <div className="draw-gate-popup" onClick={function(e) { e.stopPropagation(); }}>
+                        <div className="draw-gate-popup-title">Add Gate to Segment</div>
+                        <div className="draw-gate-popup-field">
+                            <label className="draw-gate-label">Gate Type</label>
+                            <div className="draw-gate-type-row">
+                                <button
+                                    className={'draw-gate-type-btn' + (gateType === 'walk' ? ' selected' : '')}
+                                    onClick={function() { setGateType('walk'); setGateWidth(48); }}
+                                >Walk Gate</button>
+                                <button
+                                    className={'draw-gate-type-btn' + (gateType === 'drive' ? ' selected' : '')}
+                                    onClick={function() { setGateType('drive'); setGateWidth(120); }}
+                                >Drive Gate</button>
+                            </div>
+                        </div>
+                        <div className="draw-gate-popup-field">
+                            <label className="draw-gate-label">Width</label>
+                            <select
+                                className="draw-gate-select"
+                                value={gateWidth}
+                                onChange={function(e) { setGateWidth(Number(e.target.value)); }}
+                            >
+                                {widthOptions.map(function(w) {
+                                    return <option key={w} value={w}>{w}" ({Math.round(w / 12 * 10) / 10} ft)</option>;
+                                })}
+                            </select>
+                        </div>
+                        <div className="draw-gate-popup-actions">
+                            <button className="draw-gate-confirm" onClick={handleConfirmGate}>Add Gate</button>
+                            <button className="draw-gate-cancel" onClick={function() { setGatePopup(null); }}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
@@ -372,7 +553,9 @@ var DrawingPanel = function(props) {
     var drawMode = props.drawMode;
     var setDrawMode = props.setDrawMode;
     var onGetQuote = props.onGetQuote;
-    var onRecenter = props.onRecenter;
+    var fenceConfig = props.fenceConfig;
+    var gateMarkers = props.gateMarkers;
+
     var canUndo = props.canUndo;
     var canRedo = props.canRedo;
 
@@ -385,7 +568,6 @@ var DrawingPanel = function(props) {
             var p2 = line.points[i + 1];
             totalFt += distanceFt(p1.lat, p1.lng, p2.lat, p2.lng);
         }
-        // Corners: each intermediate point in a line is a corner
         if (line.points.length > 2) {
             cornerCount += line.points.length - 2;
         }
@@ -408,8 +590,32 @@ var DrawingPanel = function(props) {
         });
     };
 
+    // Config thumbnail
+    var configStyle = fenceConfig ? FENCE_TOOL_STYLES.find(function(s) { return s.id === fenceConfig.styleId; }) : null;
+    var configColorName = fenceConfig && fenceConfig.color ? fenceConfig.color.displayName : '';
+    var configStyleName = configStyle ? configStyle.name : '';
+    var configHeight = fenceConfig ? fenceConfig.height : '';
+    var hasConfig = !!configStyleName;
+    var thumbSrc = fenceConfig ? (STYLE_THUMBS[fenceConfig.styleId] || 'assets/ifence_previews/gate_styles/bella_vista_48.png') : '';
+
+    // Gate opening deduction display
+    var gateOpeningFt = 0;
+    if (gateMarkers) {
+        gateMarkers.forEach(function(gm) { gateOpeningFt += gm.widthInches / 12; });
+    }
+    gateOpeningFt = Math.round(gateOpeningFt * 10) / 10;
+
     return (
         <div className="draw-panel">
+            {hasConfig && (
+                <div className="draw-config-thumb">
+                    <img className="draw-config-img" src={thumbSrc} alt={configStyleName} />
+                    <div className="draw-config-info">
+                        <div className="draw-config-name">{configStyleName} in {configColorName}</div>
+                        <div className="draw-config-detail">{configHeight}" | Residential</div>
+                    </div>
+                </div>
+            )}
             <div className="draw-panel-header">
                 <div className="draw-panel-title">YOUR FENCE LAYOUT</div>
             </div>
@@ -426,9 +632,6 @@ var DrawingPanel = function(props) {
                 </button>
                 <button className="draw-tool-btn" onClick={onClear} title="Clear all">
                     &#128465; Clear
-                </button>
-                <button className="draw-tool-btn" onClick={onRecenter} title="Re-center map">
-                    &#128205; Center
                 </button>
             </div>
 
@@ -464,11 +667,23 @@ var DrawingPanel = function(props) {
             {lines.length > 0 && (
                 <div className="draw-totals">
                     Total: <strong>{totalFt} ft</strong> &middot; {lines.length} line{lines.length !== 1 ? 's' : ''} &middot; {cornerCount} corner{cornerCount !== 1 ? 's' : ''}
+                    {gateMarkers && gateMarkers.length > 0 && (
+                        <span> &middot; {gateMarkers.length} gate{gateMarkers.length !== 1 ? 's' : ''}</span>
+                    )}
+                </div>
+            )}
+
+            {gateOpeningFt > 0 && (
+                <div className="draw-gate-summary">
+                    {totalFt} ft measured &minus; {gateOpeningFt} ft gate openings = <strong>{Math.round(totalFt - gateOpeningFt)} ft</strong> fence
                 </div>
             )}
 
             <div className="draw-panel-actions">
                 <button className="draw-new-line-btn" onClick={onNewLine}>+ New Line</button>
+                <div className="draw-gate-hint">
+                    Tip: Switch off Draw mode, then click a green fence line to add a gate.
+                </div>
                 {totalFt > 0 && (
                     <button className="draw-quote-btn" onClick={onGetQuote}>
                         Get Quote for This Layout &rarr;
@@ -483,11 +698,194 @@ var DrawingPanel = function(props) {
 };
 
 // ============================================================
+// DRAW 7: Follow-Up Questions Overlay
+// ============================================================
+var TERRAIN_OPTIONS = [
+    { value: 'flat', label: 'Flat' },
+    { value: 'gentle', label: 'Gentle Slope' },
+    { value: 'steep', label: 'Steep Slope' },
+    { value: 'mixed', label: 'Mixed' },
+];
+
+var INSTALL_OPTIONS = [
+    { value: 'diy', label: "I'll do it myself" },
+    { value: 'contractor', label: 'I have a contractor' },
+    { value: 'referral', label: 'I need an installer referral' },
+];
+
+var FollowUpQuestions = function(props) {
+    var onComplete = props.onComplete;
+    var onCancel = props.onCancel;
+    var gateMarkerCount = props.gateMarkerCount;
+    var hasFenceConfig = props.hasFenceConfig;
+
+    var terrainState = useState('flat');
+    var terrain = terrainState[0];
+    var setTerrain = terrainState[1];
+
+    var installState = useState('');
+    var installPlan = installState[0];
+    var setInstallPlan = installState[1];
+
+    // Q2: manual gates (only if no gate markers placed)
+    var showGateQuestion = gateMarkerCount === 0;
+    var manualGateState = useState([]);
+    var manualGates = manualGateState[0];
+    var setManualGates = manualGateState[1];
+
+    // Q4: style pick (only if cold entry)
+    var showStyleQuestion = !hasFenceConfig;
+    var selectedStyleState = useState('');
+    var selectedStyle = selectedStyleState[0];
+    var setSelectedStyle = selectedStyleState[1];
+
+    var addManualGate = function() {
+        setManualGates(function(prev) {
+            return prev.concat([{ type: 'walk', widthInches: 48 }]);
+        });
+    };
+    var removeManualGate = function(idx) {
+        setManualGates(function(prev) {
+            var updated = prev.slice();
+            updated.splice(idx, 1);
+            return updated;
+        });
+    };
+    var updateManualGate = function(idx, field, value) {
+        setManualGates(function(prev) {
+            var updated = prev.slice();
+            updated[idx] = Object.assign({}, updated[idx]);
+            updated[idx][field] = value;
+            return updated;
+        });
+    };
+
+    var canContinue = !!installPlan && (!showStyleQuestion || !!selectedStyle);
+
+    var handleContinue = function() {
+        onComplete({
+            terrain: terrain,
+            installPlan: installPlan,
+            gates: showGateQuestion ? manualGates : null,
+            style: showStyleQuestion ? selectedStyle : null,
+        });
+    };
+
+    var walkWidths = GATE_COMPATIBLE_WIDTHS.residential.walk;
+    var driveWidths = GATE_COMPATIBLE_WIDTHS.residential.drive;
+
+    return (
+        <div className="draw-followup-overlay">
+            <div className="draw-followup-card">
+                <h2 className="draw-followup-title">A few quick questions</h2>
+                <p className="draw-followup-subtitle">Help us give you the most accurate quote.</p>
+
+                {/* Q1: Terrain */}
+                <div className="draw-followup-q">
+                    <label className="draw-followup-label">What's the ground like?</label>
+                    <div className="draw-followup-options">
+                        {TERRAIN_OPTIONS.map(function(opt) {
+                            return (
+                                <button
+                                    key={opt.value}
+                                    className={'draw-followup-option' + (terrain === opt.value ? ' selected' : '')}
+                                    onClick={function() { setTerrain(opt.value); }}
+                                >{opt.label}</button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Q2: Gates (only if no markers placed) */}
+                {showGateQuestion && (
+                    <div className="draw-followup-q">
+                        <label className="draw-followup-label">How many gates do you need?</label>
+                        {manualGates.map(function(g, idx) {
+                            var widths = g.type === 'walk' ? walkWidths : driveWidths;
+                            return (
+                                <div key={idx} className="draw-followup-gate-row">
+                                    <select
+                                        className="draw-followup-select"
+                                        value={g.type}
+                                        onChange={function(e) { updateManualGate(idx, 'type', e.target.value); }}
+                                    >
+                                        <option value="walk">Walk Gate</option>
+                                        <option value="drive">Drive Gate</option>
+                                    </select>
+                                    <select
+                                        className="draw-followup-select"
+                                        value={g.widthInches}
+                                        onChange={function(e) { updateManualGate(idx, 'widthInches', Number(e.target.value)); }}
+                                    >
+                                        {widths.map(function(w) {
+                                            return <option key={w} value={w}>{w}"</option>;
+                                        })}
+                                    </select>
+                                    <button className="draw-followup-remove" onClick={function() { removeManualGate(idx); }}>&times;</button>
+                                </div>
+                            );
+                        })}
+                        <button className="draw-followup-add-gate" onClick={addManualGate}>+ Add a gate</button>
+                    </div>
+                )}
+
+                {/* Q3: Install plan */}
+                <div className="draw-followup-q">
+                    <label className="draw-followup-label">Who will install the fence?</label>
+                    <div className="draw-followup-options">
+                        {INSTALL_OPTIONS.map(function(opt) {
+                            return (
+                                <button
+                                    key={opt.value}
+                                    className={'draw-followup-option' + (installPlan === opt.value ? ' selected' : '')}
+                                    onClick={function() { setInstallPlan(opt.value); }}
+                                >{opt.label}</button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Q4: Style pick (cold entry only) */}
+                {showStyleQuestion && (
+                    <div className="draw-followup-q">
+                        <label className="draw-followup-label">What fence style?</label>
+                        <div className="draw-followup-styles">
+                            {FENCE_TOOL_STYLES.filter(function(s) { return !s.isPrivacy; }).map(function(s) {
+                                return (
+                                    <button
+                                        key={s.id}
+                                        className={'draw-followup-style-card' + (selectedStyle === s.id ? ' selected' : '')}
+                                        onClick={function() { setSelectedStyle(s.id); }}
+                                    >
+                                        <img src={STYLE_THUMBS[s.id] || ''} alt={s.name} className="draw-followup-style-img" />
+                                        <span className="draw-followup-style-name">{s.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                <div className="draw-followup-actions">
+                    <button
+                        className="draw-followup-continue"
+                        onClick={handleContinue}
+                        disabled={!canContinue}
+                    >Continue to Quote &rarr;</button>
+                    <button className="draw-followup-back" onClick={onCancel}>Back to Map</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================
 // Main DrawYardView Component
 // ============================================================
 var DrawYardView = function(props) {
     var onGetQuote = props.onGetQuote;
     var onSkipToManualEntry = props.onSkipToManualEntry;
+    var fenceConfig = props.fenceConfig;
 
     var mapsReadyState = useState(false);
     var mapsReady = mapsReadyState[0];
@@ -517,6 +915,16 @@ var DrawYardView = function(props) {
     var redoStack = redoState[0];
     var setRedoStack = redoState[1];
 
+    // DRAW 6: Gate markers state
+    var gateMarkersState = useState([]);
+    var gateMarkers = gateMarkersState[0];
+    var setGateMarkers = gateMarkersState[1];
+
+    // DRAW 7: Follow-up questions state
+    var followUpState = useState(false);
+    var showFollowUp = followUpState[0];
+    var setShowFollowUp = followUpState[1];
+
     // Load Google Maps
     useEffect(function() {
         if (!GOOGLE_MAPS_KEY) return;
@@ -545,6 +953,13 @@ var DrawYardView = function(props) {
         var prev = undoStack[undoStack.length - 1];
         setUndoStack(function(u) { return u.slice(0, -1); });
         setLines(prev);
+        // Remove gate markers on segments that no longer exist
+        setGateMarkers(function(gm) {
+            return gm.filter(function(m) {
+                var line = prev[m.lineIndex];
+                return line && line.points.length > m.segmentIndex + 1;
+            });
+        });
     };
 
     var handleRedo = function() {
@@ -562,46 +977,80 @@ var DrawYardView = function(props) {
         setRedoStack([]);
         setLines([]);
         setActiveLineIndex(0);
+        setGateMarkers([]);
     };
 
-    var handleRecenter = function() {
-        // Re-center is handled by map component accessing location
-        if (location && window.__drawMapInstance) {
-            window.__drawMapInstance.setCenter({ lat: location.lat, lng: location.lng });
-            window.__drawMapInstance.setZoom(20);
-        }
+    var handleAddGateMarker = function(marker) {
+        setGateMarkers(function(prev) { return prev.concat([marker]); });
     };
 
+    var handleRemoveGateMarker = function(idx) {
+        setGateMarkers(function(prev) {
+            var updated = prev.slice();
+            updated.splice(idx, 1);
+            return updated;
+        });
+    };
+
+    // DRAW 7: Show follow-up questions instead of immediately navigating
     var handleGetQuoteForLayout = function() {
-        // Generate JSON and store it, then open quote
+        setShowFollowUp(true);
+    };
+
+    // DRAW 7: Complete follow-up and export
+    var handleFollowUpComplete = function(answers) {
+        // Calculate totals
+        var totalLengthFt = 0;
+        lines.forEach(function(line) {
+            for (var i = 0; i < line.points.length - 1; i++) {
+                totalLengthFt += distanceFt(line.points[i].lat, line.points[i].lng, line.points[i + 1].lat, line.points[i + 1].lng);
+            }
+        });
+        totalLengthFt = Math.round(totalLengthFt);
+
+        // Gate openings deduction (DRAW 6 addition)
+        var allGates = gateMarkers.slice();
+        if (answers.gates && answers.gates.length > 0) {
+            allGates = allGates.concat(answers.gates.map(function(g, i) {
+                return { lineIndex: 0, segmentIndex: 0, positionFt: 0, type: g.type, widthInches: g.widthInches };
+            }));
+        }
+        var gateOpeningFt = 0;
+        allGates.forEach(function(g) { gateOpeningFt += g.widthInches / 12; });
+        var adjustedLinearFeet = Math.round(totalLengthFt - gateOpeningFt);
+
+        var corners = 0;
+        lines.forEach(function(line) {
+            if (line.points.length > 2) corners += line.points.length - 2;
+        });
+
         var data = {
             source: 'gps-draw-tool',
             address: location ? location.address : '',
             lines: lines.map(function(line) {
-                var totalFt = 0;
+                var ft = 0;
                 for (var i = 0; i < line.points.length - 1; i++) {
-                    totalFt += distanceFt(line.points[i].lat, line.points[i].lng, line.points[i + 1].lat, line.points[i + 1].lng);
+                    ft += distanceFt(line.points[i].lat, line.points[i].lng, line.points[i + 1].lat, line.points[i + 1].lng);
                 }
-                return {
-                    label: line.label,
-                    lengthFt: Math.round(totalFt),
-                    points: line.points,
-                };
+                return { label: line.label, lengthFt: Math.round(ft), points: line.points };
             }),
-            totalLengthFt: 0,
-            corners: 0,
+            totalLengthFt: totalLengthFt,
+            adjustedLinearFeet: adjustedLinearFeet,
+            corners: corners,
+            gates: allGates.map(function(g) { return { type: g.type, widthInches: g.widthInches }; }),
+            gateCount: allGates.length,
+            terrain: answers.terrain,
+            installPlan: answers.installPlan,
+            style: answers.style || (fenceConfig ? fenceConfig.styleId : ''),
             mapCenter: location ? { lat: location.lat, lng: location.lng } : null,
             timestamp: new Date().toISOString(),
         };
-        data.lines.forEach(function(l) { data.totalLengthFt += l.lengthFt; });
-        lines.forEach(function(line) {
-            if (line.points.length > 2) data.corners += line.points.length - 2;
-        });
 
         try {
             localStorage.setItem('gv_draw_layout', JSON.stringify(data));
         } catch (e) { /* */ }
 
+        setShowFollowUp(false);
         if (onGetQuote) onGetQuote();
     };
 
@@ -610,7 +1059,7 @@ var DrawYardView = function(props) {
         return (
             <div className="draw-no-key">
                 <h2>Google Maps API Key Required</h2>
-                <p>Add VITE_GOOGLE_MAPS_API_KEY to .env to use the draw tool.</p>
+                <p>Add GOOGLE_MAPS_API_KEY to .env to use the draw tool.</p>
             </div>
         );
     }
@@ -635,6 +1084,39 @@ var DrawYardView = function(props) {
         );
     }
 
+    // DRAW 7: Follow-up questions overlay
+    if (showFollowUp) {
+        return (
+            <div className="draw-container">
+                <DrawingMap
+                    location={location}
+                    lines={lines}
+                    setLines={setLines}
+                    activeLineIndex={activeLineIndex}
+                    setActiveLineIndex={setActiveLineIndex}
+                    drawMode={false}
+                    undoStack={undoStack}
+                    setUndoStack={setUndoStack}
+                    redoStack={redoStack}
+                    setRedoStack={setRedoStack}
+                    onNewLine={handleNewLine}
+                    onUndo={handleUndo}
+                    onClear={handleClear}
+                    canUndo={undoStack.length > 0}
+                    gateMarkers={gateMarkers}
+                    onAddGateMarker={handleAddGateMarker}
+                    onRemoveGateMarker={handleRemoveGateMarker}
+                />
+                <FollowUpQuestions
+                    onComplete={handleFollowUpComplete}
+                    onCancel={function() { setShowFollowUp(false); }}
+                    gateMarkerCount={gateMarkers.length}
+                    hasFenceConfig={!!(fenceConfig && fenceConfig.styleId)}
+                />
+            </div>
+        );
+    }
+
     // Map + Drawing Panel
     return (
         <div className="draw-container">
@@ -649,6 +1131,13 @@ var DrawYardView = function(props) {
                 setUndoStack={setUndoStack}
                 redoStack={redoStack}
                 setRedoStack={setRedoStack}
+                onNewLine={handleNewLine}
+                onUndo={handleUndo}
+                onClear={handleClear}
+                canUndo={undoStack.length > 0}
+                gateMarkers={gateMarkers}
+                onAddGateMarker={handleAddGateMarker}
+                onRemoveGateMarker={handleRemoveGateMarker}
             />
             <DrawingPanel
                 lines={lines}
@@ -660,7 +1149,8 @@ var DrawYardView = function(props) {
                 drawMode={drawMode}
                 setDrawMode={setDrawMode}
                 onGetQuote={handleGetQuoteForLayout}
-                onRecenter={handleRecenter}
+                fenceConfig={fenceConfig}
+                gateMarkers={gateMarkers}
                 canUndo={undoStack.length > 0}
                 canRedo={redoStack.length > 0}
             />
