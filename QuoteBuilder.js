@@ -600,8 +600,8 @@ var StepQuoteDisplay = function(props) {
                                 {item.note && <small className="qb-quote-note">{item.note}</small>}
                             </span>
                             <span className="qb-quote-col-qty">{item.qty}</span>
-                            <span className="qb-quote-col-unit">{'$' + item.unitPrice.toFixed(2)}</span>
-                            <span className="qb-quote-col-total">{'$' + item.total.toFixed(2)}</span>
+                            <span className="qb-quote-col-unit">{'$' + item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="qb-quote-col-total">{'$' + item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     );
                 })}
@@ -609,7 +609,7 @@ var StepQuoteDisplay = function(props) {
                     <span className="qb-quote-col-item">Subtotal</span>
                     <span className="qb-quote-col-qty"></span>
                     <span className="qb-quote-col-unit"></span>
-                    <span className="qb-quote-col-total">{'$' + result.subtotal.toFixed(2)}</span>
+                    <span className="qb-quote-col-total">{'$' + result.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
             </div>
 
