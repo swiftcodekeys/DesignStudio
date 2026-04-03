@@ -567,9 +567,11 @@ var QuoteBuilder = function(props) {
     var onClose = props.onClose;
 
     var saved = loadQuoteData();
-    var dataState = useState(saved || defaultData);
+    var dataState = useState(Object.assign({}, defaultData, saved || {}));
     var data = dataState[0];
     var setData = dataState[1];
+    if (!data.runs) data.runs = [];
+    if (!data.gates) data.gates = [];
 
     // Read initialStep from saved data (set by handleSkipToManualEntry)
     var startStep = (saved && saved.initialStep) || 0;
