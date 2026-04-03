@@ -132,7 +132,8 @@ html, body {
   white-space: nowrap;
 }
 .topnav-tab:hover {
-  color: rgba(255,255,255,0.8);
+  color: rgba(255,255,255,0.9);
+  border-bottom-color: rgba(212,117,58,0.5);
 }
 .topnav-tab.active {
   color: #fff;
@@ -1136,11 +1137,15 @@ html, body {
   z-index: 999;
   animation: popIn 0.15s ease;
   pointer-events: none;
+  width: 240px;
+  max-width: 280px;
 }
 .img-popup img {
   display: block;
   border-radius: 6px;
   width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 .img-popup-label {
   padding: 4px 6px;
