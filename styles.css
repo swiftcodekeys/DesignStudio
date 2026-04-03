@@ -1618,7 +1618,7 @@ html, body {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #78AFCF;
   color: #fff;
   font-size: 28px;
   font-weight: 900;
@@ -1753,7 +1753,7 @@ html, body {
   color: #fff;
 }
 .qb-progress-step.done .qb-progress-num {
-  background: #22c55e;
+  background: #78AFCF;
   color: #fff;
 }
 .qb-progress-label {
@@ -2070,7 +2070,7 @@ html, body {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #78AFCF;
   color: #fff;
   font-size: 32px;
   font-weight: 900;
@@ -2096,6 +2096,28 @@ html, body {
   cursor: pointer;
   font-family: inherit;
 }
+
+/* Quote Display */
+.qb-quote-display { padding: 0; }
+.qb-quote-header { text-align: center; padding: 24px 0 16px; }
+.qb-quote-header h2 { margin: 8px 0 4px; }
+.qb-quote-table { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 0 0 16px; }
+.qb-quote-row { display: grid; grid-template-columns: 1fr 50px 70px 80px; padding: 10px 12px; border-bottom: 1px solid var(--border); align-items: start; font-size: 13px; }
+.qb-quote-row:last-child { border-bottom: none; }
+.qb-quote-row-header { background: var(--bg-light, #f8f9fa); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-hint); }
+.qb-quote-row-subtotal { background: var(--bg-light, #f8f9fa); font-weight: 700; font-size: 15px; border-top: 2px solid var(--text-primary); }
+.qb-quote-col-qty, .qb-quote-col-unit, .qb-quote-col-total { text-align: right; }
+.qb-quote-note { display: block; font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+.qb-quote-warnings { background: #fef3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #856404; }
+.qb-quote-warnings p { margin: 4px 0; }
+.qb-quote-followup { text-align: center; font-size: 13px; color: var(--text-secondary); margin: 16px 0; }
+.qb-quote-actions { display: flex; flex-direction: column; gap: 8px; }
+.qb-action-btn { display: block; width: 100%; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 700; text-align: center; border: none; cursor: pointer; text-decoration: none; font-family: inherit; }
+.qb-action-primary { background: #D4753A; color: #fff; }
+.qb-action-primary:hover { background: #c06830; }
+.qb-action-disabled { background: #e0e0e0; color: #999; cursor: not-allowed; }
+.qb-action-secondary { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+.qb-action-secondary:hover { background: rgba(107,163,194,0.08); }
 
 /* Footer */
 .qb-footer {

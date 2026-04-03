@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { House, SwimmingPool, Tree, MapPin, Buildings, GearSix, ArrowLeft, ArrowRight, Check, X, Plus } from '@phosphor-icons/react';
+import { calculateQuote } from './pricingEngine';
 
 var STORAGE_KEY = 'gv_quote_builder';
 var STEPS = [
@@ -8,12 +9,47 @@ var STEPS = [
     { id: 'style', label: 'Style & Options' },
     { id: 'gates', label: 'Gates' },
     { id: 'extras', label: 'Extras' },
-    { id: 'install', label: 'Installation' },
+    { id: 'install', label: 'Install & Shipping' },
     { id: 'review', label: 'Review' },
     { id: 'confirm', label: 'Confirmation' },
 ];
 
 var ICON_MAP = { backyard: House, pool: SwimmingPool, front: Tree, full: MapPin, commercial: Buildings, other: GearSix };
+
+function buildQuoteConfig(data) {
+    var totalFeet = 0;
+    var worstTerrain = 'flat';
+    var terrainRank = { flat: 0, slope: 1, steep: 2, mixed: 2 };
+
+    (data.runs || []).forEach(function(run) {
+        totalFeet += (parseFloat(run.lengthFt) || 0);
+        if ((terrainRank[run.terrain] || 0) > (terrainRank[worstTerrain] || 0)) {
+            worstTerrain = run.terrain;
+        }
+    });
+
+    return {
+        style: data.style || 'horizon',
+        height: parseInt(data.height) || 48,
+        grade: data.grade || 'residential',
+        linearFeet: totalFeet || 100,
+        corners: parseInt(data.corners) || 0,
+        endCount: 2,
+        gates: (data.gates || []).map(function(g) {
+            return {
+                type: g.type || 'walk',
+                widthInches: parseInt(g.width) || 36,
+                top: g.topStyle === 'arched' ? 'arch' : 'straight',
+                hardware: null
+            };
+        }),
+        postCap: data.postCap || 'flat',
+        puppyPickets: !!(data.extras && data.extras.puppyPickets),
+        finials: null,
+        circles: !!(data.extras && data.extras.circles),
+        terrain: worstTerrain
+    };
+}
 
 var PROJECT_TYPES = [
     { id: 'backyard', label: 'Backyard' },
@@ -454,12 +490,6 @@ var StepInstall = function(props) {
             <h3 className="qb-question">Shipping Address</h3>
             <input className="qb-input" type="text" value={data.shippingAddress} onChange={function(e) { update({ shippingAddress: e.target.value }); }} placeholder="Street, City, State, ZIP" />
 
-            <h3 className="qb-question">Timeline</h3>
-            <div className="qb-toggle-row">
-                <button className={'qb-toggle' + (data.timeline === 'asap' ? ' active' : '')} onClick={function() { update({ timeline: 'asap' }); }}>ASAP</button>
-                <button className={'qb-toggle' + (data.timeline === '2-4weeks' ? ' active' : '')} onClick={function() { update({ timeline: '2-4weeks' }); }}>2-4 Weeks</button>
-                <button className={'qb-toggle' + (data.timeline === 'planning' ? ' active' : '')} onClick={function() { update({ timeline: 'planning' }); }}>Just Planning</button>
-            </div>
         </div>
     );
 };
@@ -526,7 +556,7 @@ var StepReview = function(props) {
                     <button className="qb-edit-link" onClick={function() { goToStep(5); }}>Edit</button>
                 </div>
                 <div className="qb-review-body">
-                    {data.installPlan || '—'} | {data.timeline || '—'}
+                    {data.installPlan || '—'}
                 </div>
             </div>
 
@@ -536,6 +566,71 @@ var StepReview = function(props) {
                 <input className="qb-input" placeholder="Email *" type="email" value={data.email} onChange={function(e) { props.update({ email: e.target.value }); }} />
                 <input className="qb-input" placeholder="Phone" type="tel" value={data.phone} onChange={function(e) { props.update({ phone: e.target.value }); }} />
                 <input className="qb-input" placeholder="Company (optional)" value={data.company} onChange={function(e) { props.update({ company: e.target.value }); }} />
+            </div>
+        </div>
+    );
+};
+
+var StepQuoteDisplay = function(props) {
+    var quoteId = props.quoteId;
+    var result = props.quoteResult;
+    var data = props.data;
+    var onBackToStudio = props.onBackToStudio;
+
+    return (
+        <div className="qb-step qb-quote-display">
+            <div className="qb-quote-header">
+                <div className="qb-confirm-icon"><Check size={32} weight="bold" /></div>
+                <h2>Your Itemized Quote</h2>
+                <p className="qb-confirm-ref">Reference: <strong>{quoteId}</strong></p>
+            </div>
+
+            <div className="qb-quote-table">
+                <div className="qb-quote-row qb-quote-row-header">
+                    <span className="qb-quote-col-item">Item</span>
+                    <span className="qb-quote-col-qty">Qty</span>
+                    <span className="qb-quote-col-unit">Unit</span>
+                    <span className="qb-quote-col-total">Total</span>
+                </div>
+                {result.items.map(function(item, i) {
+                    return (
+                        <div className="qb-quote-row" key={i}>
+                            <span className="qb-quote-col-item">
+                                {item.label}
+                                {item.note && <small className="qb-quote-note">{item.note}</small>}
+                            </span>
+                            <span className="qb-quote-col-qty">{item.qty}</span>
+                            <span className="qb-quote-col-unit">{'$' + item.unitPrice.toFixed(2)}</span>
+                            <span className="qb-quote-col-total">{'$' + item.total.toFixed(2)}</span>
+                        </div>
+                    );
+                })}
+                <div className="qb-quote-row qb-quote-row-subtotal">
+                    <span className="qb-quote-col-item">Subtotal</span>
+                    <span className="qb-quote-col-qty"></span>
+                    <span className="qb-quote-col-unit"></span>
+                    <span className="qb-quote-col-total">{'$' + result.subtotal.toFixed(2)}</span>
+                </div>
+            </div>
+
+            {result.warnings.length > 0 && (
+                <div className="qb-quote-warnings">
+                    {result.warnings.map(function(w, i) { return <p key={i}>{w}</p>; })}
+                </div>
+            )}
+
+            <p className="qb-quote-followup">We'll follow up at <strong>{data.email}</strong> within 1 business day.</p>
+
+            <div className="qb-quote-actions">
+                <a className="qb-action-btn qb-action-primary" href="tel:8553362330">
+                    Talk to an Expert — (855) FENCE-30
+                </a>
+                <button className="qb-action-btn qb-action-disabled" disabled>
+                    Buy Now — Coming Soon
+                </button>
+                <button className="qb-action-btn qb-action-secondary" onClick={onBackToStudio}>
+                    Back to Design Studio
+                </button>
             </div>
         </div>
     );
@@ -588,6 +683,10 @@ var QuoteBuilder = function(props) {
     var quoteId = quoteIdState[0];
     var setQuoteId = quoteIdState[1];
 
+    var quoteResultState = useState(null);
+    var quoteResult = quoteResultState[0];
+    var setQuoteResult = quoteResultState[1];
+
     // Auto-apply pool defaults
     useEffect(function() {
         if (data.projectType === 'pool') {
@@ -636,7 +735,12 @@ var QuoteBuilder = function(props) {
         var id = 'GV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         setQuoteId(id);
 
-        // Build mailto
+        // Calculate itemized quote
+        var quoteConfig = buildQuoteConfig(data);
+        var result = calculateQuote(quoteConfig);
+        setQuoteResult(result);
+
+        // Build mailto as backup
         var totalFt = 0;
         data.runs.forEach(function(r) { totalFt += (r.lengthFt || 0); });
         var selectedStyle = FENCE_STYLES_LIST.find(function(s) { return s.id === data.style; });
@@ -662,7 +766,7 @@ var QuoteBuilder = function(props) {
         if (extrasList.length) summary.push('Extras: ' + extrasList.join(', '));
 
         summary.push('Install: ' + data.installPlan);
-        summary.push('Timeline: ' + data.timeline);
+
         summary.push('Shipping: ' + data.shippingAddress);
         summary.push('');
         summary.push('Name: ' + data.name);
@@ -691,7 +795,9 @@ var QuoteBuilder = function(props) {
             case 4: return <StepExtras data={data} update={update} />;
             case 5: return <StepInstall data={data} update={update} />;
             case 6: return <StepReview data={data} update={update} goToStep={goToStep} />;
-            case 7: return <StepConfirm quoteId={quoteId} onBackToStudio={onClose} />;
+            case 7: return quoteResult
+                ? <StepQuoteDisplay quoteId={quoteId} quoteResult={quoteResult} data={data} onBackToStudio={onClose} />
+                : <StepConfirm quoteId={quoteId} onBackToStudio={onClose} />;
             default: return null;
         }
     };
