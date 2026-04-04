@@ -43,6 +43,8 @@ module.exports = {
     new webpack.DefinePlugin({
       'process.env.GAS_ENDPOINT': JSON.stringify(''),
       'process.env.STRIPE_PUBLISHABLE_KEY': JSON.stringify(''),
+      'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(''),
+      'process.env.ANTHROPIC_API_KEY': JSON.stringify(''),
       'process.env.NODE_ENV': JSON.stringify('production'),
     })
   ],
