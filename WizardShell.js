@@ -220,7 +220,8 @@ var WizardShell = function() {
     var handleConfigChange = function(newConfig) {
         setZoneConfigs(function(prev) {
             var updated = Object.assign({}, prev);
-            updated[currentZone] = newConfig;
+            var current = updated[currentZone] || {};
+            updated[currentZone] = typeof newConfig === 'function' ? newConfig(current) : newConfig;
             return updated;
         });
     };
@@ -444,7 +445,7 @@ var WizardShell = function() {
                         ) : (
                             <UnifiedCanvas
                                 config={isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '60', color: COLORS[5], arch: 'e', leaf: '2', mount: 'p', postCap: 'pcf' }}
-                                fenceConfig={!isGateConfig ? Object.assign({}, activeConfig) : { styleId: 'uaf_200', height: '48', color: FENCE_COLORS[5] }}
+                                fenceConfig={!isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '48', color: FENCE_COLORS[5] }}
                                 panelCollapsed={false}
                                 activeScene={activeScene}
                             />
