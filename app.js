@@ -173,6 +173,16 @@ var DesignStudio = function() {
     };
     var setActiveTab = handleSceneChange;
 
+    useEffect(function() {
+        try {
+            var startScene = localStorage.getItem('gv_start_scene');
+            if (startScene) {
+                localStorage.removeItem('gv_start_scene');
+                setActiveTabRaw(startScene);
+            }
+        } catch(e) {}
+    }, []);
+
     var panelState = useState(false);
     var panelCollapsed = panelState[0];
     var setPanelCollapsed = panelState[1];

@@ -58,9 +58,17 @@ var DetailsTab = function(props) {
 
     var toggleAccent = function(accId) {
         var current = config.accessories || {};
+        var updated = { ...current };
+        if (accId === 'cir' || accId === 'but') {
+            var other = accId === 'cir' ? 'but' : 'cir';
+            updated[accId] = !current[accId];
+            updated[other] = false;
+        } else {
+            updated[accId] = !current[accId];
+        }
         onConfigChange({
             ...config,
-            accessories: { ...current, [accId]: !current[accId] },
+            accessories: updated,
         });
     };
 

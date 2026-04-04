@@ -130,6 +130,17 @@ function getDefaultConfig(zoneId) {
             mount: 'p',
         };
     }
+    if (zoneId === 'back') {
+        return {
+            styleId: 'uab_200',
+            height: '54',
+            color: FENCE_COLORS[0],
+            finialType: null,
+            postCap: 'pcf',
+            accessories: {},
+            pupType: null,
+        };
+    }
     return {
         styleId: 'uaf_200',
         height: '48',
