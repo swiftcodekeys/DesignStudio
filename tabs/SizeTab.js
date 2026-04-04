@@ -17,6 +17,9 @@ var SizeTab = function(props) {
                     <div className="controls-row">
                         <div className="ctrl-btn active">48″ (Privacy)</div>
                     </div>
+                    <div style={{ fontSize: 12, color: '#8e95a0', marginTop: 8, textAlign: 'center' }}>
+                        Additional heights (60″ and 72″) available — request a quote for full options.
+                    </div>
                 </div>
             ) : (
                 <div className="section-group">

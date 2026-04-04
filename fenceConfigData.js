@@ -54,7 +54,7 @@ export var FENCE_STYLES = [
         hasFinials: false, isSpear: false, isFlush: true,
         forcedHeight: '48',
         supports3D: true,
-        acc: ['cir', 'but', 'scr'],
+        acc: ['cir', 'but', 'scr', 'pup'],
     },
     {
         id: 'uas_100', code: 'UAS-100', name: 'Charleston', subtitle: 'Spear Top',
