@@ -4,6 +4,9 @@ import UnifiedCanvas from './UnifiedCanvas';
 import StyleTab from './tabs/StyleTab';
 import ColorTab from './tabs/ColorTab';
 import SizeTab from './tabs/SizeTab';
+import DetailsTab from './tabs/DetailsTab';
+import PuppyPicketsTab from './tabs/PuppyPicketsTab';
+import OptionsTab from './tabs/OptionsTab';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 
@@ -405,11 +408,22 @@ var WizardShell = function() {
                                 isFence={!isGateConfig}
                             />
                             <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                <ColorTab config={activeConfig} onConfigChange={handleConfigChange} />
+                                <ColorTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
                             </div>
                             <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                <SizeTab config={activeConfig} onConfigChange={handleConfigChange} />
+                                <SizeTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
                             </div>
+                            <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
+                                <DetailsTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                            </div>
+                            <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
+                                <PuppyPicketsTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                            </div>
+                            {!isGateConfig ? null : (
+                                <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
+                                    <OptionsTab config={activeConfig} onConfigChange={handleConfigChange} />
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer with nav */}
@@ -529,6 +543,7 @@ var WizardShell = function() {
                                         localStorage.setItem('gv_config', JSON.stringify(primaryConfig));
                                     } catch (e) { /* */ }
                                 }
+                                try { localStorage.setItem('gv_start_scene', 'draw'); } catch (e) { /* */ }
                                 navigate('/studio');
                             }}
                         >
