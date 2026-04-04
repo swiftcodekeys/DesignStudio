@@ -34,7 +34,6 @@ module.exports = {
         { from: 'fence_tool', to: 'fence_tool' },
         { from: 'gate_tool', to: 'gate_tool' },
         { from: 'assets', to: 'assets' },
-        { from: 'quiz', to: 'quiz' },
         { from: 'styles.css', to: 'styles.css' },
         { from: 'landing.css', to: 'landing.css' },
         { from: 'wizard.css', to: 'wizard.css' },
