@@ -181,6 +181,20 @@ var DesignStudio = function() {
                 setActiveTabRaw(startScene);
             }
         } catch(e) {}
+        try {
+            var savedFence = localStorage.getItem('gv_fence_config');
+            if (savedFence) {
+                var parsed = JSON.parse(savedFence);
+                if (parsed && parsed.styleId) setFrontYardConfig(parsed);
+            }
+        } catch(e) {}
+        try {
+            var savedBack = localStorage.getItem('gv_back_config');
+            if (savedBack) {
+                var parsedBack = JSON.parse(savedBack);
+                if (parsedBack && parsedBack.styleId) setBackyardConfig(parsedBack);
+            }
+        } catch(e) {}
     }, []);
 
     var panelState = useState(false);

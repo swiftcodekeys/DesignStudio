@@ -273,15 +273,11 @@ var WizardShell = function() {
 
     // Escape to full configurator
     var handleEscape = function() {
-        // Save current config to localStorage
-        var activeConfig = currentZone && zoneConfigs[currentZone]
-            ? zoneConfigs[currentZone]
-            : zoneConfigs[selectedZones[0]];
-        if (activeConfig) {
-            try {
-                localStorage.setItem('gv_config', JSON.stringify(activeConfig));
-            } catch (e) { /* */ }
-        }
+        try {
+            if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
+            if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
+            if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
+        } catch (e) { /* */ }
         navigate('/studio');
     };
 
@@ -548,12 +544,11 @@ var WizardShell = function() {
                             className="wizard-btn-primary"
                             onClick={function() {
                                 // Save all zone configs to localStorage
-                                var primaryConfig = zoneConfigs[selectedZones[0]] || zoneConfigs.front || zoneConfigs.back;
-                                if (primaryConfig) {
-                                    try {
-                                        localStorage.setItem('gv_config', JSON.stringify(primaryConfig));
-                                    } catch (e) { /* */ }
-                                }
+                                try {
+                                    if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
+                                    if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
+                                    if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
+                                } catch (e) { /* */ }
                                 try { localStorage.setItem('gv_start_scene', 'draw'); } catch (e) { /* */ }
                                 navigate('/studio');
                             }}
@@ -561,12 +556,11 @@ var WizardShell = function() {
                             Open Draw Your Yard &rarr;
                         </button>
                         <button className="wizard-btn-secondary" onClick={function() {
-                            var primaryConfig = zoneConfigs[selectedZones[0]];
-                            if (primaryConfig) {
-                                try {
-                                    localStorage.setItem('gv_config', JSON.stringify(primaryConfig));
-                                } catch (e) { /* */ }
-                            }
+                            try {
+                                if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
+                                if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
+                                if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
+                            } catch (e) { /* */ }
                             navigate('/studio');
                         }}>
                             Skip &mdash; I will enter measurements manually

@@ -484,7 +484,7 @@ var StepInstall = function(props) {
             <div className="qb-toggle-row">
                 <button className={'qb-toggle' + (data.installPlan === 'diy' ? ' active' : '')} onClick={function() { update({ installPlan: 'diy' }); }}>DIY</button>
                 <button className={'qb-toggle' + (data.installPlan === 'contractor' ? ' active' : '')} onClick={function() { update({ installPlan: 'contractor' }); }}>Hiring Contractor</button>
-                <button className={'qb-toggle' + (data.installPlan === 'help' ? ' active' : '')} onClick={function() { update({ installPlan: 'help' }); }}>Need Help</button>
+                <button className={'qb-toggle' + (data.installPlan === 'help' ? ' active' : '')} onClick={function() { update({ installPlan: 'help' }); }}>Not Sure</button>
             </div>
 
             <h3 className="qb-question">Shipping Address</h3>

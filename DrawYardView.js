@@ -710,7 +710,7 @@ var TERRAIN_OPTIONS = [
 var INSTALL_OPTIONS = [
     { value: 'diy', label: "I'll do it myself" },
     { value: 'contractor', label: 'I have a contractor' },
-    { value: 'referral', label: 'I need an installer referral' },
+    { value: 'referral', label: 'Not Sure' },
 ];
 
 var FollowUpQuestions = function(props) {
