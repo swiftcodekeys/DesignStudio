@@ -268,7 +268,57 @@ OPEN QUESTIONS FOR AMANDA:
   6. Rackability — $25 setup fee still current? Max angle per style?
   7. Privacy gate pricing — same Easy Order Form workflow?
 
-NOTE: Price book PDFs are image-based (designed marketing collateral).
-Text extraction via pdf2json and pdf-parse returned 0 characters.
-All pricing data came from QUOTE_ENGINE_SPEC.md which was manually
-transcribed from the price book in a previous session.
+NOTE: Price book PDFs are image-based but pdf2json was able to extract
+text elements (165K chars from 72 pages). Full extraction saved to:
+  C:\Users\sarah\Desktop\PRICE_BOOK_3_26_EXTRACTED.md
+
+2026-04-05 — QUOTE_ENGINE_SPEC.md Price Update
+══════════════════════════════════════════════════
+
+Updated QUOTE_ENGINE_SPEC.md from May 2025 prices to March 2026 prices.
+Source: Ultra_Fence_Privacy_PriceBook_3_26LR_Digital.pdf + errata.
+
+Key price changes (March 2026 vs May 2025):
+  - Residential panels: +15-29% across all styles/heights
+  - Posts: +15% across all sizes
+  - LokkLatch: $43.75 → $58.50 (+34%)
+  - MagnaLatch: $162.00 → $186.50 (+15%)
+  - Standard Hinge: $29.00 → $33.50 (+16%)
+  - TRUClose: $83.00 → $95.50 (+15%)
+  - LokkLatch Deluxe: $133.00 → $175.00 (+32%)
+  - Drop Rod: $34.00 → $39.25 (+15%)
+  - Finials (quad/tri): $8.75 → $10.25 (+17%)
+  - Circles: $11.00 → $12.75 (+16%)
+  - Ball Cap 2.5": $25.25 → $29.00 (+15%)
+  - Ultra Adjustable Hinge: $290.00 → $290.00 (unchanged)
+  - Puppy picket surcharge: $57.00 (unchanged)
+
+Worked examples recalculated:
+  Example A (150LF Horizon 48"): $5,794 → $6,692 (+15.5%)
+  Example B (300LF Charleston 60" comm): $25,661 → $29,006 (+13%)
+
+2026-04-05 — pricing.js Updated to March 2026
+══════════════════════════════════════════════
+
+Updated grandview-quote-system/shared/pricing.js from May 2025 → March 2026.
+Authoritative source: C:\Users\sarah\Downloads\ULTRA_PRICEBOOK_MARCH2026_PARSED (1).md
+
+Changes made:
+  - All residential panel prices (standard + pro, 12 styles)
+  - All commercial panel prices (6 styles)
+  - All industrial panel prices (6 styles)
+  - Defender UAD-100 + UAD-101 prices
+  - All post prices (2x2, 2.5x2.5, 3x3, 4x4)
+  - All residential walk gate prices (standard + pro, 6 style groups)
+  - All accessories (caps, finials, circles, butterflies, scrolls)
+  - All hardware (hinges, latches, drop rod, EAK)
+  - All rails, flanges, misc items
+  - Added industrial TRUClose ($131.75), commercial Ultra hinge ($333.50)
+  - Added freight thresholds and Michigan freight rate
+  - Added Pro style mappings (savannah-pro, eclipse-pro, etc.)
+  - Fixed pool compliance in QUOTE_ENGINE_SPEC (spear styles NOT pool compliant)
+  - Fixed Haven variant documentation (Lite/Plus/Guard = config options, not SKUs)
+  - Confirmed Cambridge/UAL-100 NOT in March 2026 price book — likely discontinued
+  - Easy Order Form is v4.0 (not v3.3 as previously assumed)
+
+Cross-check: 16 key prices verified against authoritative parsed doc. All match.

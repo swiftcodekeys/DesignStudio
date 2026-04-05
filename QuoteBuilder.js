@@ -410,6 +410,9 @@ var StepGates = function(props) {
     return (
         <div className="qb-step">
             <h3 className="qb-question">Your Gates</h3>
+            <p className="qb-hint" style={{ margin: '-4px 0 16px', fontSize: '13px', color: '#5a6270' }}>
+                Walk and drive gates can be added to your quote. Estate and cantilever gates are custom order &mdash; call (855) FENCE-30.
+            </p>
             {data.gates.map(function(gate, idx) {
                 return (
                     <div key={idx} className="qb-run-card">

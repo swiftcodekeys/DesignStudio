@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FENCE_STYLES, ARCH_STYLES, POST_CAPS, FINIALS, ACCESSORIES } from './configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 
+var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
+
 function buildConfigSummary(config, isFence) {
     var styleList = isFence ? FENCE_TOOL_STYLES : FENCE_STYLES;
     var style = styleList.find(function(s) { return s.id === config.styleId; }) || styleList[0];
@@ -105,19 +107,46 @@ var QuoteModal = function(props) {
     summaryLines.push('Config URL: ' + configUrl);
     var summaryText = summaryLines.join('\n');
 
+    var sendingState = useState(false);
+    var sending = sendingState[0];
+    var setSending = sendingState[1];
+
     var handleSubmit = function(e) {
         e.preventDefault();
+        if (sending) return;
+        setSending(true);
+
         var productType = isFence ? 'Fence' : 'Gate';
-        var subject = encodeURIComponent('Design Studio ' + productType + ' Quote Request — ' + summary.style + ' ' + summary.color);
-        var body = encodeURIComponent(
-            'Name: ' + name + '\n' +
-            'Email: ' + email + '\n' +
-            'Phone: ' + phone + '\n\n' +
-            'Message:\n' + message + '\n\n' +
-            '--- Configuration ---\n' + summaryText
-        );
-        window.location.href = 'mailto:sales@grandviewfence.com?subject=' + subject + '&body=' + body;
-        setSent(true);
+        var nameParts = name.trim().split(/\s+/);
+        var payload = {
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: email.trim(),
+            phone: phone.trim(),
+            inquiryType: productType + ' Quote',
+            specialRequests: [
+                message.trim(),
+                '--- Configuration ---',
+                summaryText,
+            ].filter(Boolean).join('\n'),
+            source: 'design-studio-quote-modal',
+            timestamp: new Date().toISOString(),
+            pageUrl: configUrl,
+        };
+
+        fetch(GAS_ENDPOINT, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        })
+        .then(function() {
+            setSending(false);
+            setSent(true);
+        })
+        .catch(function(err) {
+            console.error('[QuoteModal] Submit error:', err);
+            setSending(false);
+            setSent(true); // Still show success — GAS is fire-and-forget, CORS may block response
+        });
     };
 
     var handleBackdropClick = function(e) {
@@ -131,8 +160,8 @@ var QuoteModal = function(props) {
                     <button className="quote-modal-close" onClick={onClose}>&times;</button>
                     <div className="quote-modal-sent">
                         <div className="quote-modal-sent-icon">&#10003;</div>
-                        <h2>Quote Request Sent</h2>
-                        <p>Your email client should have opened with your configuration details. If it didn't, call us directly:</p>
+                        <h2>Quote Request Received!</h2>
+                        <p>We'll email your detailed quote to <strong>{email}</strong> within 1 business day. Need it sooner?</p>
                         <div className="quote-modal-phone">
                             <strong>(855) FENCE-30</strong>
                             <span>(855) 336-2330</span>
@@ -200,7 +229,9 @@ var QuoteModal = function(props) {
                         <label htmlFor="qm-message">Message</label>
                         <textarea id="qm-message" rows="3" value={message} onChange={function(e) { setMessage(e.target.value); }} placeholder="Tell us about your project..." />
                     </div>
-                    <button type="submit" className="quote-modal-submit">Send Quote Request &rarr;</button>
+                    <button type="submit" className="quote-modal-submit" disabled={sending}>
+                        {sending ? 'Sending...' : 'Send Quote Request \u2192'}
+                    </button>
                 </form>
 
                 {onOpenBuilder && (

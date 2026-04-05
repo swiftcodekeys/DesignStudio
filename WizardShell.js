@@ -482,9 +482,12 @@ var WizardShell = function() {
             {/* ---- Step 3: Gates Question (only if gate not selected in Step 1) ---- */}
             {step === 3 && !hasGateZone && (
                 <div className="wizard-content">
-                    <h1 className="zone-heading">Do you need any gates?</h1>
-                    <p className="zone-subhead" style={{ marginBottom: 40 }}>
-                        Walk gates, driveway gates, or garden gates.
+                    <h1 className="zone-heading">Want to explore gate options?</h1>
+                    <p className="zone-subhead">
+                        Walk and drive gates can be added to your quote.
+                    </p>
+                    <p className="zone-subhead" style={{ marginBottom: 40, fontSize: '14px', opacity: 0.7 }}>
+                        Estate and cantilever gates are custom order &mdash; call (855) FENCE-30.
                     </p>
                     <div className="gate-cards">
                         <div
@@ -492,7 +495,7 @@ var WizardShell = function() {
                             onClick={function() { setGateAnswer('yes'); }}
                         >
                             <div className="gate-card-icon"><GateYesIcon /></div>
-                            <div className="gate-card-title">Yes, I need a gate</div>
+                            <div className="gate-card-title">Yes, add a gate</div>
                         </div>
                         <div
                             className={'gate-card' + (gateAnswer === 'no' ? ' selected' : '')}

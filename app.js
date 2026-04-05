@@ -174,6 +174,19 @@ var DesignStudio = function() {
     var setActiveTab = handleSceneChange;
 
     useEffect(function() {
+        // Check URL query param first: ?tab=fencing|backyard|gates|draw&view=quote
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var tabParam = params.get('tab');
+            var viewParam = params.get('view');
+            if (tabParam && ['fencing', 'backyard', 'gates', 'draw'].indexOf(tabParam) >= 0) {
+                setActiveTabRaw(tabParam);
+            }
+            if (viewParam === 'quote') {
+                setView('quote-builder');
+            }
+        } catch(e) {}
+        // Fallback: check localStorage (from wizard flow)
         try {
             var startScene = localStorage.getItem('gv_start_scene');
             if (startScene) {
@@ -210,7 +223,7 @@ var DesignStudio = function() {
     var setView = viewState[1];
 
     var handleGetQuote = function() {
-        setContactPopupOpen(true);
+        handleOpenQuoteBuilder();
     };
 
     var handleOpenQuoteBuilder = function() {

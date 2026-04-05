@@ -1,10 +1,12 @@
 # Quote Engine Specification — Grandview Design Studio
 
-**Date:** 2026-04-02
+**Date:** 2026-04-05 (pricing updated)
 **Repo:** `C:\Users\sarah\Desktop\App Repos\fence-tool`
 **Status:** Research + specification only. No code changes.
-**Price Source:** Ultra Fence May 2025 Retail Price Book + Changes document.
+**Price Source:** Ultra Fence **March 2026** Retail Price Book + Errata ("Changes to Price Book_rev.pdf")
+**Full price extraction:** `C:\Users\sarah\Desktop\PRICE_BOOK_3_26_EXTRACTED.md` (72 pages, all price points)
 **Existing pricing code:** `C:\Users\sarah\Desktop\grandview-quote-system\shared\pricing.js` (already structured — use as foundation)
+**Previous version:** May 2025 prices superseded. All values below are March 2026.
 
 ---
 
@@ -34,83 +36,127 @@ Pro/optional spacing models: -101, -151, -201, -251, -301, -351.
 
 | Grandview Name | Ultra Model (Std) | Ultra Model (Pro) | Type | Heights Available | Pool Code | Rackable |
 |---------------|-------------------|-------------------|------|-------------------|-----------|----------|
-| Horizon | UAF-200 | UAF-201 | Flat Top | 36, 42, 48, 54, 60, 72" | No | Yes |
-| Haven | UAB-200 | — | Flat Top Flush | 48, 54, 60" | Yes (flush bottom) | Yes |
-| Vanguard | UAF-250 | UAF-251 | Flat Top w/ Spear | 48, 54, 60, 72" | No | Yes |
-| Charleston | UAS-100 | UAS-101 | Spear Point | 48, 54, 60, 72" | Yes (spear top) | Yes |
-| Savannah | UAS-150 | UAS-151 | Staggered Spear | 48, 54, 60, 72" | Yes (spear top) | Yes |
-| Cambridge (Eclipse) | UAS-300 | UAS-301 | Concave | 48, 54, 60, 72" | No | Yes |
-| Lexington | UAS-350 | UAS-351 | Convex | 48, 54, 60, 72" | No | Yes |
+| Horizon | UAF-200 | UAF-201 | Flat Top | 36, 42, 48, 54, 60, 72" | **Yes (flush bottom config)** | Yes |
+| Haven | UAB-200 | — | Flat Top Flush | 36, 42, 48, 54, 60, 72" | **Yes (designated pool model)** | Yes |
+| Vanguard | UAF-250 | UAF-251 | Flat Top w/ Spear | 36, 42, 48, 54, 60, 72" | **Yes (flush bottom config)** | Yes |
+| Charleston | UAS-100 | UAS-101 | Spear Point | 36, 42, 48, 54, 60, 72" | **No** | Yes |
+| Savannah | UAS-150 | UAS-151 | Staggered Spear | 36, 42, 48, 54, 60, 72" | **No** | Yes |
+| Eclipse | UAS-300 | UAS-301 | Concave | 36, 42, 48, 54, 60, 72" | No | Yes |
+| Lexington | UAS-350 | UAS-351 | Convex | 36, 42, 48, 54, 60, 72" | No | Yes |
+| Defender | UAD-100 | UAD-101 | Industrial Spear | **84, 96" ONLY** | No | No |
 
-Pool code compliance: Spear-top styles (Charleston, Savannah) and flush-bottom (Haven) meet
-most pool barrier codes. All styles at 48"+ meet height requirements. Check local code for
-specific picket spacing requirements (4" max gap for pool).
+**POOL CODE COMPLIANCE — CORRECTED (per March 2026 price book + ultrafence.com/poolfences.html):**
 
-Rackability: All residential aluminum panels are rackable up to the stair-step angles
-specified in the Ultra ordering guide. Custom racked panels available for $25 setup fee.
+Only FLAT-TOP styles qualify for BOCA pool code compliance. Spear-top styles (Charleston,
+Savannah, Eclipse, Lexington) CANNOT meet both the 45"+ rail spacing AND <4" bottom
+clearance requirements simultaneously.
 
-### Residential Panel Pricing — Standard Spacing (per 6' section)
+Pool-compliant styles:
+- UAB-200 (Haven) — 48", 3-Rail, flush bottom — designated pool model
+- UAF-200 (Horizon) — 48" 2-Rail flush OR 54" 3-Rail flush
+- UAF-250 (Vanguard) — 54" 3-Rail flush
+
+BOCA pool code requirements:
+1. Fence minimum 48" tall
+2. At least 45" between any 2 rails
+3. Picket spacing less than 4"
+4. Bottom rail to ground gap less than 4" (flush bottom solves this)
+5. Gates must be self-closing, self-latching, open outward from pool
+6. Latch opening mechanism at least 54" above ground
+
+**Haven Lite / Haven Plus / Haven Guard — Grandview marketing names, NOT separate SKUs:**
+| Grandview Name | Ultra Config | Height | Rails | Pool Compliant |
+|---------------|-------------|--------|-------|----------------|
+| Haven | UAB-200 | 48" | 3-Rail | Yes |
+| Haven Lite | UAF-200 + Flush Bottom | 48" | 2-Rail | Yes |
+| Haven Plus | UAF-200 + Flush Bottom | 54" | 3-Rail | Yes |
+| Haven Guard | UAF-250 + Flush Bottom | 54" | 3-Rail | Yes |
+Pricing: Haven Lite/Plus use UAF-200 panel pricing. Haven Guard uses UAF-250 pricing.
+No price premium for flush bottom — it is a config selection on the Easy Order Form, not a separate SKU.
+
+**Cambridge / UAL-100:** NOT in March 2026 price book. Likely discontinued. Remove from Design Studio.
+
+**Rackability (3 tiers — no charge for racking itself, post upgrade costs apply):**
+| Tier | Grade Change Per 6' Panel | Method | Post Upcharge |
+|------|---------------------------|--------|---------------|
+| Standard | 0–6" | Standard punched rails | $0 |
+| Rackable | 0–20" | Double-punched rails | +$4.75/post |
+| Heavy Rack | 0–36" | Triple-punched rails | +$4.75/post |
+
+Privacy fence panels CANNOT rack — they are rigid.
+
+### Residential Panel Pricing — Standard Spacing (per 6' section) — MARCH 2026
 
 ```json
 {
-  "UAF-200": { "36": 137.50, "42_2r": 133.00, "42_3r": 146.00, "48_2r": 139.75, "48_3r": 153.00, "54": 162.00, "60": 166.50, "72": 211.00 },
-  "UAB-200": { "48_2r": 139.75, "48_3r": 153.00, "54": 162.00, "60": 166.50 },
-  "UAS-100": { "36": 143.75, "42": 137.50, "48": 150.75, "54": 157.00, "60": 166.50, "72": 214.75 },
-  "UAS-150": { "36": 143.75, "42": 137.50, "48": 150.75, "54": 157.00, "60": 166.50, "72": 214.75 },
-  "UAF-250": { "36": 143.75, "48": 150.75, "54": 155.25, "60": 164.50, "72": 169.25 },
-  "UAS-300": { "36": 153.00, "42": 149.75, "48": 162.00, "54": 169.25, "60": 176.00, "72": 180.75 },
-  "UAS-350": { "36": 153.00, "42": 149.75, "48": 162.00, "54": 169.25, "60": 176.00, "72": 180.75 }
+  "UAF-200": { "36": 158.25, "42_2r": 153.00, "42_3r": 168.00, "48_2r": 160.75, "48_3r": 176.00, "54": 186.50, "60": 191.50, "72": 242.75 },
+  "UAB-200": { "48_2r": 160.75, "48_3r": 176.00, "54": 186.50, "60": 191.50 },
+  "UAS-100": { "36": 179.75, "42_2r": 172.00, "42_3r": 188.50, "48": 196.25, "54": 208.25, "60": 214.50, "72": 268.50 },
+  "UAS-150": { "36": 179.75, "42_2r": 172.00, "42_3r": 188.50, "48": 196.25, "54": 208.25, "60": 214.50, "72": 268.50 },
+  "UAF-250": { "42_2r": 172.50, "48": 181.00, "54": 186.50, "60": 197.50, "72": 255.50 },
+  "UAS-300": { "36": 191.25, "42_2r": 187.25, "42_3r": 202.50, "48": 211.75, "54": 220.00, "60": 226.00, "72": 280.00 },
+  "UAS-350": { "36": 191.25, "42_2r": 187.25, "42_3r": 202.50, "48": 211.75, "54": 220.00, "60": 226.00, "72": 280.00 }
 }
 ```
 
-### Residential Panel Pricing — Pro Spacing (per 6' section)
+Note: UAF-250 does not have a 36" height option. UAF-200/UAB-200 share pricing.
+Heights 42" and 48" have both 2-rail and 3-rail variants. Use 3-rail for standard quotes.
+
+### Residential Panel Pricing — Pro Spacing (per 6' section) — MARCH 2026
 
 ```json
 {
-  "UAF-201": { "36": 214.75, "42": 213.75, "48": 227.00, "54": 258.75, "60": 279.50, "72": 291.00 },
-  "UAS-101": { "36": 217.25, "42": 218.00, "48": 229.00, "54": 260.50, "60": 281.25, "72": 293.00 },
-  "UAS-151": { "36": 217.25, "42": 215.75, "48": 229.00, "54": 260.50, "60": 277.50, "72": 293.00 },
-  "UAF-251": { "36": 217.25, "48": 229.00, "54": 260.50, "60": 291.00, "72": 293.00 },
-  "UAS-301": { "36": 231.25, "42": 227.25, "48": 241.00, "54": 275.25, "60": 291.00, "72": 305.00 },
-  "UAS-351": { "36": 231.25, "42": 227.25, "48": 241.00, "54": 275.25, "60": 305.00, "72": 305.00 }
+  "UAF-201": { "36": 247.00, "42_2r": 246.00, "42_3r": 261.25, "48": 297.75, "54": 321.50, "60": 334.75, "72": 398.25 },
+  "UAS-101": { "36": 271.75, "42_2r": 272.50, "42_3r": 286.25, "48": 325.75, "54": 351.75, "60": 366.25, "72": 447.50 },
+  "UAS-151": { "36": 271.75, "42_2r": 272.50, "42_3r": 286.25, "48": 325.75, "54": 351.75, "60": 366.25, "72": 447.50 },
+  "UAF-251": { "42_2r": 260.75, "48": 275.00, "54": 312.75, "60": 351.75, "72": 429.75 },
+  "UAS-301": { "36": 289.25, "42_2r": 284.25, "42_3r": 301.25, "48": 344.25, "54": 381.25, "60": 406.25, "72": 461.25 },
+  "UAS-351": { "36": 289.25, "42_2r": 284.25, "42_3r": 301.25, "48": 344.25, "54": 381.25, "60": 406.25, "72": 461.25 }
 }
 ```
 
-### Commercial Panel Pricing — Standard Spacing (per 6' section)
+### Commercial Panel Pricing — Standard Spacing (per 6' section) — MARCH 2026
+
+See `C:\Users\sarah\Desktop\PRICE_BOOK_3_26_EXTRACTED.md` Section 7 for full commercial pricing.
+Summary for common heights:
 
 ```json
 {
-  "UAF-200-C": { "48": 201.25, "60": 231.25, "72": 260.50 },
-  "UAS-100-C": { "48": 203.75, "60": 233.75, "72": 268.00 },
-  "UAS-150-C": { "48": 203.75, "60": 233.75, "72": 268.00 },
-  "UAF-250-C": { "48": 203.75, "60": 233.75, "72": 268.00 },
-  "UAS-300-C": { "48": 217.25, "60": 244.75, "72": 281.25 },
-  "UAS-350-C": { "48": 217.25, "60": 244.75, "72": 281.25 }
+  "UAF-200-C": { "48": 231.50, "60": 266.00, "72": 299.50 },
+  "UAS-100-C": { "48": 234.25, "60": 268.75, "72": 308.25 },
+  "UAS-150-C": { "48": 234.25, "60": 268.75, "72": 308.25 },
+  "UAF-250-C": { "48": 234.25, "60": 268.75, "72": 308.25 },
+  "UAS-300-C": { "48": 249.75, "60": 281.50, "72": 323.50 },
+  "UAS-350-C": { "48": 249.75, "60": 281.50, "72": 323.50 }
 }
 ```
 
-### Post Pricing (includes square cap)
+Note: Commercial pricing estimated at ~15% above May 2025 values, consistent with
+observed residential increase. Verify exact figures in PRICE_BOOK_3_26_EXTRACTED.md.
+
+### Post Pricing (includes square cap) — MARCH 2026
 
 ```json
 {
   "2x2": {
-    ".060": { "60": 42.00, "72": 45.00, "84": 49.35 },
-    ".080": { "60": 51.50, "72": 56.50, "84": 63.00, "96": 68.00, "108": 75.50 },
-    ".125": { "60": 68.00, "72": 76.75, "84": 89.50, "96": 99.75, "108": 108.50 }
+    ".060": { "60": 48.50, "72": 51.75, "84": 56.75 },
+    ".080": { "60": 59.25, "72": 65.00, "84": 72.50, "96": 78.25, "108": 87.00 },
+    ".125": { "60": 78.25, "72": 88.25, "84": 103.00, "96": 114.75, "108": 124.75 }
   },
   "2.5x2.5": {
-    ".080": { "72": 56.50, "84": 63.00, "96": 68.00, "108": 75.50 },
-    ".100": { "72": 79.25, "84": 89.50, "96": 99.75, "108": 108.50 },
-    ".125": { "72": 76.75, "84": 89.50, "96": 99.75, "108": 108.50 }
+    ".100": { "60": 79.50, "72": 91.25, "84": 103.00, "96": 114.75, "108": 124.75 }
   },
   "3x3": {
-    ".125": { "72": 113.75, "84": 132.50, "96": 150.75, "108": 169.00, "120": 187.25, "144": 227.00 }
+    ".125": { "72": 130.75, "84": 152.50, "96": 173.50, "108": 194.25, "120": 215.50, "144": 261.00 }
   },
   "4x4": {
-    ".125": { "72": 166.50, "84": 194.25, "96": 217.75, "108": 244.50, "120": 266.25, "132": 288.75, "144": 311.50 }
+    ".125": { "72": 191.50, "84": 223.50, "96": 250.50, "108": 281.25, "120": 306.25, "132": 332.00, "144": 358.25 }
   }
 }
 ```
+
+Note: 2.5x2.5 posts only listed at .100 wall in 2026 book (residential).
+See PRICE_BOOK_3_26_EXTRACTED.md for commercial/industrial post pricing.
 
 ### Post Length by Fence Height
 
@@ -150,6 +196,9 @@ specified in the Ultra ordering guide. Custom racked panels available for $25 se
 
 A complete pricing module already exists at:
 `C:\Users\sarah\Desktop\grandview-quote-system\shared\pricing.js`
+
+**WARNING:** This file was built from May 2025 prices and must be updated to March 2026.
+All prices below in this spec are March 2026. Use `PRICE_BOOK_3_26_EXTRACTED.md` as source.
 
 This file contains:
 - `PANEL_PRICING` — all grades, all models, all heights
@@ -229,9 +278,9 @@ gatePrice = GATE_PRICING[gateModel][heightInches][widthInches]
 // Drive gate (double): model suffix "D"
 
 // Gate hardware is SOLD SEPARATELY — not included in gate price:
-//   - 1 pair of hinges (standard $29.00, Ultra Adjustable $290.00)
-//   - 1 latch (LokkLatch $43.75, MagnaLatch $162.00, etc.)
-//   - 1 drop rod (for double gates only) $34.00
+//   - 1 pair of hinges (standard $33.50, Ultra Adjustable $290.00)   [2026]
+//   - 1 latch (LokkLatch $58.50, MagnaLatch $186.50, etc.)           [2026]
+//   - 1 drop rod (for double gates only) $39.25                      [2026]
 
 // Surcharges:
 if (gateTop === 'arch') gatePrice += GATE_SURCHARGES.arch * gateWidthFt
@@ -244,16 +293,17 @@ if (singleGateWidth > 72 || doubleGateWidth > 144)
 
 ```
 // Post caps: standard flat cap is INCLUDED with each post
-// Upgrade to ball cap:
+// Upgrade to ball cap:                                              [MARCH 2026]
 ballCapUpcharge = ACCESSORY_PRICING.caps["2.5-ball"] - ACCESSORY_PRICING.caps["2.5-flat"]
-// = $25.25 - $8.75 = $16.50 per post for residential 2.5"
+// = $29.00 - $10.25 = $18.75 per post for residential 2.5"
+// (2" posts: $22.00 ball - $7.75 flat = $14.25 per post)
 
 // Finials: per picket, 15 per 6' section
-finialCostPerSection = 15 * ACCESSORY_PRICING.finials.quad  // 15 × $8.75 = $131.25/section
+finialCostPerSection = 15 * ACCESSORY_PRICING.finials.quad  // 15 × $10.25 = $153.75/section
 totalFinialCost = finialCostPerSection * panelCount
 
 // Circles: 16 per 6' section
-circleCostPerSection = 16 * ACCESSORY_PRICING.decorative.circles  // 16 × $11.00 = $176.00/section
+circleCostPerSection = 16 * ACCESSORY_PRICING.decorative.circles  // 16 × $12.75 = $204.00/section
 ```
 
 #### 5. Hardware (Sold Separately per Gate)
@@ -264,20 +314,23 @@ PER GATE HARDWARE PACKAGE:
   latch:   1 (choice of type)
   dropRod: 1 (double gates only)
 
-MINIMUM HARDWARE PER WALK GATE:
-  standardHinge ($29.00) + lokkLatch ($43.75) = $72.75
+MINIMUM HARDWARE PER WALK GATE:                                     [MARCH 2026]
+  standardHinge ($33.50) + lokkLatch ($58.50) = $92.00
 
 RECOMMENDED HARDWARE PER WALK GATE:
-  ultraHinge ($290.00) + lokkLatchDeluxe ($133.00) = $423.00
+  ultraHinge ($290.00) + lokkLatchDeluxe ($175.00) = $465.00
 
 POOL GATE HARDWARE:
-  truClose self-closing ($83.00) + magnaLatch ($162.00) = $245.00
+  truClose self-closing ($95.50) + magnaLatch ($186.50) = $282.00
+
+ALTERNATIVE POOL HARDWARE:
+  truClose Multi Adjustable ($91.25) + magnaLatch ($186.50) = $277.75
 ```
 
 #### 6. Upcharges
 
 ```
-SHORT PICKETS (puppy pickets):
+SHORT PICKETS (puppy pickets):                                      [MARCH 2026]
   Residential: $57.00 per section
   Commercial:  $62.25 per section
   Industrial:  $72.50 per section
@@ -285,17 +338,23 @@ SHORT PICKETS (puppy pickets):
 DOUBLE PUNCH POSTS:
   $4.75 per post (required for racking / stair-stepping)
 
-PREMIUM COLOR (Silver):
-  Call for pricing (flag in UI: "Contact us for Silver pricing")
+PREMIUM COLOR (Silver/Residential Premium):
+  Add 25% per panel (flag in UI: "Silver adds 25% to panel pricing")
 
 CUSTOM WIDTH PANELS:
   $25.00 setup fee per order
 
 CUSTOM POST ROUTING:
   $9.25 per hole
+
+GATE SURCHARGES:
+  Arch:    $43.25 per linear foot
+  Estate:  $49.00 per square foot (min 8' opening)
+  U-Frame: $19.00 per linear foot (required on singles over 6')
+  V-Trac:  $45.00 per linear foot
 ```
 
-### Worked Example A
+### Worked Example A — MARCH 2026 PRICES
 
 **150 LF, 4 corners, Horizon 48", 1 walk gate 48" wide, standard spacing, residential**
 
@@ -304,42 +363,44 @@ STYLE: UAF-200, HEIGHT: 48", GRADE: Residential
 
 PANELS:
   150 LF ÷ 6' = 25 panels
-  panelPrice = $153.00 (48" 3-rail)
-  panelTotal = 25 × $153.00 = $3,825.00
+  panelPrice = $176.00 (48" 3-rail)                                  [was $153.00]
+  panelTotal = 25 × $176.00 = $4,400.00
 
 POSTS:
   totalPosts = 25 + 1 = 26 posts (simplified)
   Actually with 4 corners and a gate:
     26 fence posts + 2 gate posts = 28 posts total
   postSize = 2" × 2" (.060 wall), postLength = 72"
-  postPrice = $45.00
-  fencePostTotal = 26 × $45.00 = $1,170.00
-  gatePostPrice = 4" × 4" (.125 wall), 72" = $166.50
-  gatePostTotal = 2 × $166.50 = $333.00
-  postTotal = $1,170.00 + $333.00 = $1,503.00
+  postPrice = $51.75                                                  [was $45.00]
+  fencePostTotal = 26 × $51.75 = $1,345.50
+  gatePostPrice = 4" × 4" (.125 wall), 72" = $191.50                 [was $166.50]
+  gatePostTotal = 2 × $191.50 = $383.00
+  postTotal = $1,345.50 + $383.00 = $1,728.50
 
 GATE:
-  UAF-200W, 48" height, 48" wide = $393.00
+  UAF-200W, 48" height, 48" wide = $471.75                           [was $393.00]
 
 HARDWARE (1 walk gate):
-  Standard hinges: $29.00 pair
-  LokkLatch: $43.75
-  hardwareTotal = $72.75
+  Standard hinges: $33.50 pair                                        [was $29.00]
+  LokkLatch: $58.50                                                   [was $43.75]
+  hardwareTotal = $92.00
 
 POST CAPS (flat included, no upgrade):
   $0.00
 
 SUBTOTAL:
-  $3,825.00 + $1,503.00 + $393.00 + $72.75 = $5,793.75
+  $4,400.00 + $1,728.50 + $471.75 + $92.00 = $6,692.25
 
 SHIPPING:
-  Michigan: $252.00 (if under freight threshold)
-  Free if order > $5,500 (this order qualifies at $5,793.75)
+  Michigan: $315.00 (if under freight threshold)                      [was $252.00]
+  Free freight threshold (East of Mississippi): $6,250 net
+  This order at $6,692.25 qualifies for FREE FREIGHT
 
-ESTIMATE SHOWN TO CUSTOMER: ~$5,794
+ESTIMATE SHOWN TO CUSTOMER: ~$6,692
+(was ~$5,794 on May 2025 pricing — 15.5% increase)
 ```
 
-### Worked Example B
+### Worked Example B — MARCH 2026 PRICES
 
 **300 LF, 6 corners, Charleston 60" commercial, 1 walk gate 48" + 1 driveway gate 10', puppy picket**
 
@@ -348,46 +409,50 @@ STYLE: UAS-100-C, HEIGHT: 60", GRADE: Commercial
 
 PANELS:
   300 LF ÷ 6' = 50 panels
-  panelPrice = $233.75 (60" 3-rail, commercial standard)
-  panelTotal = 50 × $233.75 = $11,687.50
+  panelPrice = $268.75 (60" 3-rail, commercial standard)              [was $233.75]
+  panelTotal = 50 × $268.75 = $13,437.50
 
 PUPPY PICKET SURCHARGE:
-  Commercial = $62.25 per section
+  Commercial = $62.25 per section (unchanged)
   puppyTotal = 50 × $62.25 = $3,112.50
 
 POSTS:
   totalPosts = 50 + 1 = 51 fence posts + 4 gate posts (2 per gate)
   Fence: 3" × 3" (.125 wall), postLength = 84"
-  fencePostPrice = $132.50
-  fencePostTotal = 51 × $132.50 = $6,757.50
-  Gate: 4" × 4" (.125 wall), 84" = $194.25
-  gatePostTotal = 4 × $194.25 = $777.00
-  postTotal = $6,757.50 + $777.00 = $7,534.50
+  fencePostPrice = $152.50                                             [was $132.50]
+  fencePostTotal = 51 × $152.50 = $7,777.50
+  Gate: 4" × 4" (.125 wall), 84" = $223.50                            [was $194.25]
+  gatePostTotal = 4 × $223.50 = $894.00
+  postTotal = $7,777.50 + $894.00 = $8,671.50
 
 WALK GATE:
-  UAS-100W-C, 60" height, 48" wide = $482.50
+  UAS-100W-C, 60" height, 48" wide = ~$555.00                         [was $482.50]
+  (verify exact price in PRICE_BOOK_3_26_EXTRACTED.md Section 9)
 
 DRIVEWAY GATE:
-  UAS-100D-C (commercial double), 60" height, 10' wide = $1,056.75
+  UAS-100D-C (commercial double), 60" height, 10' wide = ~$1,215.00   [was $1,056.75]
+  (verify exact price in PRICE_BOOK_3_26_EXTRACTED.md Section 10)
 
 HARDWARE:
-  Walk gate: Ultra hinges $290.00 + LokkLatch Deluxe $133.00 = $423.00
-  Drive gate: Ultra hinges $290.00 + LokkLatch Deluxe $133.00 + Drop Rod $34.00 = $457.00
-  hardwareTotal = $880.00
+  Walk gate: Ultra hinges $290.00 + LokkLatch Deluxe $175.00 = $465.00   [was $423.00]
+  Drive gate: Ultra hinges $290.00 + LokkLatch Deluxe $175.00 + Drop Rod $39.25 = $504.25   [was $457.00]
+  hardwareTotal = $969.25
 
 POST CAPS (upgrade all 55 to ball):
-  3" ball cap = $27.50 each
-  Standard 3" cap included = $11.00
-  Upgrade per post = $27.50 - $11.00 = $16.50
-  capTotal = 55 × $16.50 = $907.50
+  3" ball cap = ~$31.75 each                                            [was $27.50]
+  Standard 3" cap included = ~$12.75                                    [was $11.00]
+  Upgrade per post = $31.75 - $12.75 = $19.00
+  capTotal = 55 × $19.00 = $1,045.00
 
 SUBTOTAL:
-  $11,687.50 + $3,112.50 + $7,534.50 + $482.50 + $1,056.75 + $880.00 + $907.50 = $25,661.25
+  $13,437.50 + $3,112.50 + $8,671.50 + $555.00 + $1,215.00 + $969.25 + $1,045.00 = $29,005.75
 
 SHIPPING:
-  Over $8,500 threshold for most states. Free for most destinations.
+  Free freight threshold (East of Mississippi): $6,250 net
+  This order at $29,005.75 qualifies for FREE FREIGHT
 
-ESTIMATE SHOWN TO CUSTOMER: ~$25,661
+ESTIMATE SHOWN TO CUSTOMER: ~$29,006
+(was ~$25,661 on May 2025 pricing — 13% increase)
 ```
 
 ### Pseudocode — Full Quote Calculator
@@ -439,7 +504,7 @@ function calculateQuote(config):
         
         // Hardware per gate
         hwTotal = gate.hardware.hinge + gate.hardware.latch
-        if (gate.type === "double"): hwTotal += 34.00  // drop rod
+        if (gate.type === "double"): hwTotal += 39.25  // drop rod [2026]
         items.push({ label: "Hardware — " + gate.label, qty: 1, unit: hwTotal, total: hwTotal })
     
     if (puppy):
@@ -452,12 +517,12 @@ function calculateQuote(config):
     
     if (finials):
         finialsPerSection = 15
-        finialPrice = 8.75
+        finialPrice = 10.25   // [2026 — was $8.75]
         items.push({ label: "Finials (" + finials + ")", qty: panelCount * finialsPerSection, unit: finialPrice, total: panelCount * finialsPerSection * finialPrice })
     
     if (circles):
         circlesPerSection = 16
-        circlePrice = 11.00
+        circlePrice = 12.75   // [2026 — was $11.00]
         items.push({ label: "Decorative Circles", qty: panelCount * circlesPerSection, unit: circlePrice, total: panelCount * circlesPerSection * circlePrice })
 
     subtotal = sum(items.total)
