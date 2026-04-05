@@ -209,6 +209,10 @@ var WizardShell = function() {
     }, []);
 
     // Calculate total steps (skip gate question if gate already selected)
+    var zoneOrder = ['front', 'back', 'gate'];
+    var sortedZones = selectedZones.slice().sort(function(a, b) {
+        return zoneOrder.indexOf(a) - zoneOrder.indexOf(b);
+    });
     var hasGateZone = selectedZones.indexOf('gate') >= 0;
     var fenceZones = selectedZones.filter(function(z) { return z !== 'gate'; });
     var totalSteps = hasGateZone ? 3 : 4; // zone, configure, (gates?), measure
@@ -249,7 +253,7 @@ var WizardShell = function() {
         });
 
         // Find next unconfigured zone
-        var allZones = selectedZones;
+        var allZones = sortedZones;
         var currentIdx = allZones.indexOf(currentZone);
         var nextZone = null;
         for (var i = currentIdx + 1; i < allZones.length; i++) {
@@ -356,7 +360,7 @@ var WizardShell = function() {
                             className="wizard-btn-primary"
                             disabled={selectedZones.length === 0}
                             onClick={function() {
-                                setCurrentZone(selectedZones[0]);
+                                setCurrentZone(sortedZones[0]);
                                 setStep(2);
                             }}
                         >
@@ -376,7 +380,7 @@ var WizardShell = function() {
                         {/* Zone pills (if multiple zones) */}
                         {selectedZones.length > 1 && (
                             <div className="wizard-zone-pills">
-                                {selectedZones.map(function(zoneId) {
+                                {sortedZones.map(function(zoneId) {
                                     var zone = ZONES.find(function(z) { return z.id === zoneId; });
                                     var isActive = zoneId === currentZone;
                                     var isDone = zonesConfigured[zoneId];
@@ -402,7 +406,7 @@ var WizardShell = function() {
                         <div className="wizard-config-header" style={{ padding: '20px 20px 0' }}>
                             <div className="wizard-config-label">
                                 Configuring{selectedZones.length > 1 ? ': ' + (ZONES.find(function(z) { return z.id === currentZone; }) || {}).label : ''}
-                                {selectedZones.length > 1 && ' (' + (selectedZones.indexOf(currentZone) + 1) + ' of ' + selectedZones.length + ')'}
+                                {selectedZones.length > 1 && ' (' + (sortedZones.indexOf(currentZone) + 1) + ' of ' + sortedZones.length + ')'}
                             </div>
                             <div className="wizard-config-title">Choose Your Style</div>
                         </div>
@@ -438,9 +442,9 @@ var WizardShell = function() {
                             <button
                                 className="wizard-btn-back"
                                 onClick={function() {
-                                    var idx = selectedZones.indexOf(currentZone);
+                                    var idx = sortedZones.indexOf(currentZone);
                                     if (idx > 0) {
-                                        setCurrentZone(selectedZones[idx - 1]);
+                                        setCurrentZone(sortedZones[idx - 1]);
                                     } else {
                                         setStep(1);
                                     }
@@ -449,7 +453,7 @@ var WizardShell = function() {
                                 &larr; Back
                             </button>
                             <button className="wizard-btn-primary" onClick={handleZoneNext}>
-                                {zonesConfigured[currentZone] || selectedZones.indexOf(currentZone) === selectedZones.length - 1
+                                {zonesConfigured[currentZone] || sortedZones.indexOf(currentZone) === sortedZones.length - 1
                                     ? 'Looks good, next \u2192'
                                     : 'Next zone \u2192'}
                             </button>
