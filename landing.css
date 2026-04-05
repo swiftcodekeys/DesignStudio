@@ -580,9 +580,10 @@
     margin-bottom: 0;
   }
 
-  /* Subhead hidden on mobile to save space — buttons more important */
   .hero-subhead {
-    display: none;
+    font-size: 14px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
   }
 
   /* Buttons group at bottom */

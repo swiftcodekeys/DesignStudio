@@ -503,37 +503,48 @@
   }
 
   .wizard-content {
-    padding: 24px 16px;
+    padding: 16px 16px;
+    justify-content: flex-start;
+  }
+
+  .zone-heading {
+    font-size: 22px;
+    margin: 0 0 6px;
+  }
+
+  .zone-subhead {
+    font-size: 13px;
+    margin: 0 0 16px;
   }
 
   .zone-cards {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   .zone-card {
-    padding: 16px 16px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
     text-align: left;
-    gap: 14px;
+    gap: 12px;
   }
 
   .zone-card-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     margin: 0;
     flex-shrink: 0;
   }
 
   .zone-card-title {
-    font-size: 15px;
+    font-size: 14px;
     margin: 0 0 2px;
   }
 
   .zone-card-desc {
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 11px;
+    line-height: 1.3;
   }
 
   .zone-card-check {
@@ -541,6 +552,17 @@
     right: 8px;
     width: 20px;
     height: 20px;
+  }
+
+  .wizard-actions {
+    margin-top: 16px;
+    gap: 8px;
+  }
+
+  .wizard-btn-primary {
+    height: 44px;
+    font-size: 14px;
+    min-width: 180px;
   }
 
   .gate-cards {
