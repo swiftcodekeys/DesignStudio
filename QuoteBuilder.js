@@ -18,11 +18,14 @@ var STEPS = [
 var ICON_MAP = { backyard: House, pool: SwimmingPool, front: Tree, full: MapPin, commercial: Buildings, other: GearSix };
 
 var STYLE_ID_MAP = {
-    'uaf_200': 'horizon', 'uaf_201': 'horizon-pro',
+    'uaf_200': 'horizon', 'uaf_201': 'horizon',
     'uaf_250': 'vanguard', 'uab_200': 'haven',
-    'uas_100': 'charleston', 'uas_101': 'charleston-pro',
-    'uas_150': 'savannah', 'uas_300': 'cambridge',
-    'uas_350': 'lexington', 'uap_100': 'privacy'
+    'uas_100': 'charleston', 'uas_101': 'charleston',
+    'uas_150': 'savannah', 'uas_300': 'charleston',
+    'uas_350': 'charleston', 'uap_100': 'horizon',
+    'horizon-pro': 'horizon', 'charleston-pro': 'charleston',
+    'cambridge': 'charleston', 'lexington': 'lexington',
+    'privacy': 'horizon',
 };
 
 function buildQuoteConfig(data) {
