@@ -86,8 +86,6 @@ var ContactPopup = function(props) {
 
     fetch(GAS_ENDPOINT, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
     })
       .then(function() {

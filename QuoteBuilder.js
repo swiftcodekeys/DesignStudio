@@ -801,8 +801,6 @@ var QuoteBuilder = function(props) {
         console.log('POSTING TO GAS', JSON.parse(JSON.stringify(payload)));
         fetch('https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec', {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(payload),
         })
         .then(function(res) { console.log('GAS response:', res.type, res.status); })
