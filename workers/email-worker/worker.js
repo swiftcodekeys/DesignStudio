@@ -5,7 +5,7 @@
 // ============================================================================
 
 var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
-var LOGO_URL = 'https://designstudio-csy.pages.dev/assets/logo-email.png';
+var LOGO_URL = 'https://studio.grandviewfence.com/assets/logo-email.png';
 
 var CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
