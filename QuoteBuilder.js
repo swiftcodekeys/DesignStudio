@@ -761,43 +761,48 @@ var QuoteBuilder = function(props) {
         var result = calculateQuote(quoteConfig);
         setQuoteResult(result);
 
-        // Build mailto as backup
+        // POST to Apps Script
         var totalFt = 0;
         data.runs.forEach(function(r) { totalFt += (r.lengthFt || 0); });
         var selectedStyle = FENCE_STYLES_LIST.find(function(s) { return s.id === data.style; });
         var selectedColor = COLORS_LIST.find(function(c) { return c.id === data.color; });
+        var extrasList = Object.keys(data.extras || {}).filter(function(k) { return data.extras[k]; });
 
-        var summary = [
-            'Quote Reference: ' + id,
-            'Project Type: ' + data.projectType,
-            'ZIP: ' + data.zip,
-            'Total Footage: ' + totalFt + ' ft (' + data.runs.length + ' runs, ' + data.corners + ' corners)',
-            'Style: ' + (selectedStyle ? selectedStyle.name : data.style),
-            'Height: ' + data.height + '"',
-            'Color: ' + (selectedColor ? selectedColor.name : data.color),
-            'Pickets: ' + data.picketSpacing,
-            'Post Cap: ' + data.postCap,
-        ];
+        var nameParts = (data.name || '').trim().split(/\s+/);
+        var payload = {
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: (data.email || '').trim(),
+            phone: (data.phone || '').trim(),
+            zipCode: data.zip || '',
+            linearFootage: totalFt,
+            fenceHeight: data.height,
+            style: selectedStyle ? selectedStyle.name : data.style,
+            grade: data.grade || 'residential',
+            inquiryType: data.projectType || 'quote',
+            accessories: extrasList.join(', '),
+            location: data.shippingAddress || '',
+            specialRequests: [
+                data.installPlan ? 'Install: ' + data.installPlan : '',
+                data.needsGates ? 'Gates: ' + data.gates.map(function(g) { return g.type + ' ' + g.width + '" ' + g.topStyle; }).join('; ') : '',
+                data.company ? 'Company: ' + data.company : '',
+                'Color: ' + (selectedColor ? selectedColor.name : data.color),
+                'Quote Ref: ' + id,
+            ].filter(Boolean).join(' | '),
+            source: 'design-studio-quote',
+            timestamp: new Date().toISOString(),
+            quoteId: id,
+            subtotal: result.subtotal,
+        };
 
-        if (data.needsGates) {
-            summary.push('Gates: ' + data.gates.map(function(g) { return g.type + ' ' + g.width + '" ' + g.topStyle; }).join('; '));
-        }
-
-        var extrasList = Object.keys(data.extras).filter(function(k) { return data.extras[k]; });
-        if (extrasList.length) summary.push('Extras: ' + extrasList.join(', '));
-
-        summary.push('Install: ' + data.installPlan);
-
-        summary.push('Shipping: ' + data.shippingAddress);
-        summary.push('');
-        summary.push('Name: ' + data.name);
-        summary.push('Email: ' + data.email);
-        summary.push('Phone: ' + data.phone);
-        if (data.company) summary.push('Company: ' + data.company);
-
-        var subject = encodeURIComponent('Grandview Fence Quote Request — ' + id);
-        var body = encodeURIComponent(summary.join('\n'));
-        window.location.href = 'mailto:sales@grandviewfence.com?subject=' + subject + '&body=' + body;
+        try {
+            fetch('https://script.google.com/a/macros/grandviewfence.com/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload),
+            });
+        } catch (e) { console.error('[QuoteBuilder] Submit error:', e); }
 
         // Store with ID
         try {

@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 
-var GAS_ENDPOINT = (typeof process !== 'undefined' && process.env && process.env.GAS_ENDPOINT) || '';
+var GAS_ENDPOINT = 'https://script.google.com/a/macros/grandviewfence.com/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
 
 var TOPICS = [
   { value: '', label: 'Select a topic...', disabled: true },
@@ -71,12 +71,14 @@ var ContactPopup = function(props) {
     setStatus('sending');
     setErrorMsg('');
 
+    var nameParts = name.trim().split(/\s+/);
     var payload = {
-      topic: topic,
-      name: name.trim(),
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
       email: email.trim(),
       phone: phone.trim(),
-      message: message.trim(),
+      inquiryType: topic,
+      specialRequests: message.trim(),
       source: 'design-studio-contact',
       timestamp: new Date().toISOString(),
       pageUrl: window.location.href,
@@ -84,17 +86,11 @@ var ContactPopup = function(props) {
 
     fetch(GAS_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
     })
-      .then(function(res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json().catch(function() { return { status: 'ok' }; });
-      })
-      .then(function(data) {
-        if (data.status === 'error') {
-          throw new Error(data.message || 'Server error');
-        }
+      .then(function() {
         setStatus('success');
         setCooldown(true);
         setTimeout(function() { setCooldown(false); }, 30000);
