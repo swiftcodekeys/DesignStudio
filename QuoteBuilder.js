@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { House, SwimmingPool, Tree, MapPin, Buildings, GearSix, ArrowLeft, ArrowRight, Check, X, Plus } from '@phosphor-icons/react';
 import { calculateQuote } from './pricingEngine';
+import ContactPopup from './ContactPopup';
 
 var STORAGE_KEY = 'gv_quote_builder';
 var STEPS = [
@@ -638,9 +639,9 @@ var StepQuoteDisplay = function(props) {
             <p className="qb-quote-followup">We'll follow up at <strong>{data.email}</strong> within 1 business day.</p>
 
             <div className="qb-quote-actions">
-                <a className="qb-action-btn qb-action-primary" href="tel:8553362330">
-                    Talk to an Expert — (855) FENCE-30
-                </a>
+                <button className="qb-action-btn qb-action-primary" onClick={props.onContactClick}>
+                    Talk to an Expert
+                </button>
                 <button className="qb-action-btn qb-action-disabled" disabled>
                     Buy Now — Coming Soon
                 </button>
@@ -702,6 +703,10 @@ var QuoteBuilder = function(props) {
     var quoteResultState = useState(null);
     var quoteResult = quoteResultState[0];
     var setQuoteResult = quoteResultState[1];
+
+    var contactOpenState = useState(false);
+    var contactOpen = contactOpenState[0];
+    var setContactOpen = contactOpenState[1];
 
     // Auto-apply pool defaults
     useEffect(function() {
@@ -812,7 +817,7 @@ var QuoteBuilder = function(props) {
             case 5: return <StepInstall data={data} update={update} />;
             case 6: return <StepReview data={data} update={update} goToStep={goToStep} />;
             case 7: return quoteResult
-                ? <StepQuoteDisplay quoteId={quoteId} quoteResult={quoteResult} data={data} onBackToStudio={onClose} />
+                ? <StepQuoteDisplay quoteId={quoteId} quoteResult={quoteResult} data={data} onBackToStudio={onClose} onContactClick={function() { setContactOpen(true); }} />
                 : <StepConfirm quoteId={quoteId} onBackToStudio={onClose} />;
             default: return null;
         }
@@ -857,7 +862,7 @@ var QuoteBuilder = function(props) {
                         )}
                     </div>
                     <div className="qb-footer-center">
-                        <span className="qb-escape">Prefer to talk? <strong>(855) FENCE-30</strong></span>
+                        <span className="qb-escape" style={{ cursor: 'pointer' }} onClick={function() { setContactOpen(true); }}>Prefer to talk? <strong>Contact Us</strong></span>
                     </div>
                     <div className="qb-footer-right">
                         {isReview ? (
@@ -872,6 +877,7 @@ var QuoteBuilder = function(props) {
                     </div>
                 </div>
             )}
+            <ContactPopup isOpen={contactOpen} onClose={function() { setContactOpen(false); }} />
         </div>
     );
 };
