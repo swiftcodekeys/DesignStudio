@@ -795,14 +795,15 @@ var QuoteBuilder = function(props) {
             subtotal: result.subtotal,
         };
 
-        try {
-            fetch('https://script.google.com/a/macros/grandviewfence.com/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec', {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload),
-            });
-        } catch (e) { console.error('[QuoteBuilder] Submit error:', e); }
+        console.log('POSTING TO GAS', JSON.parse(JSON.stringify(payload)));
+        fetch('https://script.google.com/a/macros/grandviewfence.com/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec', {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload),
+        })
+        .then(function(res) { console.log('GAS response:', res.type, res.status); })
+        .catch(function(err) { console.error('GAS fetch error:', err); });
 
         // Store with ID
         try {
