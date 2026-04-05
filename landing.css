@@ -570,8 +570,8 @@
 
   .hero-content {
     padding: 0 24px 60px;
-    justify-content: flex-start;
-    padding-top: 24px;
+    justify-content: flex-end;
+    padding-bottom: 80px;
   }
 
   .hero-trust-strip {

@@ -507,6 +507,39 @@
 
   .zone-cards {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .zone-card {
+    padding: 16px 16px;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 14px;
+  }
+
+  .zone-card-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .zone-card-title {
+    font-size: 15px;
+    margin: 0 0 2px;
+  }
+
+  .zone-card-desc {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .zone-card-check {
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
   }
 
   .gate-cards {
