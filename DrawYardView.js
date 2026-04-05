@@ -241,7 +241,7 @@ var AddressEntry = function(props) {
 };
 
 // ============================================================
-// Drawing Map (with floating action buttons + instruction overlay)
+// Drawing Map — supports fence draw mode + gate placement mode
 // ============================================================
 var DrawingMap = function(props) {
     var location = props.location;
@@ -250,6 +250,8 @@ var DrawingMap = function(props) {
     var activeLineIndex = props.activeLineIndex;
     var setActiveLineIndex = props.setActiveLineIndex;
     var drawMode = props.drawMode;
+    var gatePlaceMode = props.gatePlaceMode; // { type, widthInches, arch }
+    var onGatePlaced = props.onGatePlaced;
     var undoStack = props.undoStack;
     var setUndoStack = props.setUndoStack;
     var redoStack = props.redoStack;
@@ -258,9 +260,7 @@ var DrawingMap = function(props) {
     var onUndo = props.onUndo;
     var onClear = props.onClear;
     var canUndo = props.canUndo;
-    // DRAW 6 props
     var gateMarkers = props.gateMarkers;
-    var onAddGateMarker = props.onAddGateMarker;
     var onRemoveGateMarker = props.onRemoveGateMarker;
 
     var mapRef = useRef(null);
@@ -269,22 +269,12 @@ var DrawingMap = function(props) {
     var polylinesRef = useRef([]);
     var labelsRef = useRef([]);
     var gateMarkersRef = useRef([]);
+    var gatePreviewRef = useRef(null); // orange preview polyline following mouse
 
-    // DRAW 5: instruction overlay
+    // Instruction overlay
     var instructionState = useState(true);
     var showInstructions = instructionState[0];
     var setShowInstructions = instructionState[1];
-
-    // DRAW 6: gate popup state
-    var gatePopupState = useState(null); // { lineIndex, segmentIndex, lat, lng }
-    var gatePopup = gatePopupState[0];
-    var setGatePopup = gatePopupState[1];
-    var gateTypeState = useState('walk');
-    var gateType = gateTypeState[0];
-    var setGateType = gateTypeState[1];
-    var gateWidthState = useState(48);
-    var gateWidth = gateWidthState[0];
-    var setGateWidth = gateWidthState[1];
 
     // Track max native zoom for this location
     var maxZoomRef = useRef(20);
@@ -294,12 +284,10 @@ var DrawingMap = function(props) {
         if (!window.google || !mapRef.current) return;
         if (mapInstanceRef.current) return;
 
-        // Query best native satellite zoom before creating map
         getMaxNativeZoom(location.lat, location.lng, function(nativeMax) {
-            // Cap at native max (never allow upscaled blurry tiles)
             var safeMax = Math.min(nativeMax, 21);
             maxZoomRef.current = safeMax;
-            var initialZoom = Math.min(19, safeMax); // start one below max for context
+            var initialZoom = Math.min(19, safeMax);
 
             mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
                 center: { lat: location.lat, lng: location.lng },
@@ -316,24 +304,111 @@ var DrawingMap = function(props) {
             });
             window.__drawMapInstance = mapInstanceRef.current;
 
-            // Click handler for placing nodes
+            // Click handler — routes to fence draw or gate placement
             mapInstanceRef.current.addListener('click', function(e) {
-                if (!drawMode) return;
                 var lat = e.latLng.lat();
                 var lng = e.latLng.lng();
-                window.__drawMapClick({ lat: lat, lng: lng });
-                setShowInstructions(false);
+                if (window.__gatePlaceMode) {
+                    window.__drawMapGatePlace({ lat: lat, lng: lng });
+                } else if (window.__drawModeActive) {
+                    window.__drawMapClick({ lat: lat, lng: lng });
+                    setShowInstructions(false);
+                }
             });
 
-            // Right-click removes last point
+            // Right-click removes last point (draw mode only)
             mapInstanceRef.current.addListener('rightclick', function() {
-                if (!drawMode) return;
-                window.__drawMapRightClick();
+                if (window.__drawModeActive && !window.__gatePlaceMode) {
+                    window.__drawMapRightClick();
+                }
+            });
+
+            // Mouse move — update gate preview line
+            mapInstanceRef.current.addListener('mousemove', function(e) {
+                if (!window.__gatePlaceMode || !gatePreviewRef.current) return;
+                var lat = e.latLng.lat();
+                var lng = e.latLng.lng();
+                var widthFt = window.__gatePlaceWidthFt || 4;
+                // Compute a short line segment centered on mouse, perpendicular-ish
+                var halfM = (widthFt / 2) / METERS_TO_FEET;
+                if (window.google.maps.geometry) {
+                    var center = new window.google.maps.LatLng(lat, lng);
+                    var p1 = window.google.maps.geometry.spherical.computeOffset(center, halfM, 90);
+                    var p2 = window.google.maps.geometry.spherical.computeOffset(center, halfM, 270);
+                    gatePreviewRef.current.setPath([p1, p2]);
+                    gatePreviewRef.current.setVisible(true);
+                }
             });
         });
     }, [location]);
 
-    // Expose click handler via window (avoids stale closure)
+    // Sync draw mode flag to window for closure-safe access
+    useEffect(function() {
+        window.__drawModeActive = drawMode;
+    }, [drawMode]);
+
+    // Sync gate placement mode to window
+    useEffect(function() {
+        window.__gatePlaceMode = !!gatePlaceMode;
+        window.__gatePlaceWidthFt = gatePlaceMode ? gatePlaceMode.widthInches / 12 : 0;
+
+        // Create or remove preview polyline
+        if (gatePlaceMode && mapInstanceRef.current && !gatePreviewRef.current) {
+            gatePreviewRef.current = new window.google.maps.Polyline({
+                path: [],
+                strokeColor: '#D4753A',
+                strokeOpacity: 1,
+                strokeWeight: 5,
+                map: mapInstanceRef.current,
+                clickable: false,
+                visible: false,
+            });
+        }
+        if (!gatePlaceMode && gatePreviewRef.current) {
+            gatePreviewRef.current.setVisible(false);
+        }
+
+        return function() {
+            if (!gatePlaceMode && gatePreviewRef.current) {
+                gatePreviewRef.current.setMap(null);
+                gatePreviewRef.current = null;
+            }
+        };
+    }, [gatePlaceMode]);
+
+    // Gate placement click handler
+    useEffect(function() {
+        window.__drawMapGatePlace = function(clickPt) {
+            if (!gatePlaceMode || !lines.length) return;
+            // Find nearest fence line segment to the click
+            var bestLine = 0;
+            var bestSeg = 0;
+            var bestDist = Infinity;
+            for (var li = 0; li < lines.length; li++) {
+                for (var si = 0; si < lines[li].points.length - 1; si++) {
+                    var midLat = (lines[li].points[si].lat + lines[li].points[si + 1].lat) / 2;
+                    var midLng = (lines[li].points[si].lng + lines[li].points[si + 1].lng) / 2;
+                    var d = distanceFt(clickPt.lat, clickPt.lng, midLat, midLng);
+                    if (d < bestDist) { bestDist = d; bestSeg = si; bestLine = li; }
+                }
+            }
+            var segStart = lines[bestLine].points[bestSeg];
+            var posFt = distanceFt(segStart.lat, segStart.lng, clickPt.lat, clickPt.lng);
+            onGatePlaced({
+                lineIndex: bestLine,
+                segmentIndex: bestSeg,
+                positionFt: Math.round(posFt),
+                lat: clickPt.lat,
+                lng: clickPt.lng,
+                type: gatePlaceMode.type,
+                widthInches: gatePlaceMode.widthInches,
+                arch: gatePlaceMode.arch,
+            });
+        };
+        return function() { delete window.__drawMapGatePlace; };
+    }, [gatePlaceMode, lines, onGatePlaced]);
+
+    // Expose fence draw click handler via window (avoids stale closure)
     useEffect(function() {
         window.__drawMapClick = function(point) {
             setLines(function(prev) {
@@ -355,7 +430,6 @@ var DrawingMap = function(props) {
                 return updated;
             });
         };
-        // Right-click: remove last placed point
         window.__drawMapRightClick = function() {
             setLines(function(prev) {
                 var updated = prev.slice();
@@ -368,7 +442,6 @@ var DrawingMap = function(props) {
                 updated[idx] = Object.assign({}, updated[idx], {
                     points: pts.slice(0, -1),
                 });
-                // If line is now empty, remove it
                 if (updated[idx].points.length === 0) {
                     updated.splice(idx, 1);
                     setActiveLineIndex(Math.max(0, idx - 1));
@@ -380,7 +453,7 @@ var DrawingMap = function(props) {
         return function() { delete window.__drawMapClick; delete window.__drawMapRightClick; delete window.__drawMapInstance; };
     }, [activeLineIndex, setLines, setActiveLineIndex, setUndoStack, setRedoStack]);
 
-    // Render markers, polylines, distance labels, and gate markers
+    // Render markers, polylines, distance labels, and placed gates
     useEffect(function() {
         if (!mapInstanceRef.current || !window.google) return;
 
@@ -388,7 +461,7 @@ var DrawingMap = function(props) {
         markersRef.current.forEach(function(m) { m.setMap(null); });
         polylinesRef.current.forEach(function(p) { p.setMap(null); });
         labelsRef.current.forEach(function(l) { l.setMap(null); });
-        gateMarkersRef.current.forEach(function(m) { m.setMap(null); });
+        gateMarkersRef.current.forEach(function(m) { if (m.setMap) m.setMap(null); });
         markersRef.current = [];
         polylinesRef.current = [];
         labelsRef.current = [];
@@ -399,7 +472,7 @@ var DrawingMap = function(props) {
                 return new window.google.maps.LatLng(p.lat, p.lng);
             });
 
-            // Polyline — green for satellite contrast
+            // Fence polyline — green
             if (path.length >= 2) {
                 var polyline = new window.google.maps.Polyline({
                     path: path,
@@ -407,37 +480,9 @@ var DrawingMap = function(props) {
                     strokeOpacity: 0.9,
                     strokeWeight: 3,
                     map: mapInstanceRef.current,
-                    clickable: true,
+                    clickable: false,
                 });
                 polylinesRef.current.push(polyline);
-
-                // DRAW 6: Click polyline segment to add gate
-                polyline.addListener('click', function(e) {
-                    if (drawMode) return; // don't intercept during draw mode
-                    var clickLat = e.latLng.lat();
-                    var clickLng = e.latLng.lng();
-                    // Find nearest segment
-                    var bestSeg = 0;
-                    var bestDist = Infinity;
-                    for (var si = 0; si < line.points.length - 1; si++) {
-                        var midLat = (line.points[si].lat + line.points[si + 1].lat) / 2;
-                        var midLng = (line.points[si].lng + line.points[si + 1].lng) / 2;
-                        var d = distanceFt(clickLat, clickLng, midLat, midLng);
-                        if (d < bestDist) { bestDist = d; bestSeg = si; }
-                    }
-                    // Compute position along segment in feet
-                    var segStart = line.points[bestSeg];
-                    var posFt = distanceFt(segStart.lat, segStart.lng, clickLat, clickLng);
-                    setGatePopup({
-                        lineIndex: lineIdx,
-                        segmentIndex: bestSeg,
-                        positionFt: Math.round(posFt),
-                        lat: clickLat,
-                        lng: clickLng,
-                    });
-                    setGateType('walk');
-                    setGateWidth(48);
-                });
             }
 
             // Node markers
@@ -471,7 +516,7 @@ var DrawingMap = function(props) {
                 markersRef.current.push(marker);
             });
 
-            // Distance labels
+            // Distance labels per segment
             for (var i = 0; i < line.points.length - 1; i++) {
                 var p1 = line.points[i];
                 var p2 = line.points[i + 1];
@@ -502,7 +547,7 @@ var DrawingMap = function(props) {
             }
         });
 
-        // DRAW 6: Render gate markers on map (orange)
+        // Render placed gates as orange lines on map
         gateMarkers.forEach(function(gm, gmIdx) {
             var line = lines[gm.lineIndex];
             if (!line || !line.points[gm.segmentIndex] || !line.points[gm.segmentIndex + 1]) return;
@@ -513,110 +558,89 @@ var DrawingMap = function(props) {
             var gateLat = seg0.lat + (seg1.lat - seg0.lat) * frac;
             var gateLng = seg0.lng + (seg1.lng - seg0.lng) * frac;
 
-            var gateLabel = gm.type === 'walk' ? 'W' : 'D';
+            // Draw gate as an orange line segment at the gate location
+            var halfM = (gm.widthInches / 12 / 2) / METERS_TO_FEET;
+            var center = new window.google.maps.LatLng(gateLat, gateLng);
+            // Compute heading of the fence segment to orient gate perpendicular
+            var segHeading = window.google.maps.geometry
+                ? window.google.maps.geometry.spherical.computeHeading(
+                    new window.google.maps.LatLng(seg0.lat, seg0.lng),
+                    new window.google.maps.LatLng(seg1.lat, seg1.lng)
+                ) : 90;
+            var gateHeading = segHeading; // gate runs along the fence line
+            if (window.google.maps.geometry) {
+                var gp1 = window.google.maps.geometry.spherical.computeOffset(center, halfM, gateHeading);
+                var gp2 = window.google.maps.geometry.spherical.computeOffset(center, halfM, gateHeading + 180);
+                var gatePoly = new window.google.maps.Polyline({
+                    path: [gp1, gp2],
+                    strokeColor: '#D4753A',
+                    strokeOpacity: 1,
+                    strokeWeight: 5,
+                    map: mapInstanceRef.current,
+                    clickable: true,
+                });
+                gatePoly.addListener('click', function() {
+                    if (window.confirm('Remove this ' + (gm.type === 'walk' ? 'walk' : 'double drive') + ' gate (' + gm.widthInches + '")?')) {
+                        onRemoveGateMarker(gmIdx);
+                    }
+                });
+                gateMarkersRef.current.push(gatePoly);
+            }
+
+            // Gate label marker
+            var gateLabel = gm.type === 'walk' ? 'W' : 'DD';
+            var archLabel = gm.arch === 'arched' ? ' Arch' : '';
             var gateMapMarker = new window.google.maps.Marker({
                 position: { lat: gateLat, lng: gateLng },
                 map: mapInstanceRef.current,
                 icon: {
-                    path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    path: 'M -1,-1 L 1,-1 L 1,1 L -1,1 Z',
                     fillColor: '#D4753A',
-                    fillOpacity: 1,
-                    strokeColor: '#fff',
-                    strokeWeight: 2,
-                    scale: 7,
+                    fillOpacity: 0,
+                    strokeOpacity: 0,
+                    scale: 1,
                 },
                 label: {
-                    text: gateLabel,
+                    text: gateLabel + ' ' + gm.widthInches + '"' + archLabel,
                     color: '#fff',
                     fontSize: '10px',
                     fontWeight: '700',
+                    className: 'draw-gate-map-label',
                 },
-                title: (gm.type === 'walk' ? 'Walk' : 'Drive') + ' Gate — ' + gm.widthInches + '"',
-            });
-            gateMapMarker.addListener('click', function() {
-                if (window.confirm('Remove this ' + (gm.type === 'walk' ? 'walk' : 'drive') + ' gate (' + gm.widthInches + '")?')) {
-                    onRemoveGateMarker(gmIdx);
-                }
+                clickable: false,
             });
             gateMarkersRef.current.push(gateMapMarker);
         });
     }, [lines, setLines, gateMarkers, drawMode]);
 
-    var handleConfirmGate = function() {
-        if (!gatePopup) return;
-        onAddGateMarker({
-            lineIndex: gatePopup.lineIndex,
-            segmentIndex: gatePopup.segmentIndex,
-            positionFt: gatePopup.positionFt,
-            type: gateType,
-            widthInches: gateWidth,
-        });
-        setGatePopup(null);
-    };
-
-    var walkWidths = GATE_COMPATIBLE_WIDTHS.residential.walk;
-    var driveWidths = GATE_COMPATIBLE_WIDTHS.residential.drive;
-    var widthOptions = gateType === 'walk' ? walkWidths : driveWidths;
+    // Instruction text changes based on mode
+    var instructionText = gatePlaceMode
+        ? 'Click on a fence line to place your ' + (gatePlaceMode.widthInches) + '" ' + (gatePlaceMode.type === 'walk' ? 'walk' : 'double drive') + ' gate'
+        : 'Click to place points along your fence line. Right-click to undo.';
 
     return (
         <div className="draw-map-wrap">
             <div ref={mapRef} className="draw-map" />
 
-            {/* DRAW 5: Instruction overlay */}
-            {showInstructions && (
-                <div className="draw-instruction-overlay">
-                    Click to place points along your fence line. Double-click to finish a section.
+            {/* Instruction overlay */}
+            {(showInstructions || gatePlaceMode) && (
+                <div className={'draw-instruction-overlay' + (gatePlaceMode ? ' gate-mode' : '')}>
+                    {instructionText}
                 </div>
             )}
 
-            {/* DRAW 5: Floating action buttons */}
-            <div className="draw-float-actions">
-                <button className="draw-float-btn draw-float-primary" onClick={onNewLine} title="Start a new fence line">
-                    &#9998; Draw New Line
-                </button>
-                <button className="draw-float-btn draw-float-secondary" onClick={onUndo} disabled={!canUndo} title="Undo last point">
-                    &#8617; Undo
-                </button>
-                <button className="draw-float-btn draw-float-secondary" onClick={onClear} title="Clear all lines">
-                    &#128465; Clear All
-                </button>
-            </div>
-
-            {/* DRAW 6: Gate popup */}
-            {gatePopup && (
-                <div className="draw-gate-popup-overlay" onClick={function() { setGatePopup(null); }}>
-                    <div className="draw-gate-popup" onClick={function(e) { e.stopPropagation(); }}>
-                        <div className="draw-gate-popup-title">Add Gate to Segment</div>
-                        <div className="draw-gate-popup-field">
-                            <label className="draw-gate-label">Gate Type</label>
-                            <div className="draw-gate-type-row">
-                                <button
-                                    className={'draw-gate-type-btn' + (gateType === 'walk' ? ' selected' : '')}
-                                    onClick={function() { setGateType('walk'); setGateWidth(48); }}
-                                >Walk Gate</button>
-                                <button
-                                    className={'draw-gate-type-btn' + (gateType === 'drive' ? ' selected' : '')}
-                                    onClick={function() { setGateType('drive'); setGateWidth(120); }}
-                                >Drive Gate</button>
-                            </div>
-                        </div>
-                        <div className="draw-gate-popup-field">
-                            <label className="draw-gate-label">Width</label>
-                            <select
-                                className="draw-gate-select"
-                                value={gateWidth}
-                                onChange={function(e) { setGateWidth(Number(e.target.value)); }}
-                            >
-                                {widthOptions.map(function(w) {
-                                    return <option key={w} value={w}>{w}" ({Math.round(w / 12 * 10) / 10} ft)</option>;
-                                })}
-                            </select>
-                        </div>
-                        <div className="draw-gate-popup-actions">
-                            <button className="draw-gate-confirm" onClick={handleConfirmGate}>Add Gate</button>
-                            <button className="draw-gate-cancel" onClick={function() { setGatePopup(null); }}>Cancel</button>
-                        </div>
-                    </div>
+            {/* Floating action buttons (only in fence draw mode, not gate place) */}
+            {!gatePlaceMode && (
+                <div className="draw-float-actions">
+                    <button className="draw-float-btn draw-float-primary" onClick={onNewLine} title="Start a new fence line">
+                        &#9998; Draw New Line
+                    </button>
+                    <button className="draw-float-btn draw-float-secondary" onClick={onUndo} disabled={!canUndo} title="Undo last point">
+                        &#8617; Undo
+                    </button>
+                    <button className="draw-float-btn draw-float-secondary" onClick={onClear} title="Clear all lines">
+                        &#128465; Clear All
+                    </button>
                 </div>
             )}
         </div>
@@ -634,7 +658,7 @@ var SLOPE_OPTIONS = [
 ];
 
 // ============================================================
-// Drawing Panel — Guided Measuring UI
+// Drawing Panel — Guided Measuring + Gate Config UI
 // ============================================================
 var DrawingPanel = function(props) {
     var lines = props.lines;
@@ -648,14 +672,17 @@ var DrawingPanel = function(props) {
     var onGetQuote = props.onGetQuote;
     var fenceConfig = props.fenceConfig;
     var gateMarkers = props.gateMarkers;
-    var onAddGateManual = props.onAddGateManual;
-    var onFinishSegment = props.onFinishSegment;
+    var gatePlaceMode = props.gatePlaceMode;
+    var onStartGatePlace = props.onStartGatePlace;
+    var onCancelGatePlace = props.onCancelGatePlace;
+    var onRemoveGate = props.onRemoveGate;
+    var onFinishLine = props.onFinishLine;
 
     var canUndo = props.canUndo;
     var canRedo = props.canRedo;
 
     // Measuring guide visibility
-    var guideState = useState(true);
+    var guideState = useState(false);
     var showGuide = guideState[0];
     var setShowGuide = guideState[1];
 
@@ -664,20 +691,44 @@ var DrawingPanel = function(props) {
     var expandedLine = expandedState[0];
     var setExpandedLine = expandedState[1];
 
+    // Gate configurator state (before entering placement mode)
+    var gateTypeState = useState('walk');
+    var pendingGateType = gateTypeState[0];
+    var setPendingGateType = gateTypeState[1];
+
+    var gateWidthState = useState(48);
+    var pendingGateWidth = gateWidthState[0];
+    var setPendingGateWidth = gateWidthState[1];
+
+    var gateArchState = useState('standard');
+    var pendingGateArch = gateArchState[0];
+    var setPendingGateArch = gateArchState[1];
+
+    // Gate config panel open/closed
+    var gateConfigState = useState(false);
+    var showGateConfig = gateConfigState[0];
+    var setShowGateConfig = gateConfigState[1];
+
+    // Totals
     var totalFt = 0;
     var cornerCount = 0;
-    var segmentCount = 0;
 
     lines.forEach(function(line) {
         totalFt += pathLengthFt(line.points);
         if (line.points.length > 2) {
             cornerCount += line.points.length - 2;
         }
-        if (line.points.length > 1) {
-            segmentCount += line.points.length - 1;
-        }
     });
     totalFt = Math.round(totalFt);
+
+    // Gate footage
+    var gateOpeningFt = 0;
+    if (gateMarkers) {
+        gateMarkers.forEach(function(gm) { gateOpeningFt += gm.widthInches / 12; });
+    }
+    gateOpeningFt = Math.round(gateOpeningFt * 10) / 10;
+    var fenceFt = Math.round(totalFt - gateOpeningFt);
+    var totalLinearFt = totalFt; // total measured = fence + gate openings
 
     var handleDeleteLine = function(idx) {
         setLines(function(prev) {
@@ -701,7 +752,6 @@ var DrawingPanel = function(props) {
             var updated = prev.slice();
             var line = Object.assign({}, updated[lineIdx]);
             var segments = (line.segments || []).slice();
-            // Ensure segments array is long enough
             while (segments.length <= segIdx) {
                 segments.push({ slope: 'flat' });
             }
@@ -720,13 +770,6 @@ var DrawingPanel = function(props) {
     var hasConfig = !!configStyleName;
     var thumbSrc = fenceConfig ? (STYLE_THUMBS[fenceConfig.styleId] || 'assets/ifence_previews/gate_styles/bella_vista_48.png') : '';
 
-    // Gate opening deduction display
-    var gateOpeningFt = 0;
-    if (gateMarkers) {
-        gateMarkers.forEach(function(gm) { gateOpeningFt += gm.widthInches / 12; });
-    }
-    gateOpeningFt = Math.round(gateOpeningFt * 10) / 10;
-
     // Checklist progress
     var hasLines = lines.length > 0 && totalFt > 0;
     var hasGates = gateMarkers && gateMarkers.length > 0;
@@ -735,8 +778,30 @@ var DrawingPanel = function(props) {
     });
     var hasMultiplePoints = lines.some(function(line) { return line.points.length >= 2; });
 
-    // Gate width validation — all gates must have widths > 0
-    var allGatesValid = !gateMarkers || gateMarkers.every(function(gm) { return gm.widthInches > 0; });
+    // Gate validation
+    var allGatesValid = !gateMarkers || gateMarkers.length === 0 || gateMarkers.every(function(gm) { return gm.widthInches > 0; });
+
+    // Width options based on pending type
+    var walkWidths = GATE_COMPATIBLE_WIDTHS.residential.walk;
+    var driveWidths = GATE_COMPATIBLE_WIDTHS.residential.drive;
+    var widthOptions = pendingGateType === 'walk' ? walkWidths : driveWidths;
+
+    // Handle starting gate placement
+    var handlePlaceGate = function() {
+        if (!hasMultiplePoints) return;
+        setDrawMode(false);
+        onStartGatePlace({
+            type: pendingGateType,
+            widthInches: pendingGateWidth,
+            arch: pendingGateArch,
+        });
+    };
+
+    // Handle finish line: stop draw mode and start a new line next time
+    var handleFinishLine = function() {
+        setDrawMode(false);
+        if (onFinishLine) onFinishLine();
+    };
 
     return (
         <div className="draw-panel">
@@ -755,22 +820,99 @@ var DrawingPanel = function(props) {
 
             {/* ── Toolbar ── */}
             <div className="draw-toolbar">
-                <button className={'draw-tool-btn' + (drawMode ? ' active' : '')} onClick={function() { setDrawMode(true); }} title="Click map to place fence points">
+                <button className={'draw-tool-btn' + (drawMode && !gatePlaceMode ? ' active' : '')} onClick={function() { if (gatePlaceMode) onCancelGatePlace(); setDrawMode(true); onNewLine(); }} title="Draw a new fence line">
                     &#9998; New Line
                 </button>
-                <button className="draw-tool-btn" onClick={function() { setDrawMode(false); if (onFinishSegment) onFinishSegment(); }} title="Stop drawing current line">
+                <button className="draw-tool-btn" onClick={handleFinishLine} disabled={!drawMode} title="Finish current line">
                     &#10003; Finish
                 </button>
-                <button className="draw-tool-btn" onClick={function() { setDrawMode(false); if (onAddGateManual) onAddGateManual(); }} title="Add a gate opening">
+                <button className={'draw-tool-btn' + (showGateConfig || gatePlaceMode ? ' active' : '')} onClick={function() { if (gatePlaceMode) { onCancelGatePlace(); } else { setShowGateConfig(!showGateConfig); setDrawMode(false); } }} title="Add a gate">
                     &#9593; Gate
                 </button>
-                <button className="draw-tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo last action">
+                <button className="draw-tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo">
                     &#8617; Undo
                 </button>
                 <button className="draw-tool-btn" onClick={onClear} title="Clear all">
                     &#128465; Clear
                 </button>
             </div>
+
+            {/* ── Gate Configuration Panel ── */}
+            {(showGateConfig || gatePlaceMode) && (
+                <div className="draw-gate-config">
+                    <div className="draw-gate-config-title">
+                        {gatePlaceMode ? 'Click the map to place gate' : 'Configure Gate'}
+                    </div>
+
+                    {/* Gate type */}
+                    <div className="draw-gate-config-field">
+                        <label className="draw-gate-label">Type</label>
+                        <div className="draw-gate-type-row">
+                            <button
+                                className={'draw-gate-type-btn' + (pendingGateType === 'walk' ? ' selected' : '')}
+                                disabled={!!gatePlaceMode}
+                                onClick={function() { setPendingGateType('walk'); setPendingGateWidth(48); }}
+                            >Walk Gate</button>
+                            <button
+                                className={'draw-gate-type-btn' + (pendingGateType === 'drive' ? ' selected' : '')}
+                                disabled={!!gatePlaceMode}
+                                onClick={function() { setPendingGateType('drive'); setPendingGateWidth(120); }}
+                            >Double Drive</button>
+                        </div>
+                    </div>
+
+                    {/* Width dropdown */}
+                    <div className="draw-gate-config-field">
+                        <label className="draw-gate-label">Width</label>
+                        <select
+                            className="draw-gate-select"
+                            value={pendingGateWidth}
+                            disabled={!!gatePlaceMode}
+                            onChange={function(e) { setPendingGateWidth(Number(e.target.value)); }}
+                        >
+                            {widthOptions.map(function(w) {
+                                return <option key={w} value={w}>{w}" ({Math.round(w / 12 * 10) / 10} ft)</option>;
+                            })}
+                        </select>
+                    </div>
+
+                    {/* Arch style */}
+                    <div className="draw-gate-config-field">
+                        <label className="draw-gate-label">Top Style</label>
+                        <div className="draw-gate-type-row">
+                            <button
+                                className={'draw-gate-type-btn' + (pendingGateArch === 'standard' ? ' selected' : '')}
+                                disabled={!!gatePlaceMode}
+                                onClick={function() { setPendingGateArch('standard'); }}
+                            >Standard</button>
+                            <button
+                                className={'draw-gate-type-btn' + (pendingGateArch === 'arched' ? ' selected' : '')}
+                                disabled={!!gatePlaceMode}
+                                onClick={function() { setPendingGateArch('arched'); }}
+                            >Arched</button>
+                        </div>
+                    </div>
+
+                    {/* Place / Cancel buttons */}
+                    <div className="draw-gate-config-actions">
+                        {!gatePlaceMode ? (
+                            <button
+                                className="draw-gate-confirm"
+                                onClick={handlePlaceGate}
+                                disabled={!hasMultiplePoints}
+                                title={!hasMultiplePoints ? 'Draw fence lines first' : ''}
+                            >Place on Map</button>
+                        ) : (
+                            <button className="draw-gate-confirm" onClick={function() { onCancelGatePlace(); setShowGateConfig(true); }}>
+                                + Add Another
+                            </button>
+                        )}
+                        <button className="draw-gate-cancel" onClick={function() { onCancelGatePlace(); setShowGateConfig(false); }}>
+                            Done with Gates
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ── Measuring Guide ── */}
             {showGuide && (
@@ -781,15 +923,14 @@ var DrawingPanel = function(props) {
                     </div>
                     <ul className="draw-guide-list">
                         <li>Click to place points along your fence line</li>
-                        <li>Each click adds a corner or endpoint</li>
+                        <li>Click <strong>Finish</strong> to end a line, then <strong>New Line</strong> for the next</li>
                         <li><strong>Right-click</strong> to remove the last point</li>
-                        <li>Click <strong>Finish</strong> when a line is done</li>
-                        <li>Click a green line to add a gate opening</li>
+                        <li>Use the <strong>Gate</strong> button to configure and place gates</li>
                         <li>Drag any point to adjust placement</li>
                     </ul>
                 </div>
             )}
-            {!showGuide && (
+            {!showGuide && !showGateConfig && !gatePlaceMode && (
                 <button className="draw-guide-reopen" onClick={function() { setShowGuide(true); }}>Show Measuring Guide</button>
             )}
 
@@ -841,7 +982,6 @@ var DrawingPanel = function(props) {
                                     &#128465;
                                 </button>
                             </div>
-                            {/* Segment detail when expanded */}
                             {isExpanded && line.points.length >= 2 && (
                                 <div className="draw-segments">
                                     {line.points.slice(0, -1).map(function(pt, si) {
@@ -871,29 +1011,47 @@ var DrawingPanel = function(props) {
                 })}
             </div>
 
+            {/* ── Placed Gates List ── */}
+            {hasGates && (
+                <div className="draw-gates-list">
+                    <div className="draw-gates-list-title">GATES</div>
+                    {gateMarkers.map(function(gm, gmIdx) {
+                        var typeLabel = gm.type === 'walk' ? 'Walk Gate' : 'Double Drive';
+                        var archLabel = gm.arch === 'arched' ? ' (Arched)' : '';
+                        var ftLabel = Math.round(gm.widthInches / 12 * 10) / 10;
+                        return (
+                            <div key={gmIdx} className="draw-gate-list-row">
+                                <span className="draw-gate-list-icon" style={{color: '#D4753A'}}>{gm.type === 'walk' ? 'W' : 'DD'}</span>
+                                <span className="draw-gate-list-info">{typeLabel} {gm.widthInches}"{archLabel}</span>
+                                <span className="draw-gate-list-ft">{ftLabel} ft</span>
+                                <button className="draw-line-delete" onClick={function() { onRemoveGate(gmIdx); }} title="Remove gate">&#128465;</button>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
             {/* ── Totals ── */}
-            {lines.length > 0 && (
+            {totalFt > 0 && (
                 <div className="draw-totals">
-                    <div className="draw-totals-row">
-                        <span>Total fence</span>
-                        <strong>{totalFt} ft</strong>
+                    <div className="draw-totals-row draw-totals-header">
+                        <span>Total Linear Footage</span>
+                        <strong>{totalLinearFt} ft</strong>
                     </div>
-                    <div className="draw-totals-row">
+                    <div className="draw-totals-row draw-totals-sub">
+                        <span>Fence linear footage</span>
+                        <span>{fenceFt} ft</span>
+                    </div>
+                    {hasGates && (
+                        <div className="draw-totals-row draw-totals-sub">
+                            <span>Gate(s) linear footage ({gateMarkers.length} gate{gateMarkers.length !== 1 ? 's' : ''})</span>
+                            <span>{gateOpeningFt} ft</span>
+                        </div>
+                    )}
+                    <div className="draw-totals-row draw-totals-detail">
                         <span>Lines | Corners</span>
                         <span>{lines.length} | {cornerCount}</span>
                     </div>
-                    {gateMarkers && gateMarkers.length > 0 && (
-                        <div className="draw-totals-row">
-                            <span>Gates</span>
-                            <span>{gateMarkers.length} ({gateOpeningFt} ft openings)</span>
-                        </div>
-                    )}
-                    {gateOpeningFt > 0 && (
-                        <div className="draw-totals-row draw-totals-net">
-                            <span>Net fence</span>
-                            <strong>{Math.round(totalFt - gateOpeningFt)} ft</strong>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -1103,93 +1261,6 @@ var FollowUpQuestions = function(props) {
 };
 
 // ============================================================
-// Manual Gate Form (for toolbar-triggered gate entry)
-// ============================================================
-var ManualGateForm = function(props) {
-    var onConfirm = props.onConfirm;
-    var onCancel = props.onCancel;
-    var lines = props.lines;
-
-    var typeState = useState('walk');
-    var gateType = typeState[0];
-    var setGateType = typeState[1];
-
-    var widthState = useState(48);
-    var gateWidth = widthState[0];
-    var setGateWidth = widthState[1];
-
-    var lineIdxState = useState(0);
-    var lineIdx = lineIdxState[0];
-    var setLineIdx = lineIdxState[1];
-
-    var walkWidths = GATE_COMPATIBLE_WIDTHS.residential.walk;
-    var driveWidths = GATE_COMPATIBLE_WIDTHS.residential.drive;
-    var widthOptions = gateType === 'walk' ? walkWidths : driveWidths;
-
-    var handleConfirm = function() {
-        var targetLine = lineIdx;
-        if (targetLine >= lines.length) targetLine = 0;
-        var line = lines[targetLine];
-        var segIdx = line && line.points.length >= 2 ? 0 : 0;
-        onConfirm({
-            lineIndex: targetLine,
-            segmentIndex: segIdx,
-            positionFt: 0,
-            type: gateType,
-            widthInches: gateWidth,
-        });
-    };
-
-    return (
-        <div>
-            {lines.length > 1 && (
-                <div className="draw-gate-popup-field">
-                    <label className="draw-gate-label">On which line?</label>
-                    <select
-                        className="draw-gate-select"
-                        value={lineIdx}
-                        onChange={function(e) { setLineIdx(Number(e.target.value)); }}
-                    >
-                        {lines.map(function(l, i) {
-                            return <option key={i} value={i}>{l.label}</option>;
-                        })}
-                    </select>
-                </div>
-            )}
-            <div className="draw-gate-popup-field">
-                <label className="draw-gate-label">Gate Type</label>
-                <div className="draw-gate-type-row">
-                    <button
-                        className={'draw-gate-type-btn' + (gateType === 'walk' ? ' selected' : '')}
-                        onClick={function() { setGateType('walk'); setGateWidth(48); }}
-                    >Walk Gate</button>
-                    <button
-                        className={'draw-gate-type-btn' + (gateType === 'drive' ? ' selected' : '')}
-                        onClick={function() { setGateType('drive'); setGateWidth(120); }}
-                    >Drive Gate</button>
-                </div>
-            </div>
-            <div className="draw-gate-popup-field">
-                <label className="draw-gate-label">Width</label>
-                <select
-                    className="draw-gate-select"
-                    value={gateWidth}
-                    onChange={function(e) { setGateWidth(Number(e.target.value)); }}
-                >
-                    {widthOptions.map(function(w) {
-                        return <option key={w} value={w}>{w}" ({Math.round(w / 12 * 10) / 10} ft)</option>;
-                    })}
-                </select>
-            </div>
-            <div className="draw-gate-popup-actions">
-                <button className="draw-gate-confirm" onClick={handleConfirm}>Add Gate</button>
-                <button className="draw-gate-cancel" onClick={onCancel}>Cancel</button>
-            </div>
-        </div>
-    );
-};
-
-// ============================================================
 // Main DrawYardView Component
 // ============================================================
 var DrawYardView = function(props) {
@@ -1302,25 +1373,31 @@ var DrawYardView = function(props) {
         });
     };
 
-    // Manual gate add from toolbar — opens the gate popup without a map click
-    var handleAddGateManual = function() {
+    // Gate placement mode state: null = off, { type, widthInches, arch } = active
+    var gatePlaceModeState = useState(null);
+    var gatePlaceMode = gatePlaceModeState[0];
+    var setGatePlaceMode = gatePlaceModeState[1];
+
+    var handleStartGatePlace = function(gateConfig) {
         setDrawMode(false);
-        // If there are lines with segments, default to first line first segment
-        if (lines.length > 0 && lines[0].points.length >= 2) {
-            // Trigger the gate popup on the DrawingMap via a synthetic state
-            setManualGatePopup(true);
-        }
+        setGatePlaceMode(gateConfig);
     };
 
-    // Finish current segment — stop draw mode and advance active line
-    var handleFinishSegment = function() {
-        setDrawMode(false);
+    var handleCancelGatePlace = function() {
+        setGatePlaceMode(null);
     };
 
-    // Manual gate popup state (triggered from toolbar, not map click)
-    var manualGatePopupState = useState(false);
-    var manualGatePopup = manualGatePopupState[0];
-    var setManualGatePopup = manualGatePopupState[1];
+    // When a gate is placed on the map
+    var handleGatePlaced = useCallback(function(marker) {
+        setGateMarkers(function(prev) { return prev.concat([marker]); });
+        // Stay in gate placement mode so user can place another (they click "Add Another" or "Done")
+        setGatePlaceMode(null);
+    }, []);
+
+    // Finish current line
+    var handleFinishLine = function() {
+        setDrawMode(false);
+    };
 
     // DRAW 7: Show follow-up questions instead of immediately navigating
     var handleGetQuoteForLayout = function() {
@@ -1366,7 +1443,7 @@ var DrawYardView = function(props) {
             totalLengthFt: totalLengthFt,
             adjustedLinearFeet: adjustedLinearFeet,
             corners: corners,
-            gates: allGates.map(function(g) { return { type: g.type, widthInches: g.widthInches }; }),
+            gates: allGates.map(function(g) { return { type: g.type, widthInches: g.widthInches, arch: g.arch || 'standard' }; }),
             gateCount: allGates.length,
             terrain: answers.terrain,
             installPlan: answers.installPlan,
@@ -1424,6 +1501,8 @@ var DrawYardView = function(props) {
                     activeLineIndex={activeLineIndex}
                     setActiveLineIndex={setActiveLineIndex}
                     drawMode={false}
+                    gatePlaceMode={null}
+                    onGatePlaced={handleGatePlaced}
                     undoStack={undoStack}
                     setUndoStack={setUndoStack}
                     redoStack={redoStack}
@@ -1433,7 +1512,6 @@ var DrawYardView = function(props) {
                     onClear={handleClear}
                     canUndo={undoStack.length > 0}
                     gateMarkers={gateMarkers}
-                    onAddGateMarker={handleAddGateMarker}
                     onRemoveGateMarker={handleRemoveGateMarker}
                 />
                 <FollowUpQuestions
@@ -1456,6 +1534,8 @@ var DrawYardView = function(props) {
                 activeLineIndex={activeLineIndex}
                 setActiveLineIndex={setActiveLineIndex}
                 drawMode={drawMode}
+                gatePlaceMode={gatePlaceMode}
+                onGatePlaced={handleGatePlaced}
                 undoStack={undoStack}
                 setUndoStack={setUndoStack}
                 redoStack={redoStack}
@@ -1465,7 +1545,6 @@ var DrawYardView = function(props) {
                 onClear={handleClear}
                 canUndo={undoStack.length > 0}
                 gateMarkers={gateMarkers}
-                onAddGateMarker={handleAddGateMarker}
                 onRemoveGateMarker={handleRemoveGateMarker}
             />
             <DrawingPanel
@@ -1480,27 +1559,14 @@ var DrawYardView = function(props) {
                 onGetQuote={handleGetQuoteForLayout}
                 fenceConfig={fenceConfig}
                 gateMarkers={gateMarkers}
-                onAddGateManual={handleAddGateManual}
-                onFinishSegment={handleFinishSegment}
+                gatePlaceMode={gatePlaceMode}
+                onStartGatePlace={handleStartGatePlace}
+                onCancelGatePlace={handleCancelGatePlace}
+                onRemoveGate={handleRemoveGateMarker}
+                onFinishLine={handleFinishLine}
                 canUndo={undoStack.length > 0}
                 canRedo={redoStack.length > 0}
             />
-            {/* Manual gate popup (from toolbar, not map click) */}
-            {manualGatePopup && (
-                <div className="draw-gate-popup-overlay" onClick={function() { setManualGatePopup(false); }}>
-                    <div className="draw-gate-popup" onClick={function(e) { e.stopPropagation(); }}>
-                        <div className="draw-gate-popup-title">Add Gate Manually</div>
-                        <ManualGateForm
-                            onConfirm={function(gate) {
-                                handleAddGateMarker(gate);
-                                setManualGatePopup(false);
-                            }}
-                            onCancel={function() { setManualGatePopup(false); }}
-                            lines={lines}
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

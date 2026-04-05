@@ -2990,6 +2990,98 @@ html, body {
   text-decoration: underline;
 }
 
+/* --- Gate config panel in draw tool --- */
+.draw-gate-config {
+  background: #FFF8F4;
+  border-top: 2px solid #D4753A;
+  padding: 12px 14px;
+}
+.draw-gate-config-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #D4753A;
+  margin-bottom: 10px;
+}
+.draw-gate-config-field {
+  margin-bottom: 10px;
+}
+.draw-gate-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* --- Gates list in panel --- */
+.draw-gates-list {
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+}
+.draw-gates-list-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #D4753A;
+  padding: 0 14px 4px;
+}
+.draw-gate-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  font-size: 13px;
+}
+.draw-gate-list-icon {
+  font-size: 11px;
+  font-weight: 800;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.draw-gate-list-info {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.draw-gate-list-ft {
+  font-size: 12px;
+  color: var(--text-hint);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* --- Totals redesign with header/sub rows --- */
+.draw-totals-header {
+  font-size: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.draw-totals-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+.draw-totals-detail {
+  font-size: 11px;
+  color: var(--text-hint);
+  padding-top: 4px;
+}
+
+/* Gate instruction overlay (orange for gate mode) */
+.draw-instruction-overlay.gate-mode {
+  background: #D4753A;
+}
+
+/* Gate map label styling */
+.draw-gate-map-label {
+  background: #D4753A;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 /* --- Measuring Guide --- */
 .draw-guide {
   background: #F0F7FF;
