@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 
-var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
+var GAS_ENDPOINT = 'https://grandview-email-worker.sarah-13a.workers.dev';
 
 var TOPICS = [
   { value: '', label: 'Select a topic...', disabled: true },
@@ -86,6 +86,7 @@ var ContactPopup = function(props) {
 
     fetch(GAS_ENDPOINT, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
       .then(function() {

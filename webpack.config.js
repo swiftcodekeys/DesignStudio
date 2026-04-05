@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
+require('dotenv').config();
 
 module.exports = {
   mode: 'development',
@@ -43,7 +44,7 @@ module.exports = {
     new webpack.DefinePlugin({
       'process.env.GAS_ENDPOINT': JSON.stringify(''),
       'process.env.STRIPE_PUBLISHABLE_KEY': JSON.stringify(''),
-      'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.GOOGLE_MAPS_API_KEY || ''),
+      'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || ''),
       'process.env.ANTHROPIC_API_KEY': JSON.stringify(''),
       'process.env.NODE_ENV': JSON.stringify('production'),
     })

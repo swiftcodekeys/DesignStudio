@@ -801,13 +801,15 @@ var QuoteBuilder = function(props) {
             subtotal: result.subtotal,
         };
 
-        console.log('POSTING TO GAS', JSON.parse(JSON.stringify(payload)));
-        fetch('https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec', {
+        console.log('POSTING quote via email worker', JSON.parse(JSON.stringify(payload)));
+        fetch('https://grandview-email-worker.sarah-13a.workers.dev', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         })
-        .then(function(res) { console.log('GAS response:', res.type, res.status); })
-        .catch(function(err) { console.error('GAS fetch error:', err); });
+        .then(function(res) { return res.json(); })
+        .then(function(data) { console.log('Email worker response:', data); })
+        .catch(function(err) { console.error('Email worker error:', err); });
 
         // Store with ID
         try {
