@@ -16,6 +16,14 @@ var STEPS = [
 
 var ICON_MAP = { backyard: House, pool: SwimmingPool, front: Tree, full: MapPin, commercial: Buildings, other: GearSix };
 
+var STYLE_ID_MAP = {
+    'uaf_200': 'horizon', 'uaf_201': 'horizon-pro',
+    'uaf_250': 'vanguard', 'uab_200': 'haven',
+    'uas_100': 'charleston', 'uas_101': 'charleston-pro',
+    'uas_150': 'savannah', 'uas_300': 'cambridge',
+    'uas_350': 'lexington', 'uap_100': 'privacy'
+};
+
 function buildQuoteConfig(data) {
     var totalFeet = 0;
     var worstTerrain = 'flat';
@@ -28,8 +36,11 @@ function buildQuoteConfig(data) {
         }
     });
 
+    var rawStyle = data.style || 'horizon';
+    var mappedStyle = STYLE_ID_MAP[rawStyle] || rawStyle;
+
     return {
-        style: data.style || 'horizon',
+        style: mappedStyle,
         height: parseInt(data.height) || 48,
         grade: data.grade || 'residential',
         linearFeet: totalFeet || 100,
@@ -83,7 +94,12 @@ var COLORS_LIST = [
 function loadQuoteData() {
     try {
         var raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
+        if (!raw) return null;
+        var saved = JSON.parse(raw);
+        if (saved && saved.style && saved.style.indexOf('_') !== -1) {
+            saved.style = STYLE_ID_MAP[saved.style] || 'horizon';
+        }
+        return saved;
     } catch (e) { return null; }
 }
 
