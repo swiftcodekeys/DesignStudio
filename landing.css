@@ -568,6 +568,10 @@
     white-space: nowrap;
   }
 
+  .hero-bg {
+    background-position: left center;
+  }
+
   .hero-content {
     padding: 0 24px 60px;
     justify-content: space-between;
