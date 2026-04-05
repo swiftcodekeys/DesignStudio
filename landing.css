@@ -570,8 +570,24 @@
 
   .hero-content {
     padding: 0 24px 60px;
-    justify-content: flex-end;
+    justify-content: space-between;
+    padding-top: 16px;
     padding-bottom: 80px;
+  }
+
+  /* Headline at top */
+  .hero-headline {
+    margin-bottom: 0;
+  }
+
+  /* Subhead hidden on mobile to save space — buttons more important */
+  .hero-subhead {
+    display: none;
+  }
+
+  /* Buttons group at bottom */
+  .hero-cta-row {
+    margin-top: auto;
   }
 
   .hero-trust-strip {
@@ -620,6 +636,7 @@
   .hero-cta-row {
     flex-direction: column;
     width: 100%;
+    margin-top: auto;
   }
 
   .final-cta-button,
