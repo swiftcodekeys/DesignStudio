@@ -476,10 +476,18 @@
    MOBILE
    ============================================================ */
 @media (max-width: 768px) {
+  .wizard-shell {
+    overflow: auto;
+  }
+
   .wizard-progress {
-    padding: 12px 16px;
+    padding: 10px 12px;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .wizard-logo-img {
+    height: 32px;
   }
 
   .wizard-progress-bar {
@@ -489,8 +497,12 @@
     margin: 4px 0 0;
   }
 
+  .wizard-step-label {
+    font-size: 12px;
+  }
+
   .wizard-content {
-    padding: 32px 20px;
+    padding: 24px 16px;
   }
 
   .zone-cards {
@@ -501,6 +513,7 @@
     grid-template-columns: 1fr;
   }
 
+  /* Scene on top, config scrolls below */
   .wizard-configure {
     flex-direction: column;
   }
@@ -508,9 +521,17 @@
   .wizard-configure-left {
     width: 100%;
     min-width: 0;
-    max-height: 50vh;
+    min-height: 35vh;
+    max-height: 40vh;
+    flex: none;
     border-right: none;
     border-bottom: 1px solid var(--light-gray);
+  }
+
+  .wizard-configure-right {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .wizard-nav-row {
@@ -520,5 +541,27 @@
 
   .wizard-btn-primary {
     width: 100%;
+  }
+}
+
+/* Tablet: same stacked layout */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wizard-configure {
+    flex-direction: column;
+  }
+
+  .wizard-configure-left {
+    width: 100%;
+    min-width: 0;
+    min-height: 40vh;
+    max-height: 45vh;
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  .wizard-configure-right {
+    flex: 1;
+    overflow-y: auto;
   }
 }
