@@ -312,7 +312,7 @@ var WizardShell = function() {
             <div className="wizard-progress">
                 <div className="wizard-progress-left">
                     <img
-                        src="assets/logo.png"
+                        src="assets/logo-email.png"
                         alt="Grandview"
                         className="wizard-logo-img"
                         style={{ cursor: 'pointer' }}
