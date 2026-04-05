@@ -3193,21 +3193,29 @@ html, body {
     overflow: auto;
   }
   .viewport-scene {
-    min-height: 44vh;
-    max-height: 50vh;
+    min-height: 35vh;
+    max-height: 40vh;
+    flex: none;
   }
 
   /* Panel: full-width below viewport */
   .float-panel {
     position: relative;
-    width: 100%;
-    min-width: unset;
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: 100% !important;
     max-height: none;
+    flex: 1;
     border-left: none;
     border-top: 1px solid var(--border);
     border-radius: 0;
   }
   .float-panel.collapsed {
+    display: none;
+  }
+
+  /* Hide collapse toggle on mobile */
+  .panel-collapse-btn {
     display: none;
   }
 
@@ -3228,10 +3236,26 @@ html, body {
     min-height: 44px;
   }
 
-  /* Panel body: adequate scroll space */
+  /* Panel body: scrollable, takes remaining space */
   .panel-body {
-    max-height: 40vh;
+    max-height: none;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 10px 12px;
+    /* Visible scrollbar on mobile so users know it scrolls */
+    scrollbar-width: auto;
+    scrollbar-color: rgba(0,0,0,0.25) rgba(0,0,0,0.05);
+  }
+  .panel-body::-webkit-scrollbar { width: 8px; }
+  .panel-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+  .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.25); border-radius: 4px; }
+
+  /* Remove any left/right margin or padding that prevents full width */
+  .viewport-wrap {
+    margin: 0;
+    padding: 0;
+    width: 100%;
   }
 
   /* Style cards: 2 columns */
@@ -3316,11 +3340,49 @@ html, body {
 /* ============================================================
    RESPONSIVE — Tablet (768px – 1023px)
    ============================================================ */
-@media (max-width: 1024px) {
-  .float-panel {
-    width: 300px;
-    min-width: 300px;
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Stack vertically on tablet too — scene top, menu bottom */
+  .viewport-wrap {
+    flex-direction: column;
+    overflow: auto;
   }
+  .viewport-scene {
+    min-height: 40vh;
+    max-height: 45vh;
+    flex: none;
+  }
+  .float-panel {
+    position: relative;
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: 100% !important;
+    max-height: none;
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+  }
+  .panel-collapse-btn {
+    display: none;
+  }
+  .panel-body {
+    max-height: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(0,0,0,0.25) rgba(0,0,0,0.05);
+  }
+  .panel-body::-webkit-scrollbar { width: 8px; }
+  .panel-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+  .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.25); border-radius: 4px; }
+  .panel-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .panel-tabs::-webkit-scrollbar { display: none; }
+
   .topnav-center { gap: 2px; }
   .topnav-tab {
     padding: 8px 5px;
@@ -3330,21 +3392,16 @@ html, body {
   .btn-quote-nav { padding: 5px 10px; font-size: 10px; }
   .brand-name { font-size: 11px; }
   .style-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
   }
   .style-card { width: 100%; }
-  .style-card-img { max-height: 55px; }
-  .style-card-img img { max-height: 55px; }
   .option-row {
     grid-template-columns: repeat(3, 1fr);
   }
-  .opt-card-img { max-height: 28px; }
-  .opt-card-img img { max-height: 28px; }
-  .panel-body { padding: 10px 12px; }
-  .panel-tab { font-size: 9px; padding: 8px 2px; min-height: 44px; }
-  .swatch { width: 42px; height: 42px; }
-  .backlinks-bar { font-size: 9px; }
+  .panel-tab { font-size: 10px; padding: 10px 6px; min-height: 44px; }
+  .swatch { width: 48px; height: 48px; }
+  .backlinks-bar { font-size: 10px; }
 }
 
 /* ============================================================

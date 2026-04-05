@@ -387,10 +387,11 @@
 .wizard-configure-right {
   flex: 1;
   position: relative;
-  background: #f0f0f0;
+  background: var(--offwhite);
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
 }
 
 .wizard-renderer-loading {
@@ -476,10 +477,18 @@
    MOBILE
    ============================================================ */
 @media (max-width: 768px) {
+  .wizard-shell {
+    overflow: auto;
+  }
+
   .wizard-progress {
-    padding: 12px 16px;
+    padding: 10px 12px;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .wizard-logo-img {
+    height: 32px;
   }
 
   .wizard-progress-bar {
@@ -489,28 +498,101 @@
     margin: 4px 0 0;
   }
 
+  .wizard-step-label {
+    font-size: 12px;
+  }
+
   .wizard-content {
-    padding: 32px 20px;
+    padding: 16px 16px;
+    justify-content: flex-start;
+  }
+
+  .zone-heading {
+    font-size: 22px;
+    margin: 0 0 6px;
+  }
+
+  .zone-subhead {
+    font-size: 13px;
+    margin: 0 0 16px;
   }
 
   .zone-cards {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .zone-card {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+  }
+
+  .zone-card-icon {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .zone-card-title {
+    font-size: 14px;
+    margin: 0 0 2px;
+  }
+
+  .zone-card-desc {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .zone-card-check {
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .wizard-actions {
+    margin-top: 16px;
+    gap: 8px;
+  }
+
+  .wizard-btn-primary {
+    height: 44px;
+    font-size: 14px;
+    min-width: 180px;
   }
 
   .gate-cards {
     grid-template-columns: 1fr;
   }
 
+  /* Scene on top, config scrolls below */
   .wizard-configure {
     flex-direction: column;
   }
 
+  /* Scene (right in HTML) goes on top via order */
+  .wizard-configure-right {
+    order: -1;
+    width: 100%;
+    min-height: 35vh;
+    max-height: 40vh;
+    flex: none;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  /* Menu (left in HTML) scrolls below */
   .wizard-configure-left {
     width: 100%;
     min-width: 0;
-    max-height: 50vh;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-right: none;
-    border-bottom: 1px solid var(--light-gray);
+    border-bottom: none;
   }
 
   .wizard-nav-row {
@@ -520,5 +602,29 @@
 
   .wizard-btn-primary {
     width: 100%;
+  }
+}
+
+/* Tablet: same stacked layout */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wizard-configure {
+    flex-direction: column;
+  }
+
+  .wizard-configure-right {
+    order: -1;
+    width: 100%;
+    min-height: 40vh;
+    max-height: 45vh;
+    flex: none;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  .wizard-configure-left {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+    overflow-y: auto;
+    border-right: none;
   }
 }

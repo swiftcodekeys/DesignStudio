@@ -182,11 +182,11 @@ var LandingPage = function() {
                         Design your fence.<br />
                         Get an instant price.
                     </h1>
-                    <p className="hero-subhead">
-                        Configure in 3D, measure your property, and order online
-                        or talk to an expert. Takes about 3 minutes.
-                    </p>
                     <div className="hero-cta-row">
+                        <p className="hero-subhead">
+                            Configure in 3D, measure your property, and order online
+                            or talk to an expert. Takes about 3 minutes.
+                        </p>
                         <button
                             ref={ctaRef}
                             className="hero-cta-primary"
@@ -254,31 +254,7 @@ var LandingPage = function() {
                 </div>
             </section>
 
-            {/* ---- SECTION 3: SOCIAL PROOF ---- */}
-            <section className="social-proof-section" ref={proofRef}>
-                <div className="social-proof-inner">
-                    <div className="proof-stars">
-                        <StarIcon /><StarIcon /><StarIcon /><StarIcon /><StarIcon />
-                    </div>
-                    <p className={'proof-quote' + (proofVisible ? ' visible' : '')}>
-                        &ldquo;{TESTIMONIALS[activeTestimonial].quote}&rdquo;
-                    </p>
-                    <p className="proof-attribution">
-                        &mdash; {TESTIMONIALS[activeTestimonial].name}, {TESTIMONIALS[activeTestimonial].location}
-                    </p>
-                    <div className="proof-badges">
-                        <span className="proof-badge">
-                            <CheckIcon /> SDVOSB Certified
-                        </span>
-                        <span className="proof-badge">
-                            <CheckIcon /> 5-Star Rated on Google
-                        </span>
-                        <span className="proof-badge">
-                            <CheckIcon /> BBB Accredited
-                        </span>
-                    </div>
-                </div>
-            </section>
+            {/* Social proof section removed — add back when reviews and certs are ready */}
 
             {/* ---- SECTION 4: FINAL CTA ---- */}
             <section className="final-cta">
