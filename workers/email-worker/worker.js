@@ -86,7 +86,7 @@ function buildEmailHtml(p) {
   var header = [
     '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e8eaed;border-radius:8px;overflow:hidden;">',
     // Logo header
-    '<div style="background:#1a2332;padding:24px;text-align:center;">',
+    '<div style="background:#6BA3C2;padding:24px;text-align:center;">',
     '<img src="' + LOGO_URL + '" alt="Grandview Fence" style="height:80px;width:auto;" />',
     '</div>',
   ].join('');
@@ -103,7 +103,7 @@ function buildEmailHtml(p) {
     return [
       header,
       // Title bar
-      '<div style="background:#6BA3C2;padding:12px 24px;">',
+      '<div style="background:#1a2332;padding:12px 24px;">',
       '<h2 style="margin:0;color:#fff;font-size:18px;font-weight:700;">New Quote Request</h2>',
       '</div>',
       // Customer info section
@@ -144,7 +144,7 @@ function buildEmailHtml(p) {
   // Contact form email
   return [
     header,
-    '<div style="background:#6BA3C2;padding:12px 24px;">',
+    '<div style="background:#1a2332;padding:12px 24px;">',
     '<h2 style="margin:0;color:#fff;font-size:18px;font-weight:700;">New Contact Message</h2>',
     '</div>',
     '<div style="padding:20px 24px;">',
