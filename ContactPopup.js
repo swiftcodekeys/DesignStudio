@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 
-var GAS_ENDPOINT = 'https://script.google.com/a/macros/grandviewfence.com/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
+var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
 
 var TOPICS = [
   { value: '', label: 'Select a topic...', disabled: true },

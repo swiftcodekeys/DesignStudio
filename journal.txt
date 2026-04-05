@@ -186,3 +186,89 @@ Questions before fixing:
   - Should the "Get Instant Quote" and "Request Custom Quote" buttons in
     QuoteTab do different things, or is it intentional that both open the
     same QuoteModal?
+
+
+2026-04-04 — UX Audit + Conditional Logic Research Session
+══════════════════════════════════════════════════════════════
+
+Scope: Full UX audit of wizard flow + price book data extraction +
+       conditional logic spreadsheet + UX redesign proposal.
+
+RESEARCH COMPLETED:
+  1. Read Ultra price book (May 2025) data via QUOTE_ENGINE_SPEC.md
+     - Full product matrix: 7 residential styles + Defender + Privacy
+     - Panel pricing for all grades (Residential/Commercial/Industrial)
+     - Post pricing by size/wall thickness/length
+     - Gate pricing: Walk (W suffix) and Double Drive (D suffix)
+     - Hardware pricing: hinges, latches, drop rods
+     - Shipping rates by state
+  2. Read "Changes to Price Book" PDF errata document
+     - 10 price corrections across walk gates and double drive gates
+     - Privacy gate pricing table (UAE-ALGW-DS30U pattern)
+  3. Read generate-order-form.js — documented all 11 sections / 54 fields
+     of Ultra Easy Order Form v3.3
+  4. Read all wizard components in correct repo (fence-tool):
+     - app.js, FloatingPanel.js, QuoteBuilder.js, QuoteModal.js
+     - WizardShell.js (newer multi-zone wizard approach)
+     - DrawYardView.js (GPS map drawing with Haversine calculation)
+     - configData.js (12 gate styles), fenceConfigData.js (9 fence styles)
+     - All 7 tab components
+  5. Read existing UX-Research-Summary.md (already in repo)
+  6. Read QUOTE_ENGINE_SPEC.md (full pricing + calculation spec)
+  7. Read QUOTE_FUNNEL_SPEC.md (funnel audit + recommendations)
+
+FINDINGS — CRITICAL ISSUES:
+  1. GPS disclaimer: NONE exists. DrawYardView shows raw footage with
+     no accuracy warning. 3-5 meter GPS error = 10% material error.
+  2. mailto: submission: Both QuoteModal and QuoteBuilder use window
+     .location.href = mailto:. Silently fails without email client.
+  3. Gate hardware: Not captured in any flow. Hinge type ($29-$290),
+     latch type ($44-$162) missing. D&D hardware is NOT ProCoat matched.
+  4. Rackability: Not explained. Terrain dropdown exists but not
+     connected to racking implications or post surcharges.
+  5. Multi-zone disconnect: WizardShell saves to localStorage keys
+     that QuoteBuilder never reads. User work is lost.
+  6. Haven/Defender height enforcement: Haven shows invalid heights
+     in some flows. Defender not limited to 84/96.
+  7. Skip button broken: Routes to QuoteModal instead of QuoteBuilder
+     layout step for manual footage entry.
+  8. Dual config system: configData.js and fenceConfigData.js maintain
+     separate product definitions that can drift.
+  9. No real-time pricing: User never sees a price estimate until
+     after submitting contact info, despite pricing data being available.
+  10. Color name errors: "Textured Beige" (should be Khaki) and
+      "Hartford Green" (not approved) in QuoteBuilder.
+
+Easy Order Form gap analysis:
+  - 15 of 54 fields fully captured (28%)
+  - 12 partially captured (22%)
+  - 27 not captured (50%)
+  - Most gaps are auto-derivable (grade, post specs, rail count)
+  - True UI gaps: gate hardware, grade selection, special notes
+
+FILES CREATED:
+  1. C:\Users\sarah\Desktop\DESIGN_STUDIO_CONDITIONAL_LOGIC.xlsx
+     - 7 sheets: Product Master, Height Matrix, Color Matrix,
+       Picket Tops, Gate Options, Easy Order Form Map, UX Issues
+     - 20 UX issues documented with severity + recommended fixes
+  2. C:\Users\sarah\Desktop\DESIGN_STUDIO_UX_REDESIGN_PROPOSAL.md
+     - Section 1: 10 current state problems with file/line references
+     - Section 2: Solutions for multi-zone, GPS, gates, rackability
+     - Section 3: 5-step proposed wizard flow
+     - Section 4: Full TypeScript data model (QuoteRequest interface)
+     - Section 5: Implementation priority matrix
+     - Appendices: pricing reference, open questions for Amanda
+
+OPEN QUESTIONS FOR AMANDA:
+  1. Haven Lite / Haven Plus / Haven Guard — Ultra model numbers?
+  2. Cambridge (UAL-100) — still available or discontinued?
+  3. Solace / Solace Air / Solace Screen — exact model numbers, heights
+  4. Defender — confirm UAD-100, confirm 84/96 ONLY
+  5. Silver color — standard or premium (call for pricing)?
+  6. Rackability — $25 setup fee still current? Max angle per style?
+  7. Privacy gate pricing — same Easy Order Form workflow?
+
+NOTE: Price book PDFs are image-based (designed marketing collateral).
+Text extraction via pdf2json and pdf-parse returned 0 characters.
+All pricing data came from QUOTE_ENGINE_SPEC.md which was manually
+transcribed from the price book in a previous session.
