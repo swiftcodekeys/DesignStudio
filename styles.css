@@ -2990,6 +2990,199 @@ html, body {
   text-decoration: underline;
 }
 
+/* --- Measuring Guide --- */
+.draw-guide {
+  background: #F0F7FF;
+  border: 1px solid #D0E3F5;
+  border-radius: 8px;
+  margin: 8px 12px;
+  padding: 10px 14px;
+}
+.draw-guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.draw-guide-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1B3A5C;
+}
+.draw-guide-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.draw-guide-close:hover { color: #333; }
+.draw-guide-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  color: #4A5568;
+  line-height: 1.7;
+}
+.draw-guide-list li::before {
+  content: '\2022';
+  color: #6BA3C2;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.draw-guide-reopen {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #6BA3C2;
+  cursor: pointer;
+  padding: 4px 12px;
+  font-family: inherit;
+  font-weight: 600;
+}
+.draw-guide-reopen:hover { text-decoration: underline; }
+
+/* --- Checklist --- */
+.draw-checklist {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.draw-checklist-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-hint);
+  margin-bottom: 6px;
+}
+.draw-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+.draw-check-item.current {
+  opacity: 1;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.draw-check-item.done {
+  opacity: 0.7;
+  color: #16A34A;
+}
+.draw-check-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #E8EAED;
+  color: var(--text-hint);
+}
+.draw-check-item.current .draw-check-icon {
+  background: #1B3A5C;
+  color: #fff;
+}
+.draw-check-item.done .draw-check-icon {
+  background: #16A34A;
+  color: #fff;
+}
+
+/* --- Line block with expand/collapse segments --- */
+.draw-line-block {
+  border-bottom: 1px solid var(--border);
+}
+.draw-line-block.expanded {
+  background: #FAFBFC;
+}
+.draw-line-expand {
+  background: none;
+  border: none;
+  font-size: 10px;
+  color: var(--text-hint);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.draw-line-expand:hover { color: var(--text-primary); }
+.draw-line-pts {
+  font-size: 11px;
+  color: var(--text-hint);
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* --- Segment detail rows --- */
+.draw-segments {
+  padding: 4px 12px 8px 32px;
+}
+.draw-segment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.draw-seg-label {
+  color: var(--text-hint);
+  font-weight: 600;
+  width: 44px;
+  flex-shrink: 0;
+}
+.draw-seg-ft {
+  color: var(--text-primary);
+  font-weight: 600;
+  width: 48px;
+  flex-shrink: 0;
+}
+.draw-seg-slope {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Totals redesign --- */
+.draw-totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.draw-totals-row strong {
+  color: var(--text-primary);
+}
+.draw-totals-net {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+  font-weight: 600;
+}
+
+/* --- Validation message --- */
+.draw-validation-msg {
+  font-size: 12px;
+  color: #DC2626;
+  text-align: center;
+  padding: 4px 0;
+}
+
 /* Draw tool mobile */
 @media (max-width: 767px) {
   .draw-container {

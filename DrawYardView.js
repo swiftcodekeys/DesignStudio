@@ -43,16 +43,19 @@ function loadGoogleMaps(callback) {
     };
 
     var script = document.createElement('script');
-    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_KEY + '&libraries=places&callback=__initGoogleMaps';
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_KEY + '&libraries=places,geometry&callback=__initGoogleMaps';
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
 }
 
 // ============================================================
-// Haversine distance in feet
+// Distance utilities — prefer Google geometry when available
 // ============================================================
-function distanceFt(lat1, lng1, lat2, lng2) {
+var METERS_TO_FEET = 3.28084;
+
+// Haversine fallback (spherical approximation)
+function haversineFt(lat1, lng1, lat2, lng2) {
     var R = 20902231; // Earth radius in feet
     var dLat = (lat2 - lat1) * Math.PI / 180;
     var dLng = (lng2 - lng1) * Math.PI / 180;
@@ -61,6 +64,47 @@ function distanceFt(lat1, lng1, lat2, lng2) {
         Math.sin(dLng / 2) * Math.sin(dLng / 2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+}
+
+// Point-to-point distance in feet using Google geometry (WGS84 ellipsoid)
+function distanceFt(lat1, lng1, lat2, lng2) {
+    if (window.google && window.google.maps && window.google.maps.geometry) {
+        var a = new window.google.maps.LatLng(lat1, lng1);
+        var b = new window.google.maps.LatLng(lat2, lng2);
+        return window.google.maps.geometry.spherical.computeDistanceBetween(a, b) * METERS_TO_FEET;
+    }
+    return haversineFt(lat1, lng1, lat2, lng2);
+}
+
+// Total path length in feet from an array of {lat, lng} points
+function pathLengthFt(points) {
+    if (!points || points.length < 2) return 0;
+    if (window.google && window.google.maps && window.google.maps.geometry) {
+        var path = points.map(function(p) { return new window.google.maps.LatLng(p.lat, p.lng); });
+        return window.google.maps.geometry.spherical.computeLength(path) * METERS_TO_FEET;
+    }
+    // Haversine fallback
+    var total = 0;
+    for (var i = 0; i < points.length - 1; i++) {
+        total += haversineFt(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng);
+    }
+    return total;
+}
+
+// Query MaxZoomService for best native satellite zoom at a location
+function getMaxNativeZoom(lat, lng, callback) {
+    if (!window.google || !window.google.maps || !window.google.maps.MaxZoomService) {
+        callback(20); // safe default
+        return;
+    }
+    var service = new window.google.maps.MaxZoomService();
+    service.getMaxZoomAtLatLng(new window.google.maps.LatLng(lat, lng), function(response) {
+        if (response.status === 'OK') {
+            callback(response.zoom);
+        } else {
+            callback(20); // fallback
+        }
+    });
 }
 
 // ============================================================
@@ -242,33 +286,50 @@ var DrawingMap = function(props) {
     var gateWidth = gateWidthState[0];
     var setGateWidth = gateWidthState[1];
 
-    // Initialize map
+    // Track max native zoom for this location
+    var maxZoomRef = useRef(20);
+
+    // Initialize map with MaxZoom-aware satellite cap
     useEffect(function() {
         if (!window.google || !mapRef.current) return;
         if (mapInstanceRef.current) return;
 
-        mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-            center: { lat: location.lat, lng: location.lng },
-            zoom: 18,
-            mapTypeId: 'satellite',
-            tilt: 0,
-            disableDefaultUI: true,
-            zoomControl: true,
-            zoomControlOptions: {
-                position: window.google.maps.ControlPosition.RIGHT_CENTER,
-            },
-            gestureHandling: 'greedy',
-        });
-        window.__drawMapInstance = mapInstanceRef.current;
+        // Query best native satellite zoom before creating map
+        getMaxNativeZoom(location.lat, location.lng, function(nativeMax) {
+            // Cap at native max (never allow upscaled blurry tiles)
+            var safeMax = Math.min(nativeMax, 21);
+            maxZoomRef.current = safeMax;
+            var initialZoom = Math.min(19, safeMax); // start one below max for context
 
-        // Click handler for placing nodes
-        mapInstanceRef.current.addListener('click', function(e) {
-            if (!drawMode) return;
-            var lat = e.latLng.lat();
-            var lng = e.latLng.lng();
-            window.__drawMapClick({ lat: lat, lng: lng });
-            // Dismiss instructions on first click
-            setShowInstructions(false);
+            mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+                center: { lat: location.lat, lng: location.lng },
+                zoom: initialZoom,
+                maxZoom: safeMax,
+                mapTypeId: 'satellite',
+                tilt: 0,
+                disableDefaultUI: true,
+                zoomControl: true,
+                zoomControlOptions: {
+                    position: window.google.maps.ControlPosition.RIGHT_CENTER,
+                },
+                gestureHandling: 'greedy',
+            });
+            window.__drawMapInstance = mapInstanceRef.current;
+
+            // Click handler for placing nodes
+            mapInstanceRef.current.addListener('click', function(e) {
+                if (!drawMode) return;
+                var lat = e.latLng.lat();
+                var lng = e.latLng.lng();
+                window.__drawMapClick({ lat: lat, lng: lng });
+                setShowInstructions(false);
+            });
+
+            // Right-click removes last point
+            mapInstanceRef.current.addListener('rightclick', function() {
+                if (!drawMode) return;
+                window.__drawMapRightClick();
+            });
         });
     }, [location]);
 
@@ -294,7 +355,29 @@ var DrawingMap = function(props) {
                 return updated;
             });
         };
-        return function() { delete window.__drawMapClick; delete window.__drawMapInstance; };
+        // Right-click: remove last placed point
+        window.__drawMapRightClick = function() {
+            setLines(function(prev) {
+                var updated = prev.slice();
+                var idx = activeLineIndex;
+                if (idx < 0 || idx >= updated.length) return prev;
+                var pts = updated[idx].points;
+                if (pts.length === 0) return prev;
+                setUndoStack(function(u) { return u.concat([prev]); });
+                setRedoStack([]);
+                updated[idx] = Object.assign({}, updated[idx], {
+                    points: pts.slice(0, -1),
+                });
+                // If line is now empty, remove it
+                if (updated[idx].points.length === 0) {
+                    updated.splice(idx, 1);
+                    setActiveLineIndex(Math.max(0, idx - 1));
+                }
+                return updated;
+            });
+        };
+
+        return function() { delete window.__drawMapClick; delete window.__drawMapRightClick; delete window.__drawMapInstance; };
     }, [activeLineIndex, setLines, setActiveLineIndex, setUndoStack, setRedoStack]);
 
     // Render markers, polylines, distance labels, and gate markers
@@ -541,7 +624,17 @@ var DrawingMap = function(props) {
 };
 
 // ============================================================
-// Drawing Panel (replaces FloatingPanel when in draw mode)
+// Slope options per segment
+// ============================================================
+var SLOPE_OPTIONS = [
+    { value: 'flat', label: 'Flat', desc: '0-6" per panel', rack: 'standard' },
+    { value: 'gentle', label: 'Gentle Slope', desc: '6-20" per panel', rack: 'rackable' },
+    { value: 'steep', label: 'Steep Slope', desc: '20-36" per panel', rack: 'heavy-rack' },
+    { value: 'steps', label: 'Stair-Step', desc: 'Not rackable', rack: 'none' },
+];
+
+// ============================================================
+// Drawing Panel — Guided Measuring UI
 // ============================================================
 var DrawingPanel = function(props) {
     var lines = props.lines;
@@ -555,21 +648,33 @@ var DrawingPanel = function(props) {
     var onGetQuote = props.onGetQuote;
     var fenceConfig = props.fenceConfig;
     var gateMarkers = props.gateMarkers;
+    var onAddGateManual = props.onAddGateManual;
+    var onFinishSegment = props.onFinishSegment;
 
     var canUndo = props.canUndo;
     var canRedo = props.canRedo;
 
+    // Measuring guide visibility
+    var guideState = useState(true);
+    var showGuide = guideState[0];
+    var setShowGuide = guideState[1];
+
+    // Expanded segment detail (per line)
+    var expandedState = useState(null);
+    var expandedLine = expandedState[0];
+    var setExpandedLine = expandedState[1];
+
     var totalFt = 0;
     var cornerCount = 0;
+    var segmentCount = 0;
 
     lines.forEach(function(line) {
-        for (var i = 0; i < line.points.length - 1; i++) {
-            var p1 = line.points[i];
-            var p2 = line.points[i + 1];
-            totalFt += distanceFt(p1.lat, p1.lng, p2.lat, p2.lng);
-        }
+        totalFt += pathLengthFt(line.points);
         if (line.points.length > 2) {
             cornerCount += line.points.length - 2;
+        }
+        if (line.points.length > 1) {
+            segmentCount += line.points.length - 1;
         }
     });
     totalFt = Math.round(totalFt);
@@ -590,6 +695,23 @@ var DrawingPanel = function(props) {
         });
     };
 
+    // Segment slope update
+    var handleSegmentSlope = function(lineIdx, segIdx, slopeValue) {
+        setLines(function(prev) {
+            var updated = prev.slice();
+            var line = Object.assign({}, updated[lineIdx]);
+            var segments = (line.segments || []).slice();
+            // Ensure segments array is long enough
+            while (segments.length <= segIdx) {
+                segments.push({ slope: 'flat' });
+            }
+            segments[segIdx] = Object.assign({}, segments[segIdx], { slope: slopeValue });
+            line.segments = segments;
+            updated[lineIdx] = line;
+            return updated;
+        });
+    };
+
     // Config thumbnail
     var configStyle = fenceConfig ? FENCE_TOOL_STYLES.find(function(s) { return s.id === fenceConfig.styleId; }) : null;
     var configColorName = fenceConfig && fenceConfig.color ? fenceConfig.color.displayName : '';
@@ -605,6 +727,17 @@ var DrawingPanel = function(props) {
     }
     gateOpeningFt = Math.round(gateOpeningFt * 10) / 10;
 
+    // Checklist progress
+    var hasLines = lines.length > 0 && totalFt > 0;
+    var hasGates = gateMarkers && gateMarkers.length > 0;
+    var hasSlopesMarked = lines.some(function(line) {
+        return line.segments && line.segments.some(function(s) { return s.slope && s.slope !== 'flat'; });
+    });
+    var hasMultiplePoints = lines.some(function(line) { return line.points.length >= 2; });
+
+    // Gate width validation — all gates must have widths > 0
+    var allGatesValid = !gateMarkers || gateMarkers.every(function(gm) { return gm.widthInches > 0; });
+
     return (
         <div className="draw-panel">
             {hasConfig && (
@@ -617,77 +750,167 @@ var DrawingPanel = function(props) {
                 </div>
             )}
             <div className="draw-panel-header">
-                <div className="draw-panel-title">YOUR FENCE LAYOUT</div>
+                <div className="draw-panel-title">MEASURE YOUR FENCE</div>
             </div>
 
+            {/* ── Toolbar ── */}
             <div className="draw-toolbar">
-                <button className={'draw-tool-btn' + (drawMode ? ' active' : '')} onClick={function() { setDrawMode(true); }} title="Draw mode">
-                    &#9998; Draw
+                <button className={'draw-tool-btn' + (drawMode ? ' active' : '')} onClick={function() { setDrawMode(true); }} title="Click map to place fence points">
+                    &#9998; New Line
                 </button>
-                <button className="draw-tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo">
+                <button className="draw-tool-btn" onClick={function() { setDrawMode(false); if (onFinishSegment) onFinishSegment(); }} title="Stop drawing current line">
+                    &#10003; Finish
+                </button>
+                <button className="draw-tool-btn" onClick={function() { setDrawMode(false); if (onAddGateManual) onAddGateManual(); }} title="Add a gate opening">
+                    &#9593; Gate
+                </button>
+                <button className="draw-tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo last action">
                     &#8617; Undo
-                </button>
-                <button className="draw-tool-btn" onClick={onRedo} disabled={!canRedo} title="Redo">
-                    &#8618; Redo
                 </button>
                 <button className="draw-tool-btn" onClick={onClear} title="Clear all">
                     &#128465; Clear
                 </button>
             </div>
 
+            {/* ── Measuring Guide ── */}
+            {showGuide && (
+                <div className="draw-guide">
+                    <div className="draw-guide-header">
+                        <span className="draw-guide-title">Measuring Guide</span>
+                        <button className="draw-guide-close" onClick={function() { setShowGuide(false); }}>&times;</button>
+                    </div>
+                    <ul className="draw-guide-list">
+                        <li>Click to place points along your fence line</li>
+                        <li>Each click adds a corner or endpoint</li>
+                        <li><strong>Right-click</strong> to remove the last point</li>
+                        <li>Click <strong>Finish</strong> when a line is done</li>
+                        <li>Click a green line to add a gate opening</li>
+                        <li>Drag any point to adjust placement</li>
+                    </ul>
+                </div>
+            )}
+            {!showGuide && (
+                <button className="draw-guide-reopen" onClick={function() { setShowGuide(true); }}>Show Measuring Guide</button>
+            )}
+
+            {/* ── Checklist ── */}
+            <div className="draw-checklist">
+                <div className="draw-checklist-title">STEPS</div>
+                <div className={'draw-check-item' + (hasLines ? ' done' : ' current')}>
+                    <span className="draw-check-icon">{hasLines ? '\u2713' : '1'}</span>
+                    <span>Draw fence lines</span>
+                </div>
+                <div className={'draw-check-item' + (hasGates ? ' done' : hasLines ? ' current' : '')}>
+                    <span className="draw-check-icon">{hasGates ? '\u2713' : '2'}</span>
+                    <span>Add gates / openings</span>
+                </div>
+                <div className={'draw-check-item' + (hasSlopesMarked ? ' done' : hasMultiplePoints ? ' current' : '')}>
+                    <span className="draw-check-icon">{hasSlopesMarked ? '\u2713' : '3'}</span>
+                    <span>Mark sloped sections</span>
+                </div>
+                <div className={'draw-check-item' + (hasLines && hasMultiplePoints ? ' current' : '')}>
+                    <span className="draw-check-icon">4</span>
+                    <span>Review corners / endpoints</span>
+                </div>
+            </div>
+
+            {/* ── Lines List with Segment Details ── */}
             <div className="draw-lines-list">
                 {lines.length === 0 && (
                     <div className="draw-empty">Click on the map to start drawing your fence lines</div>
                 )}
                 {lines.map(function(line, idx) {
-                    var lineFt = 0;
-                    for (var i = 0; i < line.points.length - 1; i++) {
-                        var p1 = line.points[i];
-                        var p2 = line.points[i + 1];
-                        lineFt += distanceFt(p1.lat, p1.lng, p2.lat, p2.lng);
-                    }
-                    lineFt = Math.round(lineFt);
+                    var lineFt = Math.round(pathLengthFt(line.points));
+                    var isExpanded = expandedLine === idx;
+                    var lineSegments = line.segments || [];
 
                     return (
-                        <div key={idx} className="draw-line-row">
-                            <input
-                                className="draw-line-label"
-                                value={line.label}
-                                onChange={function(e) { handleRename(idx, e.target.value); }}
-                            />
-                            <span className="draw-line-ft">{lineFt} ft</span>
-                            <button className="draw-line-delete" onClick={function() { handleDeleteLine(idx); }} title="Delete line">
-                                &#128465;
-                            </button>
+                        <div key={idx} className={'draw-line-block' + (isExpanded ? ' expanded' : '')}>
+                            <div className="draw-line-row">
+                                <button className="draw-line-expand" onClick={function() { setExpandedLine(isExpanded ? null : idx); }}>
+                                    {isExpanded ? '\u25BC' : '\u25B6'}
+                                </button>
+                                <input
+                                    className="draw-line-label"
+                                    value={line.label}
+                                    onChange={function(e) { handleRename(idx, e.target.value); }}
+                                />
+                                <span className="draw-line-ft">{lineFt} ft</span>
+                                <span className="draw-line-pts">{line.points.length} pts</span>
+                                <button className="draw-line-delete" onClick={function() { handleDeleteLine(idx); }} title="Delete line">
+                                    &#128465;
+                                </button>
+                            </div>
+                            {/* Segment detail when expanded */}
+                            {isExpanded && line.points.length >= 2 && (
+                                <div className="draw-segments">
+                                    {line.points.slice(0, -1).map(function(pt, si) {
+                                        var nextPt = line.points[si + 1];
+                                        var segFt = Math.round(distanceFt(pt.lat, pt.lng, nextPt.lat, nextPt.lng));
+                                        var segData = lineSegments[si] || { slope: 'flat' };
+                                        return (
+                                            <div key={si} className="draw-segment-row">
+                                                <span className="draw-seg-label">Seg {si + 1}</span>
+                                                <span className="draw-seg-ft">{segFt} ft</span>
+                                                <select
+                                                    className="draw-seg-slope"
+                                                    value={segData.slope || 'flat'}
+                                                    onChange={function(e) { handleSegmentSlope(idx, si, e.target.value); }}
+                                                >
+                                                    {SLOPE_OPTIONS.map(function(opt) {
+                                                        return <option key={opt.value} value={opt.value}>{opt.label}</option>;
+                                                    })}
+                                                </select>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
             </div>
 
+            {/* ── Totals ── */}
             {lines.length > 0 && (
                 <div className="draw-totals">
-                    Total: <strong>{totalFt} ft</strong> &middot; {lines.length} line{lines.length !== 1 ? 's' : ''} &middot; {cornerCount} corner{cornerCount !== 1 ? 's' : ''}
+                    <div className="draw-totals-row">
+                        <span>Total fence</span>
+                        <strong>{totalFt} ft</strong>
+                    </div>
+                    <div className="draw-totals-row">
+                        <span>Lines | Corners</span>
+                        <span>{lines.length} | {cornerCount}</span>
+                    </div>
                     {gateMarkers && gateMarkers.length > 0 && (
-                        <span> &middot; {gateMarkers.length} gate{gateMarkers.length !== 1 ? 's' : ''}</span>
+                        <div className="draw-totals-row">
+                            <span>Gates</span>
+                            <span>{gateMarkers.length} ({gateOpeningFt} ft openings)</span>
+                        </div>
+                    )}
+                    {gateOpeningFt > 0 && (
+                        <div className="draw-totals-row draw-totals-net">
+                            <span>Net fence</span>
+                            <strong>{Math.round(totalFt - gateOpeningFt)} ft</strong>
+                        </div>
                     )}
                 </div>
             )}
 
-            {gateOpeningFt > 0 && (
-                <div className="draw-gate-summary">
-                    {totalFt} ft measured &minus; {gateOpeningFt} ft gate openings = <strong>{Math.round(totalFt - gateOpeningFt)} ft</strong> fence
-                </div>
-            )}
-
+            {/* ── Actions ── */}
             <div className="draw-panel-actions">
-                <button className="draw-new-line-btn" onClick={onNewLine}>+ New Line</button>
-                <div className="draw-gate-hint">
-                    Tip: Switch off Draw mode, then click a green fence line to add a gate.
-                </div>
                 {totalFt > 0 && (
-                    <button className="draw-quote-btn" onClick={onGetQuote}>
-                        Get Quote for This Layout &rarr;
+                    <button
+                        className="draw-quote-btn"
+                        onClick={onGetQuote}
+                        disabled={!allGatesValid}
+                        title={!allGatesValid ? 'Set gate widths before continuing' : ''}
+                    >
+                        Continue to Quote &rarr;
                     </button>
+                )}
+                {!allGatesValid && (
+                    <div className="draw-validation-msg">All gates must have a width set before continuing.</div>
                 )}
                 <div className="draw-phone-hint">
                     Or call <strong>(855) FENCE-30</strong> for a free estimate
@@ -880,6 +1103,93 @@ var FollowUpQuestions = function(props) {
 };
 
 // ============================================================
+// Manual Gate Form (for toolbar-triggered gate entry)
+// ============================================================
+var ManualGateForm = function(props) {
+    var onConfirm = props.onConfirm;
+    var onCancel = props.onCancel;
+    var lines = props.lines;
+
+    var typeState = useState('walk');
+    var gateType = typeState[0];
+    var setGateType = typeState[1];
+
+    var widthState = useState(48);
+    var gateWidth = widthState[0];
+    var setGateWidth = widthState[1];
+
+    var lineIdxState = useState(0);
+    var lineIdx = lineIdxState[0];
+    var setLineIdx = lineIdxState[1];
+
+    var walkWidths = GATE_COMPATIBLE_WIDTHS.residential.walk;
+    var driveWidths = GATE_COMPATIBLE_WIDTHS.residential.drive;
+    var widthOptions = gateType === 'walk' ? walkWidths : driveWidths;
+
+    var handleConfirm = function() {
+        var targetLine = lineIdx;
+        if (targetLine >= lines.length) targetLine = 0;
+        var line = lines[targetLine];
+        var segIdx = line && line.points.length >= 2 ? 0 : 0;
+        onConfirm({
+            lineIndex: targetLine,
+            segmentIndex: segIdx,
+            positionFt: 0,
+            type: gateType,
+            widthInches: gateWidth,
+        });
+    };
+
+    return (
+        <div>
+            {lines.length > 1 && (
+                <div className="draw-gate-popup-field">
+                    <label className="draw-gate-label">On which line?</label>
+                    <select
+                        className="draw-gate-select"
+                        value={lineIdx}
+                        onChange={function(e) { setLineIdx(Number(e.target.value)); }}
+                    >
+                        {lines.map(function(l, i) {
+                            return <option key={i} value={i}>{l.label}</option>;
+                        })}
+                    </select>
+                </div>
+            )}
+            <div className="draw-gate-popup-field">
+                <label className="draw-gate-label">Gate Type</label>
+                <div className="draw-gate-type-row">
+                    <button
+                        className={'draw-gate-type-btn' + (gateType === 'walk' ? ' selected' : '')}
+                        onClick={function() { setGateType('walk'); setGateWidth(48); }}
+                    >Walk Gate</button>
+                    <button
+                        className={'draw-gate-type-btn' + (gateType === 'drive' ? ' selected' : '')}
+                        onClick={function() { setGateType('drive'); setGateWidth(120); }}
+                    >Drive Gate</button>
+                </div>
+            </div>
+            <div className="draw-gate-popup-field">
+                <label className="draw-gate-label">Width</label>
+                <select
+                    className="draw-gate-select"
+                    value={gateWidth}
+                    onChange={function(e) { setGateWidth(Number(e.target.value)); }}
+                >
+                    {widthOptions.map(function(w) {
+                        return <option key={w} value={w}>{w}" ({Math.round(w / 12 * 10) / 10} ft)</option>;
+                    })}
+                </select>
+            </div>
+            <div className="draw-gate-popup-actions">
+                <button className="draw-gate-confirm" onClick={handleConfirm}>Add Gate</button>
+                <button className="draw-gate-cancel" onClick={onCancel}>Cancel</button>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================
 // Main DrawYardView Component
 // ============================================================
 var DrawYardView = function(props) {
@@ -992,6 +1302,26 @@ var DrawYardView = function(props) {
         });
     };
 
+    // Manual gate add from toolbar — opens the gate popup without a map click
+    var handleAddGateManual = function() {
+        setDrawMode(false);
+        // If there are lines with segments, default to first line first segment
+        if (lines.length > 0 && lines[0].points.length >= 2) {
+            // Trigger the gate popup on the DrawingMap via a synthetic state
+            setManualGatePopup(true);
+        }
+    };
+
+    // Finish current segment — stop draw mode and advance active line
+    var handleFinishSegment = function() {
+        setDrawMode(false);
+    };
+
+    // Manual gate popup state (triggered from toolbar, not map click)
+    var manualGatePopupState = useState(false);
+    var manualGatePopup = manualGatePopupState[0];
+    var setManualGatePopup = manualGatePopupState[1];
+
     // DRAW 7: Show follow-up questions instead of immediately navigating
     var handleGetQuoteForLayout = function() {
         setShowFollowUp(true);
@@ -999,12 +1329,10 @@ var DrawYardView = function(props) {
 
     // DRAW 7: Complete follow-up and export
     var handleFollowUpComplete = function(answers) {
-        // Calculate totals
+        // Calculate totals using Google geometry (ellipsoid) when available
         var totalLengthFt = 0;
         lines.forEach(function(line) {
-            for (var i = 0; i < line.points.length - 1; i++) {
-                totalLengthFt += distanceFt(line.points[i].lat, line.points[i].lng, line.points[i + 1].lat, line.points[i + 1].lng);
-            }
+            totalLengthFt += pathLengthFt(line.points);
         });
         totalLengthFt = Math.round(totalLengthFt);
 
@@ -1028,11 +1356,12 @@ var DrawYardView = function(props) {
             source: 'gps-draw-tool',
             address: location ? location.address : '',
             lines: lines.map(function(line) {
-                var ft = 0;
-                for (var i = 0; i < line.points.length - 1; i++) {
-                    ft += distanceFt(line.points[i].lat, line.points[i].lng, line.points[i + 1].lat, line.points[i + 1].lng);
-                }
-                return { label: line.label, lengthFt: Math.round(ft), points: line.points };
+                return {
+                    label: line.label,
+                    lengthFt: Math.round(pathLengthFt(line.points)),
+                    points: line.points,
+                    segments: line.segments || [],
+                };
             }),
             totalLengthFt: totalLengthFt,
             adjustedLinearFeet: adjustedLinearFeet,
@@ -1151,9 +1480,27 @@ var DrawYardView = function(props) {
                 onGetQuote={handleGetQuoteForLayout}
                 fenceConfig={fenceConfig}
                 gateMarkers={gateMarkers}
+                onAddGateManual={handleAddGateManual}
+                onFinishSegment={handleFinishSegment}
                 canUndo={undoStack.length > 0}
                 canRedo={redoStack.length > 0}
             />
+            {/* Manual gate popup (from toolbar, not map click) */}
+            {manualGatePopup && (
+                <div className="draw-gate-popup-overlay" onClick={function() { setManualGatePopup(false); }}>
+                    <div className="draw-gate-popup" onClick={function(e) { e.stopPropagation(); }}>
+                        <div className="draw-gate-popup-title">Add Gate Manually</div>
+                        <ManualGateForm
+                            onConfirm={function(gate) {
+                                handleAddGateMarker(gate);
+                                setManualGatePopup(false);
+                            }}
+                            onCancel={function() { setManualGatePopup(false); }}
+                            lines={lines}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
