@@ -15,6 +15,7 @@ import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';
 import DesignReviewPage from './DesignReviewPage';
 import AreaReturnPage from './AreaReturnPage';
+import PoolCompliancePopup from './PoolCompliancePopup';
 
 var STORAGE_KEY = 'gv_config';
 
@@ -229,6 +230,10 @@ var DesignStudio = function() {
     var multiArea = multiAreaState[0];
     var setMultiArea = multiAreaState[1];
 
+    var poolPopupState = useState(false);
+    var showPoolPopup = poolPopupState[0];
+    var setShowPoolPopup = poolPopupState[1];
+
     var buildSavedDesign = function(scene, activeConfig) {
         var acc = activeConfig.accessories || {};
         var isFence = (scene === 'fencing' || scene === 'backyard');
@@ -290,6 +295,10 @@ var DesignStudio = function() {
         }
 
         setView('design-review');
+
+        if (scene === 'backyard' && !savedDesign.poolBarrier) {
+            setShowPoolPopup(true);
+        }
     };
 
     var handleSkipToManualEntry = function() {
@@ -338,6 +347,21 @@ var DesignStudio = function() {
                         setContactPopupOpen(true);
                         setView('studio');
                     }}
+                    showPoolPopup={showPoolPopup}
+                    onPoolComplete={function(result) {
+                        setShowPoolPopup(false);
+                        // Update saved design with pool data
+                        try {
+                            var raw = localStorage.getItem('gv_saved_design');
+                            if (raw) {
+                                var design = JSON.parse(raw);
+                                design.poolBarrier = result.poolBarrier;
+                                design.poolCompliance = result.poolCompliance;
+                                localStorage.setItem('gv_saved_design', JSON.stringify(design));
+                            }
+                        } catch (e) {}
+                    }}
+                    onPoolCancel={function() { setShowPoolPopup(false); }}
                 />
             </div>
         );

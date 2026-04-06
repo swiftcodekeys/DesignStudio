@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import PoolCompliancePopup from './PoolCompliancePopup';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import { FENCE_STYLES as GATE_STYLES, POST_CAPS, FINIALS, ARCH_STYLES } from './configData';
 
@@ -282,6 +283,13 @@ var DesignReviewPage = function(props) {
                     </div>
                 </div>
             </div>
+                {props.showPoolPopup && (
+                    <PoolCompliancePopup
+                        currentStyleId={hasDesign ? saved.styleId : ''}
+                        onComplete={props.onPoolComplete}
+                        onCancel={props.onPoolCancel}
+                    />
+                )}
         </div>
     );
 };
