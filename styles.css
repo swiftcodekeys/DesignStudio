@@ -2347,9 +2347,9 @@ html, body {
   color: var(--brand-dark);
 }
 .draw-tool-btn.active {
-  background: #C9A84C;
+  background: #6BA3C2;
   color: #fff;
-  border-color: #C9A84C;
+  border-color: #6BA3C2;
 }
 .draw-tool-btn:disabled {
   opacity: 0.4;
@@ -2637,7 +2637,7 @@ html, body {
 }
 .draw-float-actions {
   position: absolute;
-  bottom: 20px;
+  top: 52px;
   left: 16px;
   display: flex;
   gap: 8px;
@@ -2674,9 +2674,20 @@ html, body {
   opacity: 0.4;
   cursor: not-allowed;
 }
+.draw-float-finish {
+  background: #16A34A;
+  color: #fff;
+}
+.draw-float-finish:hover:not(:disabled) {
+  background: #15803d;
+}
+.draw-float-finish:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .draw-instruction-overlay {
   position: absolute;
-  top: 12px;
+  top: 50px;
   left: 50%;
   transform: translateX(-50%);
   background: #1B3A5C;
@@ -2990,6 +3001,395 @@ html, body {
   text-decoration: underline;
 }
 
+/* --- Gate config panel in draw tool --- */
+.draw-gate-config {
+  background: #FFF8F4;
+  border-top: 2px solid #D4753A;
+  padding: 12px 14px;
+}
+.draw-gate-config-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #D4753A;
+  margin-bottom: 10px;
+}
+.draw-gate-config-field {
+  margin-bottom: 10px;
+}
+.draw-gate-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* --- Gates list in panel --- */
+.draw-gates-list {
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+}
+.draw-gates-list-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #D4753A;
+  padding: 0 14px 4px;
+}
+.draw-gate-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  font-size: 13px;
+}
+.draw-gate-list-icon {
+  font-size: 11px;
+  font-weight: 800;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.draw-gate-list-info {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.draw-gate-list-ft {
+  font-size: 12px;
+  color: var(--text-hint);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* --- Totals redesign with header/sub rows --- */
+.draw-totals-header {
+  font-size: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.draw-totals-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+.draw-totals-detail {
+  font-size: 11px;
+  color: var(--text-hint);
+  padding-top: 4px;
+}
+
+/* Gate instruction overlay (orange for gate mode) */
+.draw-instruction-overlay.gate-mode {
+  background: #D4753A;
+}
+
+/* Gate map label styling */
+.draw-gate-map-label {
+  background: #D4753A;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* --- Accuracy disclaimer — top center, prominent --- */
+.draw-accuracy-note {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 25;
+  pointer-events: none;
+  max-width: 520px;
+  text-align: center;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* --- Segment detail with override + elevation --- */
+.draw-segment-detail {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.draw-segment-detail:last-child { border-bottom: none; }
+.draw-seg-override {
+  width: 50px;
+  padding: 2px 4px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: inherit;
+  text-align: center;
+  color: var(--text-secondary);
+  background: transparent;
+}
+.draw-seg-override:focus {
+  border-color: #D4753A;
+  outline: none;
+  background: #FFF8F4;
+}
+.draw-seg-override::placeholder { color: var(--text-hint); opacity: 0.5; }
+.draw-seg-ft.overridden {
+  color: #D4753A;
+  text-decoration: line-through;
+  text-decoration-color: var(--text-hint);
+}
+.draw-seg-elev-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 2px 44px;
+  font-size: 10px;
+}
+.draw-seg-elev-badge {
+  background: #EEF6FF;
+  color: #3B82F6;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.draw-seg-elev-change {
+  color: var(--text-hint);
+  font-size: 10px;
+}
+.draw-seg-elev-confirm, .draw-seg-elev-deny {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
+}
+.draw-seg-elev-confirm { color: #16A34A; }
+.draw-seg-elev-confirm:hover { background: #F0FFF4; border-color: #16A34A; }
+.draw-seg-elev-deny { color: #DC2626; }
+.draw-seg-elev-deny:hover { background: #FFF5F5; border-color: #DC2626; }
+
+/* --- Checklist auto-detect button --- */
+.draw-check-action {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #3B82F6;
+  color: #3B82F6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.draw-check-action:hover { background: #EEF6FF; }
+.draw-check-loading {
+  margin-left: auto;
+  font-size: 10px;
+  color: #3B82F6;
+  font-style: italic;
+}
+
+/* --- Measuring Guide --- */
+.draw-guide {
+  background: #F0F7FF;
+  border: 1px solid #D0E3F5;
+  border-radius: 8px;
+  margin: 8px 12px;
+  padding: 10px 14px;
+}
+.draw-guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.draw-guide-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1B3A5C;
+}
+.draw-guide-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.draw-guide-close:hover { color: #333; }
+.draw-guide-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  color: #4A5568;
+  line-height: 1.7;
+}
+.draw-guide-list li::before {
+  content: '\2022';
+  color: #6BA3C2;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.draw-guide-reopen {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #6BA3C2;
+  cursor: pointer;
+  padding: 4px 12px;
+  font-family: inherit;
+  font-weight: 600;
+}
+.draw-guide-reopen:hover { text-decoration: underline; }
+
+/* --- Checklist --- */
+.draw-checklist {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.draw-checklist-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-hint);
+  margin-bottom: 6px;
+}
+.draw-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+.draw-check-item.current {
+  opacity: 1;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.draw-check-item.done {
+  opacity: 0.7;
+  color: #16A34A;
+}
+.draw-check-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #E8EAED;
+  color: var(--text-hint);
+}
+.draw-check-item.current .draw-check-icon {
+  background: #1B3A5C;
+  color: #fff;
+}
+.draw-check-item.done .draw-check-icon {
+  background: #16A34A;
+  color: #fff;
+}
+
+/* --- Line block with expand/collapse segments --- */
+.draw-line-block {
+  border-bottom: 1px solid var(--border);
+}
+.draw-line-block.expanded {
+  background: #FAFBFC;
+}
+.draw-line-expand {
+  background: none;
+  border: none;
+  font-size: 10px;
+  color: var(--text-hint);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.draw-line-expand:hover { color: var(--text-primary); }
+.draw-line-pts {
+  font-size: 11px;
+  color: var(--text-hint);
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* --- Segment detail rows --- */
+.draw-segments {
+  padding: 4px 12px 8px 32px;
+}
+.draw-segment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.draw-seg-label {
+  color: var(--text-hint);
+  font-weight: 600;
+  width: 44px;
+  flex-shrink: 0;
+}
+.draw-seg-ft {
+  color: var(--text-primary);
+  font-weight: 600;
+  width: 48px;
+  flex-shrink: 0;
+}
+.draw-seg-slope {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Totals redesign --- */
+.draw-totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.draw-totals-row strong {
+  color: var(--text-primary);
+}
+.draw-totals-net {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+  font-weight: 600;
+}
+
+/* --- Validation message --- */
+.draw-validation-msg {
+  font-size: 12px;
+  color: #DC2626;
+  text-align: center;
+  padding: 4px 0;
+}
+
 /* Draw tool mobile */
 @media (max-width: 767px) {
   .draw-container {
@@ -2999,9 +3399,10 @@ html, body {
     min-height: 50vh;
   }
   .draw-float-actions {
-    bottom: 10px;
+    top: 48px;
     left: 8px;
     gap: 4px;
+    flex-wrap: wrap;
   }
   .draw-float-btn {
     padding: 8px 12px;
