@@ -327,6 +327,18 @@ var DesignStudio = function() {
         window.history.replaceState(null, '', '#' + hashString);
     }, [config]);
 
+    useEffect(function() {
+        try {
+            localStorage.setItem('gv_fence_config', JSON.stringify(frontYardConfig));
+        } catch (e) {}
+    }, [frontYardConfig]);
+
+    useEffect(function() {
+        try {
+            localStorage.setItem('gv_back_config', JSON.stringify(backyardConfig));
+        } catch (e) {}
+    }, [backyardConfig]);
+
     var isDraw = activeTab === 'draw';
 
     if (view === 'design-review') {
