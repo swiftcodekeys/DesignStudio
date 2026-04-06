@@ -3829,3 +3829,352 @@ html, body {
   .hamburger { display: none; }
   .mobile-menu { display: none !important; }
 }
+
+/* ============================================================
+   Bridge Page (Design Review)
+   ============================================================ */
+.bridge-page {
+  width: 100%;
+  min-height: 100vh;
+  background: #f7fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.bridge-topbar {
+  background: #1B3A5C;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bridge-topbar-brand {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.bridge-topbar-highlight { color: #6BA3C2; }
+.bridge-topbar-back {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.bridge-topbar-back:hover { color: #fff; }
+
+.bridge-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+.bridge-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.bridge-header-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #6BA3C2;
+  margin-bottom: 6px;
+}
+.bridge-header-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1B3A5C;
+  margin: 0 0 8px;
+}
+.bridge-header-subtitle {
+  font-size: 14px;
+  color: #718096;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.bridge-columns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.bridge-left, .bridge-right { flex: 1; min-width: 0; }
+
+/* Snapshot */
+.bridge-snapshot {
+  background: #0c1420;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 16px;
+}
+.bridge-snapshot-img {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+}
+.bridge-snapshot-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.bridge-pool-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #16A34A;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.bridge-snapshot-empty {
+  background: #e2e8f0;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bridge-snapshot-placeholder {
+  color: #A0AEC0;
+  font-size: 14px;
+}
+
+/* Selections */
+.bridge-selections {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+}
+.bridge-selections-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #718096;
+  margin-bottom: 4px;
+}
+.bridge-selections-subtitle {
+  font-size: 12px;
+  color: #A0AEC0;
+  margin-bottom: 14px;
+}
+.bridge-selections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+}
+.bridge-selection-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+.bridge-selection-label { color: #A0AEC0; }
+.bridge-selection-value { color: #1B3A5C; font-size: 13px; }
+
+/* Cold start */
+.bridge-cold-start {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 32px 16px;
+  text-align: center;
+}
+.bridge-configure-btn {
+  background: #1B3A5C;
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.bridge-configure-btn:hover { background: #142d49; }
+.bridge-skip-link {
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
+/* Address card */
+.bridge-address-card {
+  background: #fff;
+  border: 1.5px solid #6BA3C2;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.bridge-address-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1B3A5C;
+  margin-bottom: 4px;
+}
+.bridge-address-desc {
+  font-size: 12px;
+  color: #718096;
+  margin-bottom: 14px;
+}
+.bridge-address-wrap { position: relative; margin-bottom: 12px; }
+.bridge-address-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #f8fafc;
+  color: #1B3A5C;
+}
+.bridge-address-input:focus {
+  border-color: #6BA3C2;
+  outline: none;
+}
+.bridge-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+.bridge-suggestion-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+.bridge-suggestion-item:hover { background: #f7fafc; }
+.bridge-suggestion-item:last-child { border-bottom: none; }
+.bridge-address-error {
+  color: #DC2626;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.bridge-address-btn {
+  width: 100%;
+  padding: 12px;
+  background: #D4753A;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.bridge-address-btn:hover { background: #c46830; }
+.bridge-address-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* OR divider */
+.bridge-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.bridge-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+.bridge-divider-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #A0AEC0;
+}
+
+/* Manual entry card — equal weight to address card */
+.bridge-manual-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid #6BA3C2;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.bridge-manual-card:hover { border-color: #1B3A5C; background: #f8fafc; }
+.bridge-manual-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1B3A5C;
+}
+.bridge-manual-desc {
+  font-size: 12px;
+  color: #718096;
+}
+.bridge-manual-arrow {
+  color: #CBD5E0;
+  font-size: 20px;
+}
+
+/* Contact section */
+.bridge-contact {
+  text-align: center;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px dashed #CBD5E0;
+}
+.bridge-contact-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1B3A5C;
+  margin-bottom: 4px;
+}
+.bridge-contact-link {
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+}
+.bridge-contact-phone {
+  font-size: 11px;
+  color: #A0AEC0;
+  margin-top: 4px;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .bridge-columns { flex-direction: column; }
+  .bridge-header-title { font-size: 20px; }
+}
+
+/* Google Places must appear above bridge */
+.bridge-page .pac-container { z-index: 10000 !important; }
