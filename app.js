@@ -15,7 +15,6 @@ import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';
 import DesignReviewPage from './DesignReviewPage';
 import AreaReturnPage from './AreaReturnPage';
-import PoolCompliancePopup from './PoolCompliancePopup';
 
 var STORAGE_KEY = 'gv_config';
 

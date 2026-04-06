@@ -4384,6 +4384,53 @@ html, body {
   font-family: inherit;
 }
 .wizard-gate-skip-btn:hover { background: #c46830; }
+.wizard-step-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1B3A5C;
+  margin: 0 0 8px;
+}
+.wizard-step-desc {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 0;
+}
+
+/* QuoteBuilder gate step extras */
+.qb-gate-custom-note {
+  font-size: 13px;
+  color: #718096;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px dashed #CBD5E0;
+  border-radius: 8px;
+  margin-top: 16px;
+  text-align: center;
+}
+.qb-gate-custom-link {
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+.qb-gate-skip {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  font-family: inherit;
+}
+.qb-gate-skip:hover { text-decoration: underline; }
 
 /* ============================================================
    Area Return Page (Multi-Area Flow)
