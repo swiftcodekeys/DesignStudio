@@ -237,12 +237,31 @@ var DesignStudio = function() {
         var acc = activeConfig.accessories || {};
         var isFence = (scene === 'fencing' || scene === 'backyard');
 
-        // Capture 3D canvas snapshot
+        // Capture viewport snapshot (background + 3D canvas composited)
         var snapshotDataUrl = '';
         try {
+            var viewportWrap = document.querySelector('.viewport-wrap');
             var canvasEl = document.querySelector('.viewport-scene canvas');
-            if (canvasEl) {
-                snapshotDataUrl = canvasEl.toDataURL('image/png');
+            if (canvasEl && viewportWrap) {
+                var w = canvasEl.width;
+                var h = canvasEl.height;
+                var offscreen = document.createElement('canvas');
+                offscreen.width = w;
+                offscreen.height = h;
+                var ctx = offscreen.getContext('2d');
+                // Draw the CSS background gradient
+                var wrapStyle = window.getComputedStyle(viewportWrap);
+                var bgImage = wrapStyle.backgroundImage;
+                if (bgImage && bgImage !== 'none') {
+                    // Parse gradient colors and draw a simple fill
+                    ctx.fillStyle = '#8CA8BC';
+                    ctx.fillRect(0, 0, w, h);
+                }
+                // Draw the 3D canvas on top
+                ctx.drawImage(canvasEl, 0, 0, w, h);
+                snapshotDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+            } else if (canvasEl) {
+                snapshotDataUrl = canvasEl.toDataURL('image/jpeg', 0.85);
             }
         } catch (e) {
             console.warn('[SaveDesign] Canvas capture failed:', e);
@@ -293,10 +312,15 @@ var DesignStudio = function() {
             console.warn('[SaveDesign] localStorage write failed:', e);
         }
 
-        setView('design-review');
-
-        if (scene === 'backyard' && !savedDesign.poolBarrier) {
-            setShowPoolPopup(true);
+        // From draw tool: go straight to quote builder (they already have measurements)
+        // From design studio: go to bridge page (review design + enter address or manual)
+        if (activeTab === 'draw') {
+            setView('quote-builder');
+        } else {
+            setView('design-review');
+            if (scene === 'backyard' && !savedDesign.poolBarrier) {
+                setShowPoolPopup(true);
+            }
         }
     };
 
