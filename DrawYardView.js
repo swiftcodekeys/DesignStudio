@@ -297,6 +297,7 @@ var DrawingMap = function(props) {
     var onNewLine = props.onNewLine;
     var onUndo = props.onUndo;
     var onClear = props.onClear;
+    var onFinishLine = props.onFinishLine;
     var canUndo = props.canUndo;
     var gateMarkers = props.gateMarkers;
     var onRemoveGateMarker = props.onRemoveGateMarker;
@@ -717,32 +718,35 @@ var DrawingMap = function(props) {
         <div className="draw-map-wrap">
             <div ref={mapRef} className="draw-map" />
 
-            {/* Instruction overlay */}
+            {/* GPS accuracy disclaimer — top center */}
+            <div className="draw-accuracy-note">
+                Satellite measurements are approximate, +/- 3-5 ft per 100 ft. Final measurements confirmed on-site.
+            </div>
+
+            {/* Instruction overlay — below disclaimer */}
             {(showInstructions || gatePlaceMode) && (
                 <div className={'draw-instruction-overlay' + (gatePlaceMode ? ' gate-mode' : '')}>
                     {instructionText}
                 </div>
             )}
 
-            {/* Floating action buttons (only in fence draw mode, not gate place) */}
+            {/* Action buttons — top left */}
             {!gatePlaceMode && (
                 <div className="draw-float-actions">
                     <button className="draw-float-btn draw-float-primary" onClick={onNewLine} title="Start a new fence line">
-                        &#9998; Draw New Line
+                        &#9998; New Line
                     </button>
                     <button className="draw-float-btn draw-float-secondary" onClick={onUndo} disabled={!canUndo} title="Undo last point">
                         &#8617; Undo
                     </button>
                     <button className="draw-float-btn draw-float-secondary" onClick={onClear} title="Clear all lines">
-                        &#128465; Clear All
+                        &#128465; Clear
+                    </button>
+                    <button className="draw-float-btn draw-float-finish" onClick={onFinishLine} disabled={!drawMode} title="Finish current line">
+                        &#10003; Finish
                     </button>
                 </div>
             )}
-
-            {/* GPS accuracy disclaimer */}
-            <div className="draw-accuracy-note">
-                Satellite measurements are approximate, +/- 3-5 ft per 100 ft. Final measurements confirmed on-site.
-            </div>
         </div>
     );
 };
@@ -1743,6 +1747,7 @@ var DrawYardView = function(props) {
                     onNewLine={handleNewLine}
                     onUndo={handleUndo}
                     onClear={handleClear}
+                    onFinishLine={handleFinishLine}
                     canUndo={undoStack.length > 0}
                     gateMarkers={gateMarkers}
                     onRemoveGateMarker={handleRemoveGateMarker}
@@ -1776,6 +1781,7 @@ var DrawYardView = function(props) {
                 onNewLine={handleNewLine}
                 onUndo={handleUndo}
                 onClear={handleClear}
+                onFinishLine={handleFinishLine}
                 canUndo={undoStack.length > 0}
                 gateMarkers={gateMarkers}
                 onRemoveGateMarker={handleRemoveGateMarker}
