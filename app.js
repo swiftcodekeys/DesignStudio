@@ -13,6 +13,7 @@ import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigDa
 import QuizPage from './quiz/QuizPage';
 import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';
+import DesignReviewPage from './DesignReviewPage';
 
 var STORAGE_KEY = 'gv_config';
 
@@ -222,50 +223,71 @@ var DesignStudio = function() {
     var view = viewState[0];
     var setView = viewState[1];
 
-    var handleGetQuote = function() {
-        handleOpenQuoteBuilder();
+    var buildSavedDesign = function(scene, activeConfig) {
+        var acc = activeConfig.accessories || {};
+        var isFence = (scene === 'fencing' || scene === 'backyard');
+
+        // Capture 3D canvas snapshot
+        var snapshotDataUrl = '';
+        try {
+            var canvasEl = document.querySelector('.viewport-scene canvas');
+            if (canvasEl) {
+                snapshotDataUrl = canvasEl.toDataURL('image/png');
+            }
+        } catch (e) {
+            console.warn('[SaveDesign] Canvas capture failed:', e);
+        }
+
+        return {
+            scene: scene,
+            styleId: activeConfig.styleId || '',
+            height: activeConfig.height || '48',
+            color: activeConfig.color ? {
+                id: activeConfig.color.id,
+                displayName: activeConfig.color.displayName,
+                hex: activeConfig.color.hex || activeConfig.color.threeHex || '',
+            } : null,
+            postCap: activeConfig.postCap || 'pcf',
+            finialType: isFence ? (activeConfig.finialType || null) : (activeConfig.finial || null),
+            pupType: activeConfig.pupType || null,
+            circles: !!acc.tcr,
+            butterflies: !!acc.tbu,
+            scrolls: !!acc.scr,
+            midRail: !!acc.mdr,
+            upperFinialRail: !!acc.ufr,
+            proSpacing: !!acc.res,
+            arch: isFence ? null : (activeConfig.arch || null),
+            mount: isFence ? null : (activeConfig.mount || null),
+            leaf: isFence ? null : (activeConfig.leaf || null),
+            privacyPostColor: activeConfig.privacyPostColor || null,
+            privacyPanelColor: activeConfig.privacyPanelColor || null,
+            poolBarrier: false,
+            poolCompliance: null,
+            snapshotDataUrl: snapshotDataUrl,
+            timestamp: new Date().toISOString(),
+        };
     };
 
-    var handleOpenQuoteBuilder = function() {
+    var handleGetQuote = function() {
         setContactPopupOpen(false);
-        // Pre-fill quote builder with current design studio config
+
+        var isFenceScene = (activeTab === 'fencing' || activeTab === 'backyard');
+        var activeConfig = isFenceScene ? fenceConfig : config;
+        var scene = activeTab === 'draw' ? 'fencing' : activeTab;
+
+        var savedDesign = buildSavedDesign(scene, activeConfig);
+
         try {
-            var isFenceMode = activeTab === 'fencing' || activeTab === 'backyard' || activeTab === 'draw';
-            var activeConfig = isFenceMode ? fenceConfig : config;
-            var colorMap = {
-                5: 'textured-black', 6: 'textured-black',
-                3: 'textured-white', 4: 'textured-white',
-                1: 'textured-bronze', 2: 'textured-bronze',
-                0: 'textured-khaki', 7: 'silver',
-            };
-            var styleMap = {
-                'uaf_200': 'horizon', 'uaf_201': 'horizon-pro',
-                'uab_200': 'haven', 'uaf_250': 'vanguard',
-                'uas_100': 'charleston', 'uas_101': 'charleston-pro',
-                'uas_150': 'savannah', 'uas_300': 'cambridge', 'uas_350': 'lexington',
-            };
-            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
-            var prefill = Object.assign({}, existing, {
-                style: styleMap[activeConfig.styleId] || existing.style || '',
-                height: parseInt(activeConfig.height) || existing.height || 60,
-                color: (activeConfig.color && colorMap[activeConfig.color.id]) || existing.color || 'textured-black',
-                isFence: isFenceMode,
-                postCap: activeConfig.postCap || existing.postCap || '',
-                finial: activeConfig.finial || activeConfig.finialType || existing.finial || '',
-            });
-            localStorage.setItem('gv_quote_builder', JSON.stringify(prefill));
-        } catch (e) { console.error('[App] Quote prefill error:', e); }
-        setView('quote-builder');
+            localStorage.setItem('gv_saved_design', JSON.stringify(savedDesign));
+        } catch (e) {
+            console.warn('[SaveDesign] localStorage write failed:', e);
+        }
+
+        setView('design-review');
     };
 
     var handleSkipToManualEntry = function() {
-        handleOpenQuoteBuilder();
-        // QuoteBuilder will read initialStep from localStorage
-        try {
-            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
-            existing.initialStep = 1; // Step 1 = Layout (manual footage entry)
-            localStorage.setItem('gv_quote_builder', JSON.stringify(existing));
-        } catch (e) { /* */ }
+        handleGetQuote();
     };
 
     var handleReset = function() {
@@ -292,6 +314,29 @@ var DesignStudio = function() {
 
     var isDraw = activeTab === 'draw';
 
+    if (view === 'design-review') {
+        return (
+            <div className="app-shell">
+                <DesignReviewPage
+                    onNavigateToDraw={function(location) {
+                        setView('studio');
+                        setActiveTab('draw');
+                    }}
+                    onNavigateToManual={function() {
+                        setView('quote-builder');
+                    }}
+                    onNavigateToStudio={function() {
+                        setView('studio');
+                    }}
+                    onOpenContact={function() {
+                        setContactPopupOpen(true);
+                        setView('studio');
+                    }}
+                />
+            </div>
+        );
+    }
+
     if (view === 'quote-builder') {
         return (
             <div className="app-shell">
@@ -305,7 +350,7 @@ var DesignStudio = function() {
             <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
-                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
+                    <DrawYardView onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
                     <BacklinksFooter config={config} />
                 </div>
             ) : (
