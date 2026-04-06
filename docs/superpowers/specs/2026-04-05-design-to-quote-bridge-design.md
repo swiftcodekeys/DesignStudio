@@ -213,13 +213,89 @@ When QuoteBuilder mounts, it checks for `gv_saved_design`:
 | File | Change |
 |------|--------|
 | `app.js` | Replace `handleOpenQuoteBuilder` with `handleSaveDesignAndTransition`. Add `'design-review'` view state. Canvas snapshot capture. Write `gv_saved_design`. |
-| `DesignReviewPage.js` | **NEW** — Bridge page component with design summary, address entry, manual entry, contact link. |
+| `DesignReviewPage.js` | **NEW** — Bridge page component with design summary, address entry, manual entry, contact link. Multi-area progress indicator. |
+| `AreaReturnPage.js` | **NEW** — "Now let's do your backyard" page with same-system / different-system choice. |
 | `PoolCompliancePopup.js` | **NEW** — Two-step pool question modal. |
 | `WizardShell.js` | Reframe gate step as educational. Add pool popup trigger when backyard zone selected. |
 | `QuoteBuilder.js` | Read `gv_saved_design`. Remove `needsGates` checkbox from StepProject. Pre-fill all steps from saved design. StepGates always accessible. |
 | `styles.css` | Bridge page styles, pool popup styles, gate step restyle. |
 
-## 8. Fields NOT Yet Wired
+## 8. Multi-Area Flow (Front + Backyard)
+
+When the user selects both front yard and backyard (either in WizardShell zone selection or via the "Front + Backyard" project type), the flow handles them sequentially — not in parallel.
+
+### Saved Design Object — Multi-Area
+
+`gv_saved_design` gains an `areas` array instead of flat fields:
+
+```
+{
+  multiArea: true,
+  areas: [
+    {
+      zone: 'front',
+      styleId: 'uaf_200',
+      height: '48',
+      color: { ... },
+      // ... all config fields ...
+      snapshotDataUrl: 'data:image/png;base64,...',
+      poolBarrier: false,
+      poolCompliance: null,
+      layout: null,  // filled after draw/manual entry
+    },
+    {
+      zone: 'back',
+      styleId: null,  // null until area 2 is configured
+      // ... remaining fields null until configured ...
+      snapshotDataUrl: null,
+      poolBarrier: null,
+      poolCompliance: null,
+      layout: null,
+    }
+  ],
+  activeAreaIndex: 0,  // which area we're currently working on
+  timestamp: '...'
+}
+```
+
+Single-area flows still use the flat format (no `multiArea` flag). QuoteBuilder checks `multiArea` to decide which format to read.
+
+### Flow
+
+**Area 1 (front yard):**
+1. User configures front yard in the design tool
+2. Clicks "Get Quote" → bridge page shows Area 1 summary
+3. Draws yard / enters footage → completes Area 1 quote steps
+4. After Area 1 layout is saved → **Area 2 Return Page** appears
+
+**Area 2 Return Page:**
+- Header: "Now let's do your backyard"
+- Question: **"Use the same fence system as the front yard?"**
+  - **Yes, same system** → copies Area 1's config (style, color, height, all accessories) into Area 2. Skips straight to the bridge page for Area 2 (draw/measure only — design is already set).
+  - **No, different system** → navigates to design tool with backyard tab active. User configures backyard separately, then hits "Get Quote" again to return to the bridge page for Area 2.
+- Pool question triggers here if Area 2 is backyard (the popup fires since it's a backyard zone).
+
+**Area 2 completes:**
+- After Area 2 layout is saved, both areas merge into a single combined quote in QuoteBuilder.
+- QuoteBuilder shows both areas as separate sections with their own line items, then a combined total.
+
+### Progress Indicator
+
+When in multi-area mode, the bridge page shows a progress indicator:
+
+```
+[Area 1: Front Yard ✓] — [Area 2: Backyard ○]
+```
+
+This makes it clear they're not done yet and sets the expectation that there's a second area.
+
+### Edge Cases
+
+- **User abandons Area 2:** Area 1 data is already saved. If they close and return, they can pick up where they left off (Area 2 return page shows again).
+- **User changes mind:** "Back to Design Tool" on the Area 2 return page lets them reconfigure Area 1 if needed.
+- **Gate only:** If user also selected a gate zone in the wizard, gate config is separate from both areas and carries through as a third section in the quote.
+
+## 9. Fields NOT Yet Wired
 
 These fields exist in the design tool but do not yet affect pricing or the order form. They are saved in `gv_saved_design` for future use:
 
@@ -233,6 +309,7 @@ These will be wired when the pricing engine is extended to cover gate quotes.
 
 ## 9. Navigation Flow Summary
 
+### Single-area flow
 ```
 Design Studio (any tab)
   → "Get Quote" clicked
@@ -243,15 +320,34 @@ Design Studio (any tab)
       ├── "Enter Footage Manually" → QuoteBuilder Step 1 (pre-filled)
       ├── "Drop us a line" → ContactPopup
       └── "Back to Design Tool" → Studio view
+```
 
+### Multi-area flow (Front + Backyard)
+```
+Wizard Shell → Select "Front Yard" + "Backyard"
+  → Configure Area 1 (front yard)
+  → "Get Quote" → Bridge Page (Area 1)
+      → Draw / Manual → Area 1 layout saved
+      → Area 2 Return Page
+          ├── "Same system" → copies config → Bridge Page (Area 2, draw/measure only)
+          │     → Draw / Manual → Area 2 layout saved → QuoteBuilder (both areas)
+          └── "Different system" → Design Studio (backyard tab)
+                → Configure backyard → "Get Quote" → Bridge Page (Area 2)
+                    → Draw / Manual → Area 2 layout saved → QuoteBuilder (both areas)
+```
+
+### Wizard Shell flow
+```
 Wizard Shell
-  → Zone selection → Configure → Gate exploration (optional)
-  → "Get Quote" → same bridge page flow
+  → Zone selection → Configure → Gate exploration (educational, optional)
+  → "Get Quote" → same bridge page flow (single or multi-area)
+```
 
-Cold entry (direct URL, Framer landing page)
-  → Bridge Page (cold start variant)
-      ├── "Configure Your Fence" → Design Studio
-      ├── "Skip to quote" → QuoteBuilder (no pre-fill)
-      ├── Address entry → DrawYardView
-      └── "Drop us a line" → ContactPopup
+### Cold entry (direct URL, Framer landing page)
+```
+Bridge Page (cold start variant)
+  ├── "Configure Your Fence" → Design Studio
+  ├── "Skip to quote" → QuoteBuilder (no pre-fill)
+  ├── Address entry → DrawYardView
+  └── "Drop us a line" → ContactPopup
 ```
