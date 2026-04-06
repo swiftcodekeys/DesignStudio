@@ -479,62 +479,58 @@ var WizardShell = function() {
                 </div>
             )}
 
-            {/* ---- Step 3: Gates Question (only if gate not selected in Step 1) ---- */}
+            {/* ---- Step 3: Gate Exploration (educational, not blocking) ---- */}
             {step === 3 && !hasGateZone && (
-                <div className="wizard-content">
-                    <h1 className="zone-heading">Want to explore gate options?</h1>
-                    <p className="zone-subhead">
-                        Walk and drive gates can be added to your quote.
+                <div className="wizard-gate-explore">
+                    <h2 className="wizard-step-title">Take a Look at Your Gate Options</h2>
+                    <p className="wizard-step-desc">
+                        Most homeowners add a walk gate or drive gate. Take a look — if you see something you like, we'll add it to your quote.
                     </p>
-                    <p className="zone-subhead" style={{ marginBottom: 40, fontSize: '14px', opacity: 0.7 }}>
-                        Estate and cantilever gates are custom order &mdash; call (855) FENCE-30.
-                    </p>
-                    <div className="gate-cards">
-                        <div
-                            className={'gate-card' + (gateAnswer === 'yes' ? ' selected' : '')}
-                            onClick={function() { setGateAnswer('yes'); }}
-                        >
-                            <div className="gate-card-icon"><GateYesIcon /></div>
-                            <div className="gate-card-title">Yes, add a gate</div>
+
+                    <div className="wizard-gate-cards">
+                        <div className="wizard-gate-card">
+                            <img src="assets/ifence_previews/gate_styles/san_marino_15.png" alt="Walk Gate" className="wizard-gate-img" />
+                            <div className="wizard-gate-card-body">
+                                <div className="wizard-gate-card-title">Walk Gate</div>
+                                <div className="wizard-gate-card-desc">36" to 72" wide. Single-leaf pedestrian gate.</div>
+                                <div className="wizard-gate-card-tag">Most common — included in instant quote</div>
+                            </div>
                         </div>
-                        <div
-                            className={'gate-card' + (gateAnswer === 'no' ? ' selected' : '')}
-                            onClick={function() { setGateAnswer('no'); }}
-                        >
-                            <div className="gate-card-icon"><NoGateIcon /></div>
-                            <div className="gate-card-title">No gates for now</div>
+                        <div className="wizard-gate-card">
+                            <img src="assets/ifence_previews/gate_styles/san_marino_15.png" alt="Drive Gate" className="wizard-gate-img" />
+                            <div className="wizard-gate-card-body">
+                                <div className="wizard-gate-card-title">Double Drive Gate</div>
+                                <div className="wizard-gate-card-desc">72" to 144" wide. Standard vehicle access.</div>
+                                <div className="wizard-gate-card-tag">Standard — included in instant quote</div>
+                            </div>
                         </div>
                     </div>
-                    <div className="wizard-actions">
-                        <div className="wizard-nav-row">
-                            <button className="wizard-btn-back" onClick={function() { setStep(2); }}>
-                                &larr; Back
-                            </button>
-                            <button
-                                className="wizard-btn-primary"
-                                disabled={gateAnswer === null}
-                                onClick={function() {
-                                    if (gateAnswer === 'yes') {
-                                        // Add gate zone and go to configure it
-                                        setSelectedZones(function(prev) {
-                                            if (prev.indexOf('gate') < 0) return prev.concat(['gate']);
-                                            return prev;
-                                        });
-                                        setCurrentZone('gate');
-                                        setZoneConfigs(function(prev) {
-                                            var updated = Object.assign({}, prev);
-                                            if (!updated.gate) updated.gate = getDefaultConfig('gate');
-                                            return updated;
-                                        });
-                                        setStep(2);
-                                    } else {
-                                        setStep(4); // Skip to measure
-                                    }
-                                }}
-                            >
-                                Next &rarr;
-                            </button>
-                        </div>
+
+                    <div className="wizard-gate-custom">
+                        <strong>Estate &amp; Cantilever Gates</strong> — Custom order. <button className="wizard-gate-custom-link" onClick={function() {}}>Contact us for pricing</button>
+                    </div>
+
+                    <div className="wizard-gate-actions">
+                        <button className="wizard-gate-explore-btn" onClick={function() {
+                            setGateAnswer('yes');
+                            var newZones = selectedZones.concat(['gate']);
+                            setSelectedZones(newZones);
+                            setCurrentZone('gate');
+                            setZoneConfigs(function(prev) {
+                                var updated = Object.assign({}, prev);
+                                if (!updated.gate) updated.gate = getDefaultConfig('gate');
+                                return updated;
+                            });
+                            setStep(2);
+                        }}>
+                            Yes, configure a gate now
+                        </button>
+                        <button className="wizard-gate-skip-btn" onClick={function() {
+                            setGateAnswer('no');
+                            setStep(hasGateZone ? 3 : 4);
+                        }}>
+                            I'll add my gates with my instant quote &rarr;
+                        </button>
                     </div>
                 </div>
             )}

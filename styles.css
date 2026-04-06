@@ -4290,3 +4290,97 @@ html, body {
 
 /* Google Places must appear above bridge */
 .bridge-page .pac-container { z-index: 10000 !important; }
+
+/* ============================================================
+   Wizard Gate Exploration (reframed)
+   ============================================================ */
+.wizard-gate-explore {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.wizard-gate-cards {
+  display: flex;
+  gap: 16px;
+  margin: 20px 0;
+}
+.wizard-gate-card {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.wizard-gate-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+.wizard-gate-card-body { padding: 12px; }
+.wizard-gate-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1B3A5C;
+  margin-bottom: 4px;
+}
+.wizard-gate-card-desc {
+  font-size: 12px;
+  color: #718096;
+  margin-bottom: 6px;
+}
+.wizard-gate-card-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #16A34A;
+  background: #F0FFF4;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.wizard-gate-custom {
+  background: #f8fafc;
+  border: 1px dashed #CBD5E0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  color: #718096;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.wizard-gate-custom-link {
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+.wizard-gate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wizard-gate-explore-btn {
+  padding: 12px;
+  background: #fff;
+  color: #1B3A5C;
+  border: 1.5px solid #1B3A5C;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wizard-gate-explore-btn:hover { background: #f0f4f8; }
+.wizard-gate-skip-btn {
+  padding: 14px;
+  background: #D4753A;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wizard-gate-skip-btn:hover { background: #c46830; }
