@@ -59,7 +59,7 @@ function buildQuoteConfig(data) {
             };
         }),
         postCap: data.postCap || 'flat',
-        puppyPickets: !!(data.extras && data.extras.puppyPickets),
+        puppyPickets: data.picketSpacing === 'puppy',
         finials: null,
         circles: !!(data.extras && data.extras.circles),
         terrain: worstTerrain
@@ -109,6 +109,47 @@ function loadQuoteData() {
 
 function saveQuoteData(data) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* */ }
+}
+
+function loadSavedDesign() {
+    try {
+        var raw = localStorage.getItem('gv_saved_design');
+        if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return null;
+}
+
+function prefillFromSavedDesign(savedDesign) {
+    if (!savedDesign || !savedDesign.styleId) return null;
+
+    var styleMap = {
+        'uaf_200': 'horizon', 'uaf_201': 'horizon-pro',
+        'uab_200': 'haven', 'uaf_250': 'vanguard',
+        'uas_100': 'charleston', 'uas_101': 'charleston-pro',
+        'uas_150': 'savannah', 'uas_300': 'cambridge', 'uas_350': 'lexington',
+    };
+
+    var prefill = {
+        style: styleMap[savedDesign.styleId] || savedDesign.styleId,
+        height: parseInt(savedDesign.height) || 48,
+        color: savedDesign.color ? savedDesign.color.displayName.toLowerCase().replace(/\s+/g, '-') : 'textured-black',
+        postCap: savedDesign.postCap === 'pcb' ? 'ball' : 'flat',
+        picketSpacing: savedDesign.pupType ? 'puppy' : (savedDesign.proSpacing ? 'pro' : 'standard'),
+        extras: {
+            circles: !!savedDesign.circles,
+            butterflies: !!savedDesign.butterflies,
+            scrolls: !!savedDesign.scrolls,
+        },
+        needsFence: true,
+        needsGates: false,
+    };
+
+    // Pre-fill pool project type
+    if (savedDesign.poolBarrier) {
+        prefill.projectType = 'pool';
+    }
+
+    return prefill;
 }
 
 var defaultData = {
@@ -166,10 +207,6 @@ var StepProject = function(props) {
                 <label className="qb-check">
                     <input type="checkbox" checked={data.needsFence} onChange={function(e) { update({ needsFence: e.target.checked }); }} />
                     <span>Fence Panels</span>
-                </label>
-                <label className="qb-check">
-                    <input type="checkbox" checked={data.needsGates} onChange={function(e) { update({ needsGates: e.target.checked }); }} />
-                    <span>Gate(s)</span>
                 </label>
             </div>
 
@@ -380,16 +417,7 @@ var StepStyle = function(props) {
 var StepGates = function(props) {
     var data = props.data;
     var update = props.update;
-
-    if (!data.needsGates) {
-        return (
-            <div className="qb-step">
-                <div className="qb-empty-state">
-                    <p>You indicated you don't need gates. Click Next to continue, or go back to add gates.</p>
-                </div>
-            </div>
-        );
-    }
+    var onSkip = props.onSkip;
 
     var addGate = function() {
         update({ gates: data.gates.concat([{ type: 'walk', width: '36', topStyle: 'flat', swing: 'left', selfClosing: data.projectType === 'pool' }]) });
@@ -469,6 +497,15 @@ var StepGates = function(props) {
                 );
             })}
             <button className="qb-add-btn" onClick={addGate}><Plus size={14} /> Add Gate</button>
+            <div className="qb-gate-custom-note">
+                <strong>Estate &amp; Cantilever Gates</strong> are custom order.{' '}
+                <button className="qb-gate-custom-link" onClick={function() {}}>
+                    Contact us for a quote
+                </button>
+            </div>
+            <button className="qb-gate-skip" onClick={onSkip}>
+                Skip — no gates needed &rarr;
+            </button>
         </div>
     );
 };
@@ -685,7 +722,9 @@ var QuoteBuilder = function(props) {
     var onClose = props.onClose;
 
     var saved = loadQuoteData();
-    var dataState = useState(Object.assign({}, defaultData, saved || {}));
+    var designPrefill = prefillFromSavedDesign(loadSavedDesign());
+    var initialData = Object.assign({}, defaultData, saved || {}, designPrefill || {});
+    var dataState = useState(initialData);
     var data = dataState[0];
     var setData = dataState[1];
     if (!data.runs) data.runs = [];
@@ -824,7 +863,7 @@ var QuoteBuilder = function(props) {
             case 0: return <StepProject data={data} update={update} />;
             case 1: return <StepLayout data={data} update={update} />;
             case 2: return <StepStyle data={data} update={update} />;
-            case 3: return <StepGates data={data} update={update} />;
+            case 3: return <StepGates data={data} update={update} onSkip={handleNext} />;
             case 4: return <StepExtras data={data} update={update} />;
             case 5: return <StepInstall data={data} update={update} />;
             case 6: return <StepReview data={data} update={update} goToStep={goToStep} />;
