@@ -91,6 +91,44 @@ function pathLengthFt(points) {
     return total;
 }
 
+// ============================================================
+// Line color palette — each line gets a unique color
+// ============================================================
+var LINE_COLORS = ['#22C55E', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6'];
+function getLineColor(idx) { return LINE_COLORS[idx % LINE_COLORS.length]; }
+
+// ============================================================
+// Google Elevation API — query elevation for an array of {lat,lng} points
+// ============================================================
+function getElevationsForPoints(points, callback) {
+    if (!window.google || !window.google.maps || !window.google.maps.ElevationService) {
+        callback(null);
+        return;
+    }
+    if (!points || points.length < 2) { callback(null); return; }
+    var service = new window.google.maps.ElevationService();
+    var locations = points.map(function(p) { return new window.google.maps.LatLng(p.lat, p.lng); });
+    service.getElevationForLocations({ locations: locations }, function(results, status) {
+        if (status === 'OK' && results) {
+            callback(results.map(function(r) { return { elevation: r.elevation, resolution: r.resolution }; }));
+        } else {
+            callback(null);
+        }
+    });
+}
+
+// Classify slope per segment based on elevation change and horizontal distance
+// Returns 'flat' | 'gentle' | 'steep' | 'steps'
+function classifySlope(elevChange, horizontalFt) {
+    if (horizontalFt <= 0) return 'flat';
+    // Grade change per 6ft panel (inches)
+    var gradePerPanel = Math.abs(elevChange * METERS_TO_FEET * 12) / horizontalFt * 6;
+    if (gradePerPanel <= 6) return 'flat';       // 0-6" per panel = standard
+    if (gradePerPanel <= 20) return 'gentle';    // 6-20" per panel = rackable
+    if (gradePerPanel <= 36) return 'steep';     // 20-36" per panel = heavy rack
+    return 'steps';                               // >36" per panel = stair-step
+}
+
 // Query MaxZoomService for best native satellite zoom at a location
 function getMaxNativeZoom(lat, lng, callback) {
     if (!window.google || !window.google.maps || !window.google.maps.MaxZoomService) {
@@ -453,7 +491,10 @@ var DrawingMap = function(props) {
         return function() { delete window.__drawMapClick; delete window.__drawMapRightClick; delete window.__drawMapInstance; };
     }, [activeLineIndex, setLines, setActiveLineIndex, setUndoStack, setRedoStack]);
 
-    // Render markers, polylines, distance labels, and placed gates
+    // Midpoint markers ref
+    var midpointMarkersRef = useRef([]);
+
+    // Render markers, polylines, distance labels, midpoints, and placed gates
     useEffect(function() {
         if (!mapInstanceRef.current || !window.google) return;
 
@@ -462,21 +503,24 @@ var DrawingMap = function(props) {
         polylinesRef.current.forEach(function(p) { p.setMap(null); });
         labelsRef.current.forEach(function(l) { l.setMap(null); });
         gateMarkersRef.current.forEach(function(m) { if (m.setMap) m.setMap(null); });
+        midpointMarkersRef.current.forEach(function(m) { m.setMap(null); });
         markersRef.current = [];
         polylinesRef.current = [];
         labelsRef.current = [];
         gateMarkersRef.current = [];
+        midpointMarkersRef.current = [];
 
         lines.forEach(function(line, lineIdx) {
+            var lineColor = getLineColor(lineIdx);
             var path = line.points.map(function(p) {
                 return new window.google.maps.LatLng(p.lat, p.lng);
             });
 
-            // Fence polyline — green
+            // Fence polyline — color per line
             if (path.length >= 2) {
                 var polyline = new window.google.maps.Polyline({
                     path: path,
-                    strokeColor: '#22C55E',
+                    strokeColor: lineColor,
                     strokeOpacity: 0.9,
                     strokeWeight: 3,
                     map: mapInstanceRef.current,
@@ -485,7 +529,7 @@ var DrawingMap = function(props) {
                 polylinesRef.current.push(polyline);
             }
 
-            // Node markers
+            // Node markers (draggable endpoints/corners)
             line.points.forEach(function(point, ptIdx) {
                 var marker = new window.google.maps.Marker({
                     position: { lat: point.lat, lng: point.lng },
@@ -493,45 +537,95 @@ var DrawingMap = function(props) {
                     draggable: true,
                     icon: {
                         path: window.google.maps.SymbolPath.CIRCLE,
-                        fillColor: '#1B3A5C',
+                        fillColor: '#fff',
                         fillOpacity: 1,
-                        strokeColor: '#1B3A5C',
-                        strokeWeight: 2,
-                        scale: 6,
+                        strokeColor: lineColor,
+                        strokeWeight: 3,
+                        scale: 7,
                     },
+                    zIndex: 10,
                 });
 
-                marker.addListener('dragend', function(e) {
-                    var newLat = e.latLng.lat();
-                    var newLng = e.latLng.lng();
-                    setLines(function(prev) {
-                        var updated = prev.slice();
-                        var pts = updated[lineIdx].points.slice();
-                        pts[ptIdx] = { lat: newLat, lng: newLng };
-                        updated[lineIdx] = Object.assign({}, updated[lineIdx], { points: pts });
-                        return updated;
+                // Fix: capture lineIdx/ptIdx in closure via IIFE
+                (function(li, pi) {
+                    marker.addListener('dragend', function(e) {
+                        var newLat = e.latLng.lat();
+                        var newLng = e.latLng.lng();
+                        setLines(function(prev) {
+                            var updated = prev.slice();
+                            if (!updated[li]) return prev;
+                            var pts = updated[li].points.slice();
+                            pts[pi] = { lat: newLat, lng: newLng };
+                            updated[li] = Object.assign({}, updated[li], { points: pts });
+                            return updated;
+                        });
                     });
-                });
+                })(lineIdx, ptIdx);
 
                 markersRef.current.push(marker);
             });
+
+            // Midpoint handles — draggable ghost markers that insert a new point when dragged
+            for (var mi = 0; mi < line.points.length - 1; mi++) {
+                var mp1 = line.points[mi];
+                var mp2 = line.points[mi + 1];
+                var midLat = (mp1.lat + mp2.lat) / 2;
+                var midLng = (mp1.lng + mp2.lng) / 2;
+
+                var midMarker = new window.google.maps.Marker({
+                    position: { lat: midLat, lng: midLng },
+                    map: mapInstanceRef.current,
+                    draggable: true,
+                    icon: {
+                        path: window.google.maps.SymbolPath.CIRCLE,
+                        fillColor: lineColor,
+                        fillOpacity: 0.4,
+                        strokeColor: lineColor,
+                        strokeWeight: 2,
+                        scale: 5,
+                    },
+                    zIndex: 5,
+                    title: 'Drag to add a point',
+                    cursor: 'grab',
+                    opacity: 0.6,
+                });
+
+                // Insert new point at this midpoint position when dragged
+                (function(li, insertAfter) {
+                    midMarker.addListener('dragend', function(e) {
+                        var newLat = e.latLng.lat();
+                        var newLng = e.latLng.lng();
+                        setLines(function(prev) {
+                            var updated = prev.slice();
+                            if (!updated[li]) return prev;
+                            var pts = updated[li].points.slice();
+                            // Insert new point after insertAfter index
+                            pts.splice(insertAfter + 1, 0, { lat: newLat, lng: newLng });
+                            updated[li] = Object.assign({}, updated[li], { points: pts });
+                            return updated;
+                        });
+                    });
+                })(lineIdx, mi);
+
+                midpointMarkersRef.current.push(midMarker);
+            }
 
             // Distance labels per segment
             for (var i = 0; i < line.points.length - 1; i++) {
                 var p1 = line.points[i];
                 var p2 = line.points[i + 1];
-                var midLat = (p1.lat + p2.lat) / 2;
-                var midLng = (p1.lng + p2.lng) / 2;
+                var segMidLat = (p1.lat + p2.lat) / 2;
+                var segMidLng = (p1.lng + p2.lng) / 2;
                 var dist = Math.round(distanceFt(p1.lat, p1.lng, p2.lat, p2.lng));
 
                 var label = new window.google.maps.Marker({
-                    position: { lat: midLat, lng: midLng },
+                    position: { lat: segMidLat, lng: segMidLng },
                     map: mapInstanceRef.current,
                     icon: {
                         path: 'M -20,-10 L 20,-10 L 20,10 L -20,10 Z',
                         fillColor: '#fff',
                         fillOpacity: 0.9,
-                        strokeColor: '#22C55E',
+                        strokeColor: lineColor,
                         strokeWeight: 1,
                         scale: 1,
                     },
@@ -542,6 +636,7 @@ var DrawingMap = function(props) {
                         fontWeight: '700',
                     },
                     clickable: false,
+                    zIndex: 3,
                 });
                 labelsRef.current.push(label);
             }
@@ -643,6 +738,11 @@ var DrawingMap = function(props) {
                     </button>
                 </div>
             )}
+
+            {/* GPS accuracy disclaimer */}
+            <div className="draw-accuracy-note">
+                Satellite measurements are approximate, +/- 3-5 ft per 100 ft. Final measurements confirmed on-site.
+            </div>
         </div>
     );
 };
@@ -709,12 +809,97 @@ var DrawingPanel = function(props) {
     var showGateConfig = gateConfigState[0];
     var setShowGateConfig = gateConfigState[1];
 
-    // Totals
+    // Elevation auto-detect state
+    var elevLoadingState = useState(false);
+    var elevLoading = elevLoadingState[0];
+    var setElevLoading = elevLoadingState[1];
+    var elevDataState = useState(null); // { lineIdx: [ {elevation, resolution}, ... ] }
+    var elevData = elevDataState[0];
+    var setElevData = elevDataState[1];
+
+    // Manual segment override state: { "lineIdx-segIdx": numFt }
+    var overridesState = useState({});
+    var overrides = overridesState[0];
+    var setOverrides = overridesState[1];
+
+    // Auto-detect slopes for all lines using Elevation API
+    var handleAutoDetectSlopes = function() {
+        if (elevLoading) return;
+        setElevLoading(true);
+        var allPoints = [];
+        var lineOffsets = []; // track which points belong to which line
+        lines.forEach(function(line, li) {
+            lineOffsets.push({ lineIdx: li, startIdx: allPoints.length, count: line.points.length });
+            line.points.forEach(function(p) { allPoints.push(p); });
+        });
+        if (allPoints.length < 2) { setElevLoading(false); return; }
+
+        getElevationsForPoints(allPoints, function(results) {
+            setElevLoading(false);
+            if (!results) return;
+            var newElevData = {};
+            lineOffsets.forEach(function(lo) {
+                newElevData[lo.lineIdx] = results.slice(lo.startIdx, lo.startIdx + lo.count);
+            });
+            setElevData(newElevData);
+
+            // Auto-classify and set slope per segment
+            setLines(function(prev) {
+                var updated = prev.slice();
+                lineOffsets.forEach(function(lo) {
+                    var line = Object.assign({}, updated[lo.lineIdx]);
+                    var segments = (line.segments || []).slice();
+                    var lineElevs = newElevData[lo.lineIdx];
+                    if (!lineElevs) return;
+                    for (var si = 0; si < line.points.length - 1; si++) {
+                        while (segments.length <= si) segments.push({ slope: 'flat' });
+                        var e1 = lineElevs[si];
+                        var e2 = lineElevs[si + 1];
+                        if (e1 && e2) {
+                            var horizFt = distanceFt(line.points[si].lat, line.points[si].lng, line.points[si + 1].lat, line.points[si + 1].lng);
+                            var detected = classifySlope(e2.elevation - e1.elevation, horizFt);
+                            segments[si] = Object.assign({}, segments[si], {
+                                slope: detected,
+                                autoDetected: true,
+                                elevChange: Math.round((e2.elevation - e1.elevation) * METERS_TO_FEET * 10) / 10,
+                            });
+                        }
+                    }
+                    line.segments = segments;
+                    updated[lo.lineIdx] = line;
+                });
+                return updated;
+            });
+        });
+    };
+
+    // Manual segment length override handler
+    var handleSegmentOverride = function(lineIdx, segIdx, ftValue) {
+        var key = lineIdx + '-' + segIdx;
+        setOverrides(function(prev) {
+            var updated = Object.assign({}, prev);
+            if (ftValue === '' || ftValue === null) {
+                delete updated[key];
+            } else {
+                updated[key] = Number(ftValue);
+            }
+            return updated;
+        });
+    };
+
+    // Totals — use manual overrides when available
     var totalFt = 0;
     var cornerCount = 0;
 
-    lines.forEach(function(line) {
-        totalFt += pathLengthFt(line.points);
+    lines.forEach(function(line, lineIdx) {
+        for (var si = 0; si < line.points.length - 1; si++) {
+            var overrideKey = lineIdx + '-' + si;
+            if (overrides[overrideKey] !== undefined) {
+                totalFt += overrides[overrideKey];
+            } else {
+                totalFt += distanceFt(line.points[si].lat, line.points[si].lng, line.points[si + 1].lat, line.points[si + 1].lng);
+            }
+        }
         if (line.points.length > 2) {
             cornerCount += line.points.length - 2;
         }
@@ -948,6 +1133,12 @@ var DrawingPanel = function(props) {
                 <div className={'draw-check-item' + (hasSlopesMarked ? ' done' : hasMultiplePoints ? ' current' : '')}>
                     <span className="draw-check-icon">{hasSlopesMarked ? '\u2713' : '3'}</span>
                     <span>Mark sloped sections</span>
+                    {hasMultiplePoints && !elevLoading && (
+                        <button className="draw-check-action" onClick={handleAutoDetectSlopes} title="Use Google Elevation API to auto-detect slopes">
+                            Auto-detect
+                        </button>
+                    )}
+                    {elevLoading && <span className="draw-check-loading">Checking...</span>}
                 </div>
                 <div className={'draw-check-item' + (hasLines && hasMultiplePoints ? ' current' : '')}>
                     <span className="draw-check-icon">4</span>
@@ -986,21 +1177,51 @@ var DrawingPanel = function(props) {
                                 <div className="draw-segments">
                                     {line.points.slice(0, -1).map(function(pt, si) {
                                         var nextPt = line.points[si + 1];
-                                        var segFt = Math.round(distanceFt(pt.lat, pt.lng, nextPt.lat, nextPt.lng));
+                                        var gpsFt = Math.round(distanceFt(pt.lat, pt.lng, nextPt.lat, nextPt.lng));
+                                        var overrideKey = idx + '-' + si;
+                                        var hasOverride = overrides[overrideKey] !== undefined;
+                                        var displayFt = hasOverride ? overrides[overrideKey] : gpsFt;
                                         var segData = lineSegments[si] || { slope: 'flat' };
+                                        var isAutoDetected = segData.autoDetected;
+                                        var elevChangeLabel = segData.elevChange !== undefined
+                                            ? (segData.elevChange > 0 ? '+' : '') + segData.elevChange + ' ft'
+                                            : '';
                                         return (
-                                            <div key={si} className="draw-segment-row">
-                                                <span className="draw-seg-label">Seg {si + 1}</span>
-                                                <span className="draw-seg-ft">{segFt} ft</span>
-                                                <select
-                                                    className="draw-seg-slope"
-                                                    value={segData.slope || 'flat'}
-                                                    onChange={function(e) { handleSegmentSlope(idx, si, e.target.value); }}
-                                                >
-                                                    {SLOPE_OPTIONS.map(function(opt) {
-                                                        return <option key={opt.value} value={opt.value}>{opt.label}</option>;
-                                                    })}
-                                                </select>
+                                            <div key={si} className="draw-segment-detail">
+                                                <div className="draw-segment-row">
+                                                    <span className="draw-seg-label">Seg {si + 1}</span>
+                                                    <span className={'draw-seg-ft' + (hasOverride ? ' overridden' : '')}>{displayFt} ft</span>
+                                                    <input
+                                                        className="draw-seg-override"
+                                                        type="number"
+                                                        placeholder={gpsFt + ''}
+                                                        value={hasOverride ? overrides[overrideKey] : ''}
+                                                        onChange={function(e) { handleSegmentOverride(idx, si, e.target.value); }}
+                                                        title="Override with hand measurement"
+                                                    />
+                                                    <select
+                                                        className="draw-seg-slope"
+                                                        value={segData.slope || 'flat'}
+                                                        onChange={function(e) { handleSegmentSlope(idx, si, e.target.value); }}
+                                                    >
+                                                        {SLOPE_OPTIONS.map(function(opt) {
+                                                            return <option key={opt.value} value={opt.value}>{opt.label}</option>;
+                                                        })}
+                                                    </select>
+                                                </div>
+                                                {/* Elevation info if auto-detected */}
+                                                {isAutoDetected && (
+                                                    <div className="draw-seg-elev-row">
+                                                        <span className="draw-seg-elev-badge">Auto-detected</span>
+                                                        {elevChangeLabel && <span className="draw-seg-elev-change">Elev: {elevChangeLabel}</span>}
+                                                        <button className="draw-seg-elev-confirm" onClick={function() {
+                                                            handleSegmentSlope(idx, si, segData.slope);
+                                                        }} title="Confirm this slope">&#10003;</button>
+                                                        <button className="draw-seg-elev-deny" onClick={function() {
+                                                            handleSegmentSlope(idx, si, 'flat');
+                                                        }} title="Override to flat">&#10007;</button>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -1429,6 +1650,17 @@ var DrawYardView = function(props) {
             if (line.points.length > 2) corners += line.points.length - 2;
         });
 
+        // Build flat segments array for pricing engine (slope + length per segment)
+        var pricingSegments = [];
+        lines.forEach(function(line) {
+            var lineSegs = line.segments || [];
+            for (var si = 0; si < line.points.length - 1; si++) {
+                var segSlope = (lineSegs[si] && lineSegs[si].slope) || 'flat';
+                var segFt = distanceFt(line.points[si].lat, line.points[si].lng, line.points[si + 1].lat, line.points[si + 1].lng);
+                pricingSegments.push({ lengthFt: Math.round(segFt), slope: segSlope });
+            }
+        });
+
         var data = {
             source: 'gps-draw-tool',
             address: location ? location.address : '',
@@ -1440,6 +1672,7 @@ var DrawYardView = function(props) {
                     segments: line.segments || [],
                 };
             }),
+            pricingSegments: pricingSegments,
             totalLengthFt: totalLengthFt,
             adjustedLinearFeet: adjustedLinearFeet,
             corners: corners,

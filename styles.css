@@ -3082,6 +3082,106 @@ html, body {
   white-space: nowrap;
 }
 
+/* --- Accuracy disclaimer --- */
+.draw-accuracy-note {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.65);
+  color: rgba(255,255,255,0.85);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  z-index: 15;
+  pointer-events: none;
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+/* --- Segment detail with override + elevation --- */
+.draw-segment-detail {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.draw-segment-detail:last-child { border-bottom: none; }
+.draw-seg-override {
+  width: 50px;
+  padding: 2px 4px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: inherit;
+  text-align: center;
+  color: var(--text-secondary);
+  background: transparent;
+}
+.draw-seg-override:focus {
+  border-color: #D4753A;
+  outline: none;
+  background: #FFF8F4;
+}
+.draw-seg-override::placeholder { color: var(--text-hint); opacity: 0.5; }
+.draw-seg-ft.overridden {
+  color: #D4753A;
+  text-decoration: line-through;
+  text-decoration-color: var(--text-hint);
+}
+.draw-seg-elev-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 2px 44px;
+  font-size: 10px;
+}
+.draw-seg-elev-badge {
+  background: #EEF6FF;
+  color: #3B82F6;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.draw-seg-elev-change {
+  color: var(--text-hint);
+  font-size: 10px;
+}
+.draw-seg-elev-confirm, .draw-seg-elev-deny {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
+}
+.draw-seg-elev-confirm { color: #16A34A; }
+.draw-seg-elev-confirm:hover { background: #F0FFF4; border-color: #16A34A; }
+.draw-seg-elev-deny { color: #DC2626; }
+.draw-seg-elev-deny:hover { background: #FFF5F5; border-color: #DC2626; }
+
+/* --- Checklist auto-detect button --- */
+.draw-check-action {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #3B82F6;
+  color: #3B82F6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.draw-check-action:hover { background: #EEF6FF; }
+.draw-check-loading {
+  margin-left: auto;
+  font-size: 10px;
+  color: #3B82F6;
+  font-style: italic;
+}
+
 /* --- Measuring Guide --- */
 .draw-guide {
   background: #F0F7FF;

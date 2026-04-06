@@ -312,10 +312,40 @@ export function calculateQuote(config) {
     });
   }
 
-  // Slope / terrain
+  // Slope / terrain — supports segment-based racking when segments data is available
+  var segments = config.segments || []; // [{ lengthFt, slope }] per segment from draw tool
   var hasSlope = terrain !== 'flat';
   var doublePunchSurcharge = 0;
-  if (hasSlope) {
+
+  if (segments.length > 0) {
+    // Segment-based: only charge racking posts in sloped segments
+    var slopedFt = 0;
+    var hasStairStep = false;
+    segments.forEach(function(seg) {
+      if (seg.slope && seg.slope !== 'flat') {
+        slopedFt += (seg.lengthFt || 0);
+        if (seg.slope === 'steps') hasStairStep = true;
+      }
+    });
+    if (slopedFt > 0) {
+      hasSlope = true;
+      // Racking posts = posts in sloped segments (1 post per panel + 1)
+      var slopedPanels = Math.ceil(slopedFt / PANEL_LENGTH_FT);
+      var slopedPosts = slopedPanels + 1;
+      doublePunchSurcharge = slopedPosts * DOUBLE_PUNCH_PER_POST;
+      items.push({
+        label: 'Racking Posts (sloped sections)',
+        qty: slopedPosts,
+        unitPrice: DOUBLE_PUNCH_PER_POST,
+        total: doublePunchSurcharge,
+        note: Math.round(slopedFt) + ' ft of sloped fence requires racked posts',
+      });
+    }
+    if (hasStairStep) {
+      warnings.push('Stair-step sections cannot be racked. We recommend a free consultation to determine the best approach.');
+    }
+  } else if (hasSlope) {
+    // Fallback: whole-yard slope (legacy behavior)
     doublePunchSurcharge = totalPostCount * DOUBLE_PUNCH_PER_POST;
     items.push({
       label: 'Double Punch Posts (slope/racking)',
