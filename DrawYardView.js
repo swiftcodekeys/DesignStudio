@@ -386,6 +386,11 @@ var DrawingMap = function(props) {
         window.__drawModeActive = drawMode;
     }, [drawMode]);
 
+    // Sync gate markers to window for undo snapshots in click handlers
+    useEffect(function() {
+        window.__currentGateMarkers = gateMarkers;
+    }, [gateMarkers]);
+
     // Sync gate placement mode to window
     useEffect(function() {
         window.__gatePlaceMode = !!gatePlaceMode;
@@ -464,7 +469,8 @@ var DrawingMap = function(props) {
                         points: updated[idx].points.concat([point]),
                     });
                 }
-                setUndoStack(function(u) { return u.concat([prev]); });
+                var gates = window.__currentGateMarkers || [];
+                setUndoStack(function(u) { return u.concat([{ lines: prev, gates: gates }]); });
                 setRedoStack([]);
                 return updated;
             });
@@ -476,7 +482,8 @@ var DrawingMap = function(props) {
                 if (idx < 0 || idx >= updated.length) return prev;
                 var pts = updated[idx].points;
                 if (pts.length === 0) return prev;
-                setUndoStack(function(u) { return u.concat([prev]); });
+                var gates = window.__currentGateMarkers || [];
+                setUndoStack(function(u) { return u.concat([{ lines: prev, gates: gates }]); });
                 setRedoStack([]);
                 updated[idx] = Object.assign({}, updated[idx], {
                     points: pts.slice(0, -1),
@@ -1553,44 +1560,48 @@ var DrawYardView = function(props) {
         setActiveLineIndex(lines.length);
     };
 
+    // Snapshot helper: saves current lines + gates to undo stack
+    var pushUndo = function() {
+        setUndoStack(function(u) {
+            return u.concat([{ lines: lines, gates: gateMarkers }]);
+        });
+        setRedoStack([]);
+    };
+
     var handleUndo = function() {
         if (undoStack.length === 0) return;
-        setRedoStack(function(r) { return r.concat([lines]); });
-        var prev = undoStack[undoStack.length - 1];
+        var snapshot = undoStack[undoStack.length - 1];
+        setRedoStack(function(r) { return r.concat([{ lines: lines, gates: gateMarkers }]); });
         setUndoStack(function(u) { return u.slice(0, -1); });
-        setLines(prev);
-        // Remove gate markers on segments that no longer exist
-        setGateMarkers(function(gm) {
-            return gm.filter(function(m) {
-                var line = prev[m.lineIndex];
-                return line && line.points.length > m.segmentIndex + 1;
-            });
-        });
+        setLines(snapshot.lines);
+        setGateMarkers(snapshot.gates);
     };
 
     var handleRedo = function() {
         if (redoStack.length === 0) return;
-        setUndoStack(function(u) { return u.concat([lines]); });
-        var next = redoStack[redoStack.length - 1];
+        var snapshot = redoStack[redoStack.length - 1];
+        setUndoStack(function(u) { return u.concat([{ lines: lines, gates: gateMarkers }]); });
         setRedoStack(function(r) { return r.slice(0, -1); });
-        setLines(next);
+        setLines(snapshot.lines);
+        setGateMarkers(snapshot.gates);
     };
 
     var handleClear = function() {
-        if (lines.length === 0) return;
-        if (!window.confirm('Clear all fence lines?')) return;
-        setUndoStack(function(u) { return u.concat([lines]); });
-        setRedoStack([]);
+        if (lines.length === 0 && gateMarkers.length === 0) return;
+        if (!window.confirm('Clear all fence lines and gates?')) return;
+        pushUndo();
         setLines([]);
         setActiveLineIndex(0);
         setGateMarkers([]);
     };
 
     var handleAddGateMarker = function(marker) {
+        pushUndo();
         setGateMarkers(function(prev) { return prev.concat([marker]); });
     };
 
     var handleRemoveGateMarker = function(idx) {
+        pushUndo();
         setGateMarkers(function(prev) {
             var updated = prev.slice();
             updated.splice(idx, 1);
@@ -1614,10 +1625,15 @@ var DrawYardView = function(props) {
 
     // When a gate is placed on the map
     var handleGatePlaced = useCallback(function(marker) {
+        // Push undo snapshot before adding gate
+        setUndoStack(function(u) {
+            // Read current state at time of call via functional update trick
+            return u.concat([{ lines: lines, gates: gateMarkers }]);
+        });
+        setRedoStack([]);
         setGateMarkers(function(prev) { return prev.concat([marker]); });
-        // Stay in gate placement mode so user can place another (they click "Add Another" or "Done")
         setGatePlaceMode(null);
-    }, []);
+    }, [lines, gateMarkers]);
 
     // Finish current line
     var handleFinishLine = function() {
