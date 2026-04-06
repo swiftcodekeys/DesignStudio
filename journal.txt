@@ -322,3 +322,43 @@ Changes made:
   - Easy Order Form is v4.0 (not v3.3 as previously assumed)
 
 Cross-check: 16 key prices verified against authoritative parsed doc. All match.
+
+2026-04-05 — Session 2: Draw Tool Upgrades + Design-to-Quote Bridge
+════════════════════════════════════════════════════════════════════
+
+DRAW TOOL UPGRADES (merged to main):
+  - Google geometry library (computeLength, computeDistanceBetween)
+  - MaxZoomService caps satellite zoom at native imagery
+  - Right-click removes last point
+  - Guided measuring UI: toolbar, checklist, slope selectors
+  - Gate placement: select type/width/arch → place on map with preview line
+  - Multi-colored lines (6-color palette per line)
+  - Draggable midpoints (insert new corner by dragging)
+  - Fixed drag handler stale closure (IIFE capture)
+  - Manual segment length override
+  - Elevation auto-detect via Google Elevation API
+  - Segment-based racking pricing ($4.75/post only on sloped segments)
+  - Accuracy disclaimer at top center
+  - Buttons moved to top, Finish button added
+  - Light blue active button color (#6BA3C2)
+  - Undo reverts gate placements (combined snapshots)
+
+DESIGN-TO-QUOTE BRIDGE (on dev, NOT merged):
+  - gv_saved_design: captures all 22 config fields + canvas snapshot
+  - DesignReviewPage.js: bridge page with snapshot, selections grid,
+    address entry, manual footage, contact link, cold start
+  - handleOpenQuoteBuilder removed, replaced by handleGetQuote
+  - Bridge page CSS (~290 lines)
+
+REMAINING (Tasks 4-11):
+  - PoolCompliancePopup.js (two-step pool question)
+  - WizardShell gate step reframe (educational, not blocking)
+  - QuoteBuilder pre-fill from gv_saved_design + remove needsGates
+  - AreaReturnPage.js (multi-area Front + Backyard)
+  - Wire multi-area flow into app.js
+  - Wire pool popup into backyard flow
+  - Auto-persist fence configs to localStorage
+  - Fix puppy picket bug in buildQuoteConfig (line 62)
+
+SPEC: docs/superpowers/specs/2026-04-05-design-to-quote-bridge-design.md
+PLAN: docs/superpowers/plans/2026-04-05-design-to-quote-bridge.md
