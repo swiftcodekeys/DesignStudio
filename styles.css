@@ -4384,3 +4384,118 @@ html, body {
   font-family: inherit;
 }
 .wizard-gate-skip-btn:hover { background: #c46830; }
+
+/* ============================================================
+   Area Return Page (Multi-Area Flow)
+   ============================================================ */
+.area-return-page {
+  width: 100%;
+  min-height: 100vh;
+  background: #f7fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.area-return-content {
+  max-width: 520px;
+  width: calc(100% - 48px);
+  text-align: center;
+}
+.area-return-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.area-return-step {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #e2e8f0;
+  color: #718096;
+}
+.area-return-step.done { background: #16A34A; color: #fff; }
+.area-return-step.current { background: #1B3A5C; color: #fff; }
+.area-return-step-divider { color: #CBD5E0; }
+.area-return-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1B3A5C;
+  margin: 0 0 8px;
+}
+.area-return-desc {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 20px;
+}
+.area-return-snapshot {
+  background: #0c1420;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  position: relative;
+}
+.area-return-snapshot-img {
+  width: 100%;
+  display: block;
+}
+.area-return-snapshot-label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.area-return-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.area-return-option-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: all 150ms ease;
+}
+.area-return-option-btn strong {
+  font-size: 15px;
+}
+.area-return-option-btn span {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.area-return-same {
+  background: #D4753A;
+  color: #fff;
+  border: none;
+}
+.area-return-same:hover { background: #c46830; }
+.area-return-diff {
+  background: #fff;
+  color: #1B3A5C;
+  border: 1.5px solid #e2e8f0;
+}
+.area-return-diff:hover { border-color: #1B3A5C; }
+.area-return-back {
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.area-return-back:hover { text-decoration: underline; }
