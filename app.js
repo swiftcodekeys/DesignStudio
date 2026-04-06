@@ -420,7 +420,22 @@ var DesignStudio = function() {
 
     return (
         <div className="app-shell">
-            <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
+            <TopNav activeScene={activeTab} onSceneChange={function(id) {
+                if (id === 'draw') {
+                    // Show bridge page first — user enters address, then goes to draw tool
+                    var isFenceScene = (activeTab === 'fencing' || activeTab === 'backyard');
+                    var activeConfig = isFenceScene ? fenceConfig : config;
+                    var scene = activeTab === 'gates' ? 'gates' : activeTab;
+                    var savedDesign = buildSavedDesign(scene, activeConfig);
+                    try {
+                        localStorage.setItem('gv_saved_design', JSON.stringify(savedDesign));
+                    } catch (e) {}
+                    setView('design-review');
+                } else {
+                    setActiveTab(id);
+                    setView('studio');
+                }
+            }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
                     <DrawYardView onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />

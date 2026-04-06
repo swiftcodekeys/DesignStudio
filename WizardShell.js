@@ -9,6 +9,7 @@ import PuppyPicketsTab from './tabs/PuppyPicketsTab';
 import OptionsTab from './tabs/OptionsTab';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import PoolCompliancePopup from './PoolCompliancePopup';
 
 /* ---- SVG Icons ---- */
 var CheckSvg = function() {
@@ -189,6 +190,15 @@ var WizardShell = function() {
     var rendererReady = rendererReadyState[0];
     var setRendererReady = rendererReadyState[1];
 
+    // Pool compliance state
+    var poolPopupState = useState(false);
+    var showPoolPopup = poolPopupState[0];
+    var setShowPoolPopup = poolPopupState[1];
+
+    var poolAnsweredState = useState(false);
+    var poolAnswered = poolAnsweredState[0];
+    var setPoolAnswered = poolAnsweredState[1];
+
     // Initialize configs when zones are selected
     useEffect(function() {
         var newConfigs = {};
@@ -355,11 +365,33 @@ var WizardShell = function() {
                             );
                         })}
                     </div>
+                    {/* Pool question inline when backyard selected */}
+                    {selectedZones.indexOf('back') >= 0 && !poolAnswered && (
+                        <div className="wizard-pool-inline">
+                            <div className="wizard-pool-question">
+                                <strong>Pool Safety:</strong> Is any part of your backyard fence around a pool?
+                            </div>
+                            <div className="wizard-pool-btns">
+                                <button className={'wizard-pool-btn' + (poolAnswered === 'yes' ? ' active' : '')} onClick={function() { setPoolAnswered('yes'); setShowPoolPopup(true); }}>
+                                    Yes
+                                </button>
+                                <button className={'wizard-pool-btn' + (poolAnswered === 'no' ? ' active' : '')} onClick={function() { setPoolAnswered('no'); }}>
+                                    No
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="wizard-actions">
                         <button
                             className="wizard-btn-primary"
                             disabled={selectedZones.length === 0}
                             onClick={function() {
+                                // If backyard selected and pool not answered, prompt
+                                if (selectedZones.indexOf('back') >= 0 && !poolAnswered) {
+                                    setShowPoolPopup(true);
+                                    return;
+                                }
                                 setCurrentZone(sortedZones[0]);
                                 setStep(2);
                             }}
@@ -371,6 +403,33 @@ var WizardShell = function() {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Pool Compliance Popup */}
+            {showPoolPopup && (
+                <PoolCompliancePopup
+                    currentStyleId={zoneConfigs.back ? zoneConfigs.back.styleId : 'uab_200'}
+                    onComplete={function(result) {
+                        setShowPoolPopup(false);
+                        setPoolAnswered(result.poolBarrier ? 'yes' : 'no');
+                        // Save pool data to backyard config
+                        setZoneConfigs(function(prev) {
+                            var updated = Object.assign({}, prev);
+                            var back = updated.back || getDefaultConfig('back');
+                            back.poolBarrier = result.poolBarrier;
+                            back.poolCompliance = result.poolCompliance;
+                            updated.back = back;
+                            return updated;
+                        });
+                        // If pool answered, proceed to step 2
+                        setCurrentZone(sortedZones[0]);
+                        setStep(2);
+                    }}
+                    onCancel={function() {
+                        setShowPoolPopup(false);
+                        setPoolAnswered('no');
+                    }}
+                />
             )}
 
             {/* ---- Step 2: Configure Each Zone ---- */}

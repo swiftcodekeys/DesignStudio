@@ -138,8 +138,10 @@ var DesignReviewPage = function(props) {
         if (saved.arch) selections.push({ label: 'Arch', value: ARCH_NAMES[saved.arch] || saved.arch });
         if (saved.mount) selections.push({ label: 'Mount', value: MOUNT_NAMES[saved.mount] || saved.mount });
         if (saved.leaf) selections.push({ label: 'Leaf', value: LEAF_NAMES[saved.leaf] || saved.leaf });
-        if (saved.privacyPostColor) selections.push({ label: 'Privacy Post', value: saved.privacyPostColor });
-        if (saved.privacyPanelColor) selections.push({ label: 'Privacy Panel', value: saved.privacyPanelColor });
+        // Only show privacy fields for privacy styles
+        var isPrivacy = saved.styleId && saved.styleId.indexOf('priv') >= 0;
+        if (isPrivacy && saved.privacyPostColor) selections.push({ label: 'Privacy Post', value: saved.privacyPostColor });
+        if (isPrivacy && saved.privacyPanelColor) selections.push({ label: 'Privacy Panel', value: saved.privacyPanelColor });
     }
 
     var isPoolReady = hasDesign && saved.poolBarrier && POOL_STYLES.indexOf(saved.styleId) >= 0;

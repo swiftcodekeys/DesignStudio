@@ -4384,6 +4384,43 @@ html, body {
   font-family: inherit;
 }
 .wizard-gate-skip-btn:hover { background: #c46830; }
+
+/* Wizard pool inline question */
+.wizard-pool-inline {
+  background: #EBF8FF;
+  border: 1.5px solid #6BA3C2;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 20px auto 0;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.wizard-pool-question {
+  font-size: 14px;
+  color: #1B3A5C;
+}
+.wizard-pool-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.wizard-pool-btn {
+  padding: 8px 20px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1B3A5C;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wizard-pool-btn:hover { border-color: #6BA3C2; }
+.wizard-pool-btn.active { background: #6BA3C2; color: #fff; border-color: #6BA3C2; }
+
 .wizard-step-title {
   font-size: 20px;
   font-weight: 800;
