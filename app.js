@@ -14,6 +14,7 @@ import QuizPage from './quiz/QuizPage';
 import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';
 import DesignReviewPage from './DesignReviewPage';
+import AreaReturnPage from './AreaReturnPage';
 
 var STORAGE_KEY = 'gv_config';
 
@@ -223,6 +224,11 @@ var DesignStudio = function() {
     var view = viewState[0];
     var setView = viewState[1];
 
+    // Multi-area flow state
+    var multiAreaState = useState(null); // null = single area, { areas: [...], activeAreaIndex: 0 }
+    var multiArea = multiAreaState[0];
+    var setMultiArea = multiAreaState[1];
+
     var buildSavedDesign = function(scene, activeConfig) {
         var acc = activeConfig.accessories || {};
         var isFence = (scene === 'fencing' || scene === 'backyard');
@@ -331,6 +337,38 @@ var DesignStudio = function() {
                     onOpenContact={function() {
                         setContactPopupOpen(true);
                         setView('studio');
+                    }}
+                />
+            </div>
+        );
+    }
+
+    if (view === 'area-return') {
+        return (
+            <div className="app-shell">
+                <AreaReturnPage
+                    area1Config={multiArea && multiArea.areas ? multiArea.areas[0] : null}
+                    onSameSystem={function() {
+                        // Copy area 1 config to area 2
+                        setMultiArea(function(prev) {
+                            if (!prev || !prev.areas) return prev;
+                            var updated = Object.assign({}, prev);
+                            var areas = updated.areas.slice();
+                            areas[1] = Object.assign({}, areas[0], { zone: 'back', layout: null });
+                            updated.areas = areas;
+                            updated.activeAreaIndex = 1;
+                            return updated;
+                        });
+                        // Save area 2 design and go to bridge page for measurement
+                        setView('design-review');
+                    }}
+                    onDifferentSystem={function() {
+                        // Go to design tool with backyard tab
+                        setActiveTab('backyard');
+                        setView('studio');
+                    }}
+                    onBack={function() {
+                        setView('design-review');
                     }}
                 />
             </div>
