@@ -27,6 +27,29 @@ function loadSavedDesign() {
 
 // Google Maps loader (reuse from DrawYardView pattern)
 var GOOGLE_MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
+var mapsLoaded = false;
+var mapsCallbacks = [];
+
+function loadGoogleMaps(callback) {
+    if (window.google && window.google.maps) {
+        callback();
+        return;
+    }
+    mapsCallbacks.push(callback);
+    if (mapsLoaded) return;
+    mapsLoaded = true;
+
+    window.__initGoogleMaps = function() {
+        mapsCallbacks.forEach(function(cb) { cb(); });
+        mapsCallbacks = [];
+    };
+
+    var script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_KEY + '&libraries=places,geometry&callback=__initGoogleMaps';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+}
 
 var DesignReviewPage = function(props) {
     var onNavigateToDraw = props.onNavigateToDraw;
@@ -56,6 +79,14 @@ var DesignReviewPage = function(props) {
 
     var serviceRef = useRef(null);
     var debounceRef = useRef(null);
+
+    // Load Google Maps script on mount
+    useEffect(function() {
+        if (!GOOGLE_MAPS_KEY) return;
+        loadGoogleMaps(function() {
+            // Maps ready — AutocompleteService will be available for address input
+        });
+    }, []);
 
     // Address autocomplete
     var handleAddressChange = function(e) {

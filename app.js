@@ -237,11 +237,13 @@ var DesignStudio = function() {
         var acc = activeConfig.accessories || {};
         var isFence = (scene === 'fencing' || scene === 'backyard');
 
-        // Capture viewport snapshot (background + 3D canvas composited)
+        // Capture viewport snapshot (background image + 3D canvas composited)
         var snapshotDataUrl = '';
         try {
             var viewportWrap = document.querySelector('.viewport-wrap');
             var canvasEl = document.querySelector('.viewport-scene canvas');
+            // Find the background <img> inside the UnifiedCanvas wrapper
+            var bgImgEl = viewportWrap ? viewportWrap.querySelector('.viewport-scene img') : null;
             if (canvasEl && viewportWrap) {
                 var w = canvasEl.width;
                 var h = canvasEl.height;
@@ -249,12 +251,17 @@ var DesignStudio = function() {
                 offscreen.width = w;
                 offscreen.height = h;
                 var ctx = offscreen.getContext('2d');
-                // Draw the CSS background gradient
-                var wrapStyle = window.getComputedStyle(viewportWrap);
-                var bgImage = wrapStyle.backgroundImage;
-                if (bgImage && bgImage !== 'none') {
-                    // Parse gradient colors and draw a simple fill
-                    ctx.fillStyle = '#8CA8BC';
+                // Draw the background image (fb.jpg, bb.jpg, or GateBackground.jpg)
+                if (bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth > 0) {
+                    ctx.drawImage(bgImgEl, 0, 0, w, h);
+                } else {
+                    // Fallback: draw the CSS gradient
+                    var grad = ctx.createLinearGradient(0, 0, 0, h);
+                    grad.addColorStop(0, '#cddcea');
+                    grad.addColorStop(0.25, '#b4c6d6');
+                    grad.addColorStop(0.5, '#a0b4c4');
+                    grad.addColorStop(1, '#94a8b4');
+                    ctx.fillStyle = grad;
                     ctx.fillRect(0, 0, w, h);
                 }
                 // Draw the 3D canvas on top

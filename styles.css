@@ -1840,6 +1840,9 @@ html, body {
   transition: border-color 0.2s;
 }
 .qb-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(74,141,173,0.15); }
+.qb-input-error { border-color: #e74c3c; }
+.qb-input-error:focus { border-color: #e74c3c; box-shadow: 0 0 0 3px rgba(231,76,60,0.15); }
+.qb-field-error { color: #e74c3c; font-size: 12px; margin-top: -4px; margin-bottom: 8px; }
 .qb-input-short { max-width: 160px; }
 .qb-select {
   padding: 10px 12px;

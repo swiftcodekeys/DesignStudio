@@ -17,6 +17,11 @@ var STEPS = [
 
 var ICON_MAP = { backyard: House, pool: SwimmingPool, front: Tree, full: MapPin, commercial: Buildings, other: GearSix };
 
+function isValidEmail(email) {
+    if (!email) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 var STYLE_ID_MAP = {
     'uaf_200': 'horizon', 'uaf_201': 'horizon',
     'uaf_250': 'vanguard', 'uab_200': 'haven',
@@ -623,7 +628,16 @@ var StepReview = function(props) {
             <h3 className="qb-question" style={{ marginTop: 24 }}>Your Contact Info</h3>
             <div className="qb-contact-fields">
                 <input className="qb-input" placeholder="Full Name *" value={data.name} onChange={function(e) { props.update({ name: e.target.value }); }} />
-                <input className="qb-input" placeholder="Email *" type="email" value={data.email} onChange={function(e) { props.update({ email: e.target.value }); }} />
+                <input
+                    className={'qb-input' + (data.email && !isValidEmail(data.email) ? ' qb-input-error' : '')}
+                    placeholder="Email *"
+                    type="email"
+                    value={data.email}
+                    onChange={function(e) { props.update({ email: e.target.value }); }}
+                />
+                {data.email && !isValidEmail(data.email) && (
+                    <div className="qb-field-error">Please enter a valid email address</div>
+                )}
                 <input className="qb-input" placeholder="Phone" type="tel" value={data.phone} onChange={function(e) { props.update({ phone: e.target.value }); }} />
                 <input className="qb-input" placeholder="Company (optional)" value={data.company} onChange={function(e) { props.update({ company: e.target.value }); }} />
             </div>
@@ -917,7 +931,7 @@ var QuoteBuilder = function(props) {
                     </div>
                     <div className="qb-footer-right">
                         {isReview ? (
-                            <button className="qb-submit-btn" onClick={handleSubmit} disabled={!data.name || !data.email}>
+                            <button className="qb-submit-btn" onClick={handleSubmit} disabled={!data.name || !isValidEmail(data.email)}>
                                 Get My Quote <ArrowRight size={14} />
                             </button>
                         ) : (
