@@ -65,30 +65,6 @@ var GateIcon = function() {
     );
 };
 
-var GateYesIcon = function() {
-    return (
-        <svg viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="4" y="8" width="6" height="40" rx="1" />
-            <rect x="46" y="8" width="6" height="40" rx="1" />
-            <line x1="10" y1="18" x2="46" y2="18" />
-            <line x1="10" y1="38" x2="46" y2="38" />
-            <line x1="20" y1="12" x2="20" y2="44" />
-            <line x1="28" y1="10" x2="28" y2="44" />
-            <line x1="36" y1="12" x2="36" y2="44" />
-        </svg>
-    );
-};
-
-var NoGateIcon = function() {
-    return (
-        <svg viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="8" y1="8" x2="48" y2="48" />
-            <rect x="12" y="14" width="32" height="28" rx="2" strokeDasharray="4 3" />
-            <line x1="28" y1="14" x2="28" y2="42" strokeDasharray="4 3" />
-        </svg>
-    );
-};
-
 /* ---- Zone definitions ---- */
 var ZONES = [
     {
@@ -112,7 +88,7 @@ var ZONES = [
 ];
 
 /* ---- Step names for progress bar ---- */
-var STEP_NAMES = ['Select zones', 'Configure', 'Gates', 'Measure'];
+var STEP_NAMES = ['Select zones', 'Configure', 'Measure'];
 
 /* ---- Default configs per zone ---- */
 function getDefaultConfig(zoneId) {
@@ -182,10 +158,6 @@ var WizardShell = function() {
     var zonesConfigured = configuredState[0];
     var setZonesConfigured = configuredState[1];
 
-    var gateAnswerState = useState(null);
-    var gateAnswer = gateAnswerState[0];
-    var setGateAnswer = gateAnswerState[1];
-
     var rendererReadyState = useState(false);
     var rendererReady = rendererReadyState[0];
     var setRendererReady = rendererReadyState[1];
@@ -218,18 +190,13 @@ var WizardShell = function() {
         return function() { clearTimeout(timer); };
     }, []);
 
-    // Calculate total steps (skip gate question if gate already selected)
     var zoneOrder = ['front', 'back', 'gate'];
     var sortedZones = selectedZones.slice().sort(function(a, b) {
         return zoneOrder.indexOf(a) - zoneOrder.indexOf(b);
     });
     var hasGateZone = selectedZones.indexOf('gate') >= 0;
-    var fenceZones = selectedZones.filter(function(z) { return z !== 'gate'; });
-    var totalSteps = hasGateZone ? 3 : 4; // zone, configure, (gates?), measure
-    var stepNames = ['Select zones'];
-    stepNames.push('Configure');
-    if (!hasGateZone) stepNames.push('Gates');
-    stepNames.push('Measure');
+    var totalSteps = 3; // zone, configure, measure
+    var stepNames = ['Select zones', 'Configure', 'Measure'];
 
     var progressPercent = (step / totalSteps) * 100;
 
@@ -276,12 +243,8 @@ var WizardShell = function() {
         if (nextZone) {
             setCurrentZone(nextZone);
         } else {
-            // All zones configured, move to next step
-            if (!hasGateZone) {
-                setStep(3); // Gates question
-            } else {
-                setStep(hasGateZone ? 3 : 4); // Measure
-            }
+            // All zones configured, go to measure
+            setStep(3);
         }
     };
 
@@ -538,64 +501,8 @@ var WizardShell = function() {
                 </div>
             )}
 
-            {/* ---- Step 3: Gate Exploration (educational, not blocking) ---- */}
-            {step === 3 && !hasGateZone && (
-                <div className="wizard-gate-explore">
-                    <h2 className="wizard-step-title">Take a Look at Your Gate Options</h2>
-                    <p className="wizard-step-desc">
-                        Most homeowners add a walk gate or drive gate. Take a look — if you see something you like, we'll add it to your quote.
-                    </p>
-
-                    <div className="wizard-gate-cards">
-                        <div className="wizard-gate-card">
-                            <img src="assets/ifence_previews/gate_styles/san_marino_15.png" alt="Walk Gate" className="wizard-gate-img" />
-                            <div className="wizard-gate-card-body">
-                                <div className="wizard-gate-card-title">Walk Gate</div>
-                                <div className="wizard-gate-card-desc">36" to 72" wide. Single-leaf pedestrian gate.</div>
-                                <div className="wizard-gate-card-tag">Most common — included in instant quote</div>
-                            </div>
-                        </div>
-                        <div className="wizard-gate-card">
-                            <img src="assets/ifence_previews/gate_styles/san_marino_15.png" alt="Drive Gate" className="wizard-gate-img" />
-                            <div className="wizard-gate-card-body">
-                                <div className="wizard-gate-card-title">Double Drive Gate</div>
-                                <div className="wizard-gate-card-desc">72" to 144" wide. Standard vehicle access.</div>
-                                <div className="wizard-gate-card-tag">Standard — included in instant quote</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="wizard-gate-custom">
-                        <strong>Estate &amp; Cantilever Gates</strong> — Custom order. <button className="wizard-gate-custom-link" onClick={function() {}}>Contact us for pricing</button>
-                    </div>
-
-                    <div className="wizard-gate-actions">
-                        <button className="wizard-gate-explore-btn" onClick={function() {
-                            setGateAnswer('yes');
-                            var newZones = selectedZones.concat(['gate']);
-                            setSelectedZones(newZones);
-                            setCurrentZone('gate');
-                            setZoneConfigs(function(prev) {
-                                var updated = Object.assign({}, prev);
-                                if (!updated.gate) updated.gate = getDefaultConfig('gate');
-                                return updated;
-                            });
-                            setStep(2);
-                        }}>
-                            Yes, configure a gate now
-                        </button>
-                        <button className="wizard-gate-skip-btn" onClick={function() {
-                            setGateAnswer('no');
-                            setStep(hasGateZone ? 3 : 4);
-                        }}>
-                            I'll add my gates with my instant quote &rarr;
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* ---- Step 3 (with gate) or Step 4: Measure ---- */}
-            {((step === 3 && hasGateZone) || step === 4) && (
+            {/* ---- Step 3: Measure ---- */}
+            {step === 3 && (
                 <div className="wizard-content">
                     <h1 className="zone-heading">Measure your property</h1>
                     <p className="zone-subhead">
@@ -629,11 +536,7 @@ var WizardShell = function() {
                         </button>
                         <div style={{ marginTop: 16 }}>
                             <button className="wizard-btn-back" onClick={function() {
-                                if (!hasGateZone) {
-                                    setStep(3);
-                                } else {
-                                    setStep(2);
-                                }
+                                setStep(2);
                             }}>
                                 &larr; Back
                             </button>
