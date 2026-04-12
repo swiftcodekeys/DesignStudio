@@ -10,6 +10,7 @@ import OptionsTab from './tabs/OptionsTab';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import PoolCompliancePopup from './PoolCompliancePopup';
+import DesignReviewPage from './DesignReviewPage';
 
 /* ---- SVG Icons ---- */
 var CheckSvg = function() {
@@ -243,7 +244,8 @@ var WizardShell = function() {
         if (nextZone) {
             setCurrentZone(nextZone);
         } else {
-            // All zones configured, go to measure
+            // All zones configured — save design and show bridge page
+            saveWizardDesign();
             setStep(3);
         }
     };
@@ -267,6 +269,72 @@ var WizardShell = function() {
         } else {
             navigate('/');
         }
+    };
+
+    // Build and persist saved design for bridge page when entering step 3
+    var saveWizardDesign = function() {
+        // Use the first fence zone's config for the bridge page display
+        var primaryZone = sortedZones.find(function(z) { return z === 'front' || z === 'back'; }) || sortedZones[0];
+        var primaryConfig = zoneConfigs[primaryZone] || {};
+        var scene = primaryZone === 'back' ? 'backyard' : (primaryZone === 'gate' ? 'gates' : 'fencing');
+        var isFence = (scene === 'fencing' || scene === 'backyard');
+        var acc = primaryConfig.accessories || {};
+
+        // Capture snapshot from 3D canvas if available
+        var snapshotDataUrl = '';
+        try {
+            var canvasEl = document.querySelector('.wizard-configure-right canvas');
+            var bgImgEl = document.querySelector('.wizard-configure-right img');
+            if (canvasEl) {
+                var w = canvasEl.width;
+                var h = canvasEl.height;
+                var offscreen = document.createElement('canvas');
+                offscreen.width = w;
+                offscreen.height = h;
+                var ctx = offscreen.getContext('2d');
+                if (bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth > 0) {
+                    ctx.drawImage(bgImgEl, 0, 0, w, h);
+                }
+                ctx.drawImage(canvasEl, 0, 0, w, h);
+                snapshotDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+            }
+        } catch (e) {}
+
+        var savedDesign = {
+            scene: scene,
+            styleId: primaryConfig.styleId || '',
+            height: primaryConfig.height || '48',
+            color: primaryConfig.color ? {
+                id: primaryConfig.color.id,
+                displayName: primaryConfig.color.displayName,
+                hex: primaryConfig.color.hex || primaryConfig.color.threeHex || '',
+            } : null,
+            postCap: primaryConfig.postCap || 'pcf',
+            finialType: isFence ? (primaryConfig.finialType || null) : (primaryConfig.finial || null),
+            pupType: primaryConfig.pupType || null,
+            circles: !!acc.tcr,
+            butterflies: !!acc.tbu,
+            scrolls: !!acc.scr,
+            midRail: !!acc.mdr,
+            upperFinialRail: !!acc.ufr,
+            proSpacing: !!acc.res,
+            arch: isFence ? null : (primaryConfig.arch || null),
+            mount: isFence ? null : (primaryConfig.mount || null),
+            leaf: isFence ? null : (primaryConfig.leaf || null),
+            privacyPostColor: primaryConfig.privacyPostColor || null,
+            privacyPanelColor: primaryConfig.privacyPanelColor || null,
+            poolBarrier: !!(primaryConfig.poolBarrier),
+            poolCompliance: primaryConfig.poolCompliance || null,
+            snapshotDataUrl: snapshotDataUrl,
+            timestamp: new Date().toISOString(),
+        };
+
+        try {
+            localStorage.setItem('gv_saved_design', JSON.stringify(savedDesign));
+            if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
+            if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
+            if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
+        } catch (e) {}
     };
 
     // Current active config for renderer
@@ -501,48 +569,25 @@ var WizardShell = function() {
                 </div>
             )}
 
-            {/* ---- Step 3: Measure ---- */}
+            {/* ---- Step 3: Design Review / Measure (bridge page) ---- */}
             {step === 3 && (
-                <div className="wizard-content">
-                    <h1 className="zone-heading">Measure your property</h1>
-                    <p className="zone-subhead">
-                        Draw your fence line on the map, or enter measurements manually.
-                    </p>
-                    <div className="wizard-actions" style={{ marginTop: 24 }}>
-                        <button
-                            className="wizard-btn-primary"
-                            onClick={function() {
-                                // Save all zone configs to localStorage
-                                try {
-                                    if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
-                                    if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
-                                    if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
-                                } catch (e) { /* */ }
-                                try { localStorage.setItem('gv_start_scene', 'draw'); } catch (e) { /* */ }
-                                navigate('/studio');
-                            }}
-                        >
-                            Open Draw Your Yard &rarr;
-                        </button>
-                        <button className="wizard-btn-secondary" onClick={function() {
-                            try {
-                                if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
-                                if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
-                                if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
-                            } catch (e) { /* */ }
-                            navigate('/studio');
-                        }}>
-                            Skip &mdash; I will enter measurements manually
-                        </button>
-                        <div style={{ marginTop: 16 }}>
-                            <button className="wizard-btn-back" onClick={function() {
-                                setStep(2);
-                            }}>
-                                &larr; Back
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <DesignReviewPage
+                    onNavigateToDraw={function(location) {
+                        try { localStorage.setItem('gv_start_scene', 'draw'); } catch (e) {}
+                        navigate('/studio');
+                    }}
+                    onNavigateToManual={function() {
+                        navigate('/studio?view=quote');
+                    }}
+                    onNavigateToStudio={function() {
+                        setStep(2);
+                        setCurrentZone(sortedZones[sortedZones.length - 1]);
+                    }}
+                    onOpenContact={function() {}}
+                    showPoolPopup={false}
+                    onPoolComplete={function() {}}
+                    onPoolCancel={function() {}}
+                />
             )}
         </div>
     );
