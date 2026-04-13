@@ -4607,3 +4607,47 @@ html, body {
 .info-popup-close { background: none; border: none; cursor: pointer; color: #999; padding: 2px; }
 .info-popup-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
 .info-popup-text { font-size: 12px; color: #555; line-height: 1.5; margin: 0; }
+
+/* === Pool Popup === */
+.pool-popup-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.pool-popup {
+  background: #fff; border-radius: 16px; max-width: 440px; width: 90%; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+}
+.pool-popup-header {
+  background: #3182CE; color: #fff; padding: 14px 16px; border-radius: 16px 16px 0 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.pool-popup-title { font-size: 15px; font-weight: 700; }
+.pool-popup-subtitle { font-size: 11px; opacity: 0.8; }
+.pool-popup-close { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; margin-left: auto; }
+.pool-popup-desc { padding: 14px 16px 0; font-size: 13px; color: #555; line-height: 1.5; }
+.pool-popup-styles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px; }
+.pool-style-card {
+  border: 1px solid #e0e0e0; border-radius: 10px; padding: 10px; text-align: center;
+  cursor: pointer; background: #fff; transition: all 0.15s; position: relative;
+}
+.pool-style-card.selected { border: 2px solid #1B3A5C; background: #EBF0F7; }
+.pool-style-card.recommended::before { content: ''; }
+.pool-style-img { width: 100%; height: 60px; object-fit: contain; border-radius: 6px; margin-bottom: 6px; }
+.pool-style-name { font-size: 13px; font-weight: 700; }
+.pool-style-badge { background: #38A169; color: #fff; font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+.pool-style-desc { font-size: 10px; color: #888; margin-top: 2px; }
+.pool-popup-auto {
+  margin: 0 16px; padding: 12px; background: #EBF4FF; border-radius: 8px; font-size: 12px; color: #555; line-height: 1.6;
+}
+.pool-popup-auto ul { margin: 6px 0 0 16px; padding: 0; }
+.pool-popup-auto li { margin-bottom: 2px; }
+.pool-popup-note { margin: 10px 16px; padding: 8px 10px; background: #FFFBEB; border-radius: 6px; font-size: 10px; color: #666; }
+.pool-popup-confirm {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: calc(100% - 32px); margin: 12px 16px 16px; padding: 14px;
+  background: #3182CE; color: #fff; border: none; border-radius: 10px;
+  font-weight: 700; font-size: 14px; cursor: pointer; transition: background 0.15s;
+}
+.pool-popup-confirm:hover { background: #2b6cb0; }
