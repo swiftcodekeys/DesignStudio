@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
 import { emailSaveLink } from './quoteSaver';
+import { trackStepEnter, trackStepComplete } from './analytics';
 import QuoteStep1_Style from './QuoteStep1_Style';
 import QuoteStep2_Layout from './QuoteStep2_Layout';
 import QuoteStep3_Gates from './QuoteStep3_Gates';
@@ -76,6 +77,11 @@ function QuoteBuilder(props) {
       update({ bottomRail: 'flush' });
     }
   }, [props.poolCompliance]);
+
+  // Track step enters
+  useEffect(function() {
+    trackStepEnter(step, props.zoneId);
+  }, [step]);
 
   // Render active step
   var stepContent = null;
@@ -198,6 +204,7 @@ function QuoteBuilder(props) {
       React.createElement('button', {
         className: 'qb-next-btn',
         onClick: function() {
+          trackStepComplete(step, props.zoneId);
           if (step < 5) setStep(step + 1);
           else if (props.onComplete) props.onComplete(data);
         },

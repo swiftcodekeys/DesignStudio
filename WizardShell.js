@@ -19,6 +19,7 @@ import {
     loadWizardState, saveWizardState, getZoneOrder, getZoneQuote,
     updateZoneQuote, getCurrentZoneId, getGrandTotal,
 } from './wizardState';
+import { trackZoneSelection, trackQuoteComplete, trackSummaryView, trackDropoff } from './analytics';
 
 /* ---- SVG Icons ---- */
 var CheckSvg = function() {
@@ -242,6 +243,25 @@ var WizardShell = function() {
         saveWizardState(wizardState);
     }, [wizardState]);
 
+    // Track dropoff on page unload if mid-flow
+    useEffect(function() {
+        function handleUnload() {
+            if (step > 1 && step < 6) {
+                trackDropoff(step, currentZone);
+            }
+        }
+        window.addEventListener('beforeunload', handleUnload);
+        return function() { window.removeEventListener('beforeunload', handleUnload); };
+    }, [step, currentZone]);
+
+    // Track summary view when step 6 renders
+    useEffect(function() {
+        if (step === 6) {
+            var grandTotal = getGrandTotal(Object.assign({}, wizardState, { selectedZones: selectedZones }));
+            trackSummaryView(grandTotal);
+        }
+    }, [step]);
+
     // Compute ordered zones from wizardState helpers
     var orderedZones = getZoneOrder(
         Object.assign({}, wizardState, { selectedZones: selectedZones })
@@ -427,6 +447,10 @@ var WizardShell = function() {
         var zoneLabel = ZONE_LABELS[zoneId] || zoneId;
         var cfg = zoneConfigs[zoneId] || {};
 
+        // Track quote completion for this zone
+        var subtotal = quoteData && quoteData.quoteResult ? quoteData.quoteResult.subtotal : 0;
+        trackQuoteComplete(zoneId, subtotal);
+
         // Save to wizardState
         setWizardState(function(prev) {
             var next = Object.assign({}, prev, { selectedZones: selectedZones });
@@ -608,6 +632,7 @@ var WizardShell = function() {
                                     setShowPoolPopup(true);
                                     return;
                                 }
+                                trackZoneSelection(selectedZones);
                                 // Sync selectedZones into wizardState
                                 setWizardState(function(prev) {
                                     return Object.assign({}, prev, { selectedZones: selectedZones });
@@ -633,6 +658,7 @@ var WizardShell = function() {
                     onConfirm={function() {
                         setShowPoolPopup(false);
                         setPoolAnswered('yes');
+                        trackZoneSelection(selectedZones);
                         // Save pool data to backyard config
                         var poolBarrier = true;
                         var poolCompliance = {
