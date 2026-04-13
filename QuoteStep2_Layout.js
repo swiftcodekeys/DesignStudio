@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mountains, Wave, Minus, Plus, Trash, CaretDown, CaretUp, Check, Warning } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
+import { PRIVACY_RACKABLE } from './retailPricing';
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -268,8 +269,17 @@ function QuoteStep2_Layout(props) {
       )
     ) : null,
 
-    // ---- Rackability (conditional) ----
-    hasSlope ? el('div', { className: 'qb-rack-section' },
+    // ---- Privacy racking note (privacy panels cannot rack) ----
+    hasSlope && data.fenceType === 'privacy' ? el('div', { className: 'qb-rack-section' },
+      sectionHeader('Slope Handling'),
+      el('div', { className: 'qb-layout-warning' },
+        React.createElement(Warning, { size: 16 }),
+        ' Privacy panels are not rackable. Stair-stepping is recommended for sloped terrain.'
+      )
+    ) : null,
+
+    // ---- Rackability (conditional — ornamental only) ----
+    hasSlope && data.fenceType !== 'privacy' ? el('div', { className: 'qb-rack-section' },
       sectionHeader('How should panels follow the slope?', {
         title: 'Racking vs Stair-Stepping',
         text: 'How to check: Stand at one end of your fence line and look down its length. If the ground rises or falls, you need to decide how your panels handle the slope. Racked panels follow the ground smoothly. Stair-stepped panels stay level and step down, leaving triangular gaps at the bottom.',

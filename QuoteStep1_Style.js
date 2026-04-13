@@ -4,6 +4,7 @@
 import React from 'react';
 import { Check, Info } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
+import { PRIVACY_STYLES } from './configData';
 
 // ---- Style image mappings (gate_styles folder) ----
 var STYLE_IMAGES = {
@@ -171,6 +172,60 @@ function QuoteStep1_Style(props) {
         onClick: function() { update({ fenceType: 'privacy' }); },
       }, 'Privacy')
     ),
+
+    // ---- Privacy Sub-Type Picker (only when fenceType === 'privacy') ----
+    data.fenceType === 'privacy' ? el('div', { className: 'qs1-privacy-section' },
+      sectionHeader('Privacy Type'),
+      el('div', { className: 'qs1-style-grid' },
+        PRIVACY_STYLES.map(function(ps) {
+          return el('button', {
+            key: ps.id,
+            className: 'qs1-style-card' + (data.privacyType === ps.id ? ' selected' : ''),
+            onClick: function() { update({ privacyType: ps.id }); },
+          },
+            el('div', { className: 'qs1-card-body' },
+              el('div', { className: 'qs1-style-name' }, ps.name),
+              el('div', { className: 'qs1-card-desc' }, ps.type)
+            ),
+            data.privacyType === ps.id ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
+          );
+        })
+      ),
+
+      // Independent Post Color picker
+      sectionHeader('Post Color'),
+      el('div', { className: 'qs1-color-grid' },
+        COLORS.map(function(c) {
+          return el('button', {
+            key: c.id,
+            className: 'qs1-color-card' + (data.privacyPostColor === c.id ? ' selected' : ''),
+            onClick: function() { update({ privacyPostColor: c.id }); },
+          },
+            el('div', { className: 'qs1-color-swatch', style: { backgroundColor: c.hex } }),
+            el('div', { className: 'qs1-color-name' }, c.name),
+            c.premium ? el('span', { className: 'qs1-badge qs1-badge-premium' }, 'PREMIUM') : null,
+            data.privacyPostColor === c.id ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 12, weight: 'bold' })) : null
+          );
+        })
+      ),
+
+      // Independent Panel Color picker
+      sectionHeader('Panel Color'),
+      el('div', { className: 'qs1-color-grid' },
+        COLORS.map(function(c) {
+          return el('button', {
+            key: c.id,
+            className: 'qs1-color-card' + (data.privacyPanelColor === c.id ? ' selected' : ''),
+            onClick: function() { update({ privacyPanelColor: c.id }); },
+          },
+            el('div', { className: 'qs1-color-swatch', style: { backgroundColor: c.hex } }),
+            el('div', { className: 'qs1-color-name' }, c.name),
+            c.premium ? el('span', { className: 'qs1-badge qs1-badge-premium' }, 'PREMIUM') : null,
+            data.privacyPanelColor === c.id ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 12, weight: 'bold' })) : null
+          );
+        })
+      )
+    ) : null,
 
     // ---- Style ----
     sectionHeader('Style', {

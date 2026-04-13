@@ -14,7 +14,10 @@ import {
   STYLES, PANEL_PRICING, POST_PRICING, GATE_PRICING,
   POST_LENGTH_MAP, DEFAULT_POST_SPEC, GATE_POST_SPEC,
   STYLE_TO_GATE_MODEL, GRADE_GATE_SUFFIX,
+  PRIVACY_PANEL_PRICING, PRIVACY_GATE_SURCHARGE,
 } from './retailPricing';
+
+import { PRIVACY_STYLES } from './configData';
 
 function calculateGateHardwareCost(gate) {
   var cost = 0;
@@ -49,17 +52,22 @@ export function calculateZoneQuote(config) {
   var grade = config.grade || 'residential';
   var panelLengthFt = PANEL_LENGTH_FT[grade] || 6;
 
+  // Privacy fence flag
+  var isPrivacy = config.fenceType === 'privacy';
+
   // Panels
   var linearFt = config.linearFeet || 0;
   var panelCount = Math.ceil(linearFt / panelLengthFt);
-  var panelPrice = getPanelPriceLookup(config.style, config.height, grade);
+  var panelPrice = isPrivacy
+    ? getPrivacyPanelPriceLookup(config.privacyType, config.height, grade)
+    : getPanelPriceLookup(config.style, config.height, grade);
   if (panelPrice && panelCount > 0) {
     var panelTotal = panelCount * panelPrice;
-    // Silver premium
-    if (config.color === 'silver' || config.color === 'SI') {
+    // Silver premium (ornamental only — privacy uses different color system)
+    if (!isPrivacy && (config.color === 'silver' || config.color === 'SI')) {
       panelTotal *= (1 + SILVER_PREMIUM);
     }
-    items.push({ label: panelLengthFt + "' Panels", qty: panelCount, unitPrice: panelPrice, total: panelTotal });
+    items.push({ label: panelLengthFt + "' " + (isPrivacy ? 'Privacy ' : '') + "Panels", qty: panelCount, unitPrice: panelPrice, total: panelTotal });
   }
 
   // Posts
@@ -96,7 +104,12 @@ export function calculateZoneQuote(config) {
     var hwCost = calculateGateHardwareCost(gate);
 
     if (basePrice) {
-      items.push({ label: gateLabel, qty: 1, unitPrice: basePrice + surcharges, total: basePrice + surcharges });
+      var gateTotal = basePrice + surcharges;
+      // Privacy gate surcharge: double-stacked 7' gates at +15%
+      if (isPrivacy) {
+        gateTotal *= (1 + PRIVACY_GATE_SURCHARGE);
+      }
+      items.push({ label: gateLabel, qty: 1, unitPrice: gateTotal, total: gateTotal });
     } else {
       warnings.push('Gate ' + (i + 1) + ': price not available — custom quote required');
     }
@@ -146,8 +159,8 @@ export function calculateZoneQuote(config) {
     }
   });
 
-  // Double punch (racking)
-  if (config.rackingTier && config.rackingTier !== 'standard' && config.rackingTier !== 'stair-step') {
+  // Double punch (racking) — privacy panels cannot rack, skip surcharge
+  if (!isPrivacy && config.rackingTier && config.rackingTier !== 'standard' && config.rackingTier !== 'stair-step') {
     var slopedPosts = config.slopedPostCount || totalPosts;
     items.push({ label: 'Double-Punch Posts (racking)', qty: slopedPosts, unitPrice: DOUBLE_PUNCH_PER_POST, total: slopedPosts * DOUBLE_PUNCH_PER_POST });
   }
@@ -203,4 +216,13 @@ function getGatePriceLookup(style, height, widthInches, type, grade) {
   var heightTable = GATE_PRICING[fullModel][gateType][height];
   if (!heightTable) return null;
   return heightTable[widthInches] || null;
+}
+
+function getPrivacyPanelPriceLookup(privacyType, height, grade) {
+  var ps = PRIVACY_STYLES.find(function(s) { return s.id === privacyType; });
+  if (!ps) return null;
+  var model = ps.ultraModel;
+  if (grade === 'commercial') model += '-C';
+  if (!PRIVACY_PANEL_PRICING[model]) return null;
+  return PRIVACY_PANEL_PRICING[model][height] || null;
 }

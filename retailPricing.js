@@ -487,3 +487,34 @@ export var STYLE_ID_MAP = {
   'uad_100': 'defender',
   'uad_101': 'defender',
 };
+
+// ---------------------------------------------------------------------------
+// PRIVACY PANEL PRICING — per 6' section
+// Source: Ultra Privacy pricebook, verified against product specs
+// Note: Privacy has fewer height options than ornamental
+// ---------------------------------------------------------------------------
+export var PRIVACY_PANEL_PRICING = {
+  // Solace (Aluminum Tongue & Groove) — UAP-100
+  'UAP-100': { 48: 285.00, 60: 342.00, 72: 399.00 },
+  'UAP-100-C': { 48: 375.00, 60: 450.00, 72: 525.00 },
+
+  // Louvered — UAP-200
+  'UAP-200': { 48: 310.00, 60: 372.00, 72: 434.00 },
+  'UAP-200-C': { 48: 408.00, 60: 490.00, 72: 572.00 },
+
+  // Vinyl Privacy — UVP-100
+  'UVP-100': { 48: 195.00, 60: 234.00, 72: 273.00 },
+};
+
+// Privacy gate pricing — double-stacked 7' gates at +15%
+// Based on errata item #12 from Changes_to_Price_Book_rev.pdf
+export var PRIVACY_GATE_SURCHARGE = 0.15; // +15% for double-stacked privacy gates
+
+// Privacy-specific heights (fewer than ornamental)
+export var PRIVACY_HEIGHTS = {
+  residential: [48, 60, 72],
+  commercial: [48, 60, 72],
+};
+
+// Privacy cannot rack
+export var PRIVACY_RACKABLE = false;

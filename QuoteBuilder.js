@@ -26,6 +26,10 @@ var DEFAULT_DATA = {
   rails: 3,
   bottomRail: 'standard',
   postCap: 'flat',
+  // Privacy defaults
+  privacyType: '',
+  privacyPostColor: 'textured-black',
+  privacyPanelColor: 'textured-white',
   // Layout, gates, extras, shipping fields added by later steps
 };
 
