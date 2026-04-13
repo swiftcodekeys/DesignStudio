@@ -2,7 +2,7 @@
 // React.createElement, var, function declarations, vanilla CSS
 
 import React, { useState, useEffect } from 'react';
-import { Mountains, Wave, Minus, Plus, Trash, CaretDown, CaretUp, Check, Warning } from '@phosphor-icons/react';
+import { Mountains, WaveSine, Minus, Plus, Trash, CaretDown, CaretUp, Check, Warning } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
 import { PRIVACY_RACKABLE } from './retailPricing';
 
@@ -23,7 +23,7 @@ function sectionHeader(title, infoProps) {
 var TERRAIN_OPTIONS = [
   { id: 'flat',   name: 'Flat',   desc: 'Level ground, no grade changes', icon: Minus },
   { id: 'sloped', name: 'Sloped', desc: 'Consistent uphill or downhill grade', icon: Mountains },
-  { id: 'mixed',  name: 'Mixed',  desc: 'Some flat, some sloped sections', icon: Wave },
+  { id: 'mixed',  name: 'Mixed',  desc: 'Some flat, some sloped sections', icon: WaveSine },
 ];
 
 var RACKING_TIERS = [
