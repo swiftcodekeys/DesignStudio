@@ -6096,3 +6096,81 @@ html, body {
     padding: 13px 18px;
   }
 }
+
+/* ============================================================
+   Save for Later — qb-save-* classes
+   ============================================================ */
+.qb-save-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.qb-save-link {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
+  letter-spacing: 0.2px;
+  transition: color 0.15s;
+}
+
+.qb-save-link:hover {
+  color: var(--brand);
+}
+
+.qb-save-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qb-save-input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: #fff;
+  outline: none;
+  width: 160px;
+  transition: border-color 0.15s;
+}
+
+.qb-save-input:focus {
+  border-color: var(--brand);
+}
+
+.qb-save-send-btn {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.qb-save-send-btn:hover:not(:disabled) {
+  background: var(--brand-dark);
+}
+
+.qb-save-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.qb-save-sent {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2e7d32;
+  padding: 4px 8px;
+}

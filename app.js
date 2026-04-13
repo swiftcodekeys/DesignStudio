@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { checkForResume } from './quoteSaver';
 import UnifiedCanvas from './UnifiedCanvas';
 import TopNav from './TopNav';
 import FloatingPanel from './FloatingPanel';
@@ -499,6 +500,12 @@ var DesignStudio = function() {
 };
 
 var App = function() {
+    var navigate = useNavigate();
+    useEffect(function() {
+        if (checkForResume()) {
+            navigate('/wizard');
+        }
+    }, []);
     return (
         <Routes>
             <Route path="/" element={<LandingPage />} />

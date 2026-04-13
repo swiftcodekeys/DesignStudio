@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
+import { emailSaveLink } from './quoteSaver';
 import QuoteStep1_Style from './QuoteStep1_Style';
 import QuoteStep2_Layout from './QuoteStep2_Layout';
 import QuoteStep3_Gates from './QuoteStep3_Gates';
@@ -41,6 +42,32 @@ function QuoteBuilder(props) {
 
   function update(changes) {
     setData(function(prev) { return Object.assign({}, prev, changes); });
+  }
+
+  // Save for Later state
+  var showSaveFormState = useState(false);
+  var showSaveForm = showSaveFormState[0];
+  var setShowSaveForm = showSaveFormState[1];
+
+  var saveEmailState = useState('');
+  var saveEmail = saveEmailState[0];
+  var setSaveEmail = saveEmailState[1];
+
+  var saveSentState = useState(false);
+  var saveSent = saveSentState[0];
+  var setSaveSent = saveSentState[1];
+
+  function handleSendLink() {
+    emailSaveLink(saveEmail, null).then(function(ok) {
+      if (ok) {
+        setSaveSent(true);
+        setTimeout(function() {
+          setSaveSent(false);
+          setShowSaveForm(false);
+          setSaveEmail('');
+        }, 3000);
+      }
+    });
   }
 
   // Lock flush bottom rail for pool compliance
@@ -141,6 +168,33 @@ function QuoteBuilder(props) {
         React.createElement(ArrowLeft, { size: 16 }),
         ' Back'
       ) : React.createElement('span', null)),
+
+      // ---- Save for Later ----
+      React.createElement('div', { className: 'qb-save-wrap' },
+        !showSaveForm ? React.createElement('button', {
+          className: 'qb-save-link',
+          onClick: function() { setShowSaveForm(true); },
+        }, 'Save for Later') : null,
+        showSaveForm ? React.createElement('div', { className: 'qb-save-form' },
+          saveSent
+            ? React.createElement('span', { className: 'qb-save-sent' }, 'Link sent!')
+            : React.createElement(React.Fragment, null,
+                React.createElement('input', {
+                  className: 'qb-save-input',
+                  type: 'email',
+                  placeholder: 'your@email.com',
+                  value: saveEmail,
+                  onChange: function(e) { setSaveEmail(e.target.value); },
+                }),
+                React.createElement('button', {
+                  className: 'qb-save-send-btn',
+                  onClick: handleSendLink,
+                  disabled: !saveEmail,
+                }, 'Send Link')
+              )
+        ) : null
+      ),
+
       React.createElement('button', {
         className: 'qb-next-btn',
         onClick: function() {
