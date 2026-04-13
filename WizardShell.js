@@ -10,7 +10,15 @@ import OptionsTab from './tabs/OptionsTab';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import PoolCompliancePopup from './PoolCompliancePopup';
+import PoolPopup from './PoolPopup';
 import DesignReviewPage from './DesignReviewPage';
+import QuoteBuilder from './QuoteBuilder';
+import ZoneTransitionPage from './ZoneTransitionPage';
+import ZoneQuoteSummary from './ZoneQuoteSummary';
+import {
+    loadWizardState, saveWizardState, getZoneOrder, getZoneQuote,
+    updateZoneQuote, getCurrentZoneId, getGrandTotal,
+} from './wizardState';
 
 /* ---- SVG Icons ---- */
 var CheckSvg = function() {
@@ -88,8 +96,12 @@ var ZONES = [
     },
 ];
 
+/* ---- Zone label lookup ---- */
+var ZONE_LABELS = { front: 'Front Yard', back: 'Backyard', gate: 'Driveway Gate' };
+
 /* ---- Step names for progress bar ---- */
-var STEP_NAMES = ['Select zones', 'Configure', 'Measure'];
+var STEP_NAMES = ['Select zones', 'Configure', 'Review Design', 'Quote Details', 'Zone Transition', 'Quote Summary'];
+var TOTAL_STEPS = 6;
 
 /* ---- Default configs per zone ---- */
 function getDefaultConfig(zoneId) {
@@ -138,7 +150,7 @@ function getDefaultConfig(zoneId) {
 var WizardShell = function() {
     var navigate = useNavigate();
 
-    // Wizard state
+    // ---- Core wizard state ----
     var stepState = useState(1);
     var step = stepState[0];
     var setStep = stepState[1];
@@ -163,7 +175,7 @@ var WizardShell = function() {
     var rendererReady = rendererReadyState[0];
     var setRendererReady = rendererReadyState[1];
 
-    // Pool compliance state
+    // ---- Pool popup state (NEW PoolPopup) ----
     var poolPopupState = useState(false);
     var showPoolPopup = poolPopupState[0];
     var setShowPoolPopup = poolPopupState[1];
@@ -171,6 +183,40 @@ var WizardShell = function() {
     var poolAnsweredState = useState(false);
     var poolAnswered = poolAnsweredState[0];
     var setPoolAnswered = poolAnsweredState[1];
+
+    var poolStyleState = useState('haven');
+    var poolSelectedStyle = poolStyleState[0];
+    var setPoolSelectedStyle = poolStyleState[1];
+
+    // ---- Unified wizard state (persisted) ----
+    var wizState = useState(function() { return loadWizardState(); });
+    var wizardState = wizState[0];
+    var setWizardState = wizState[1];
+
+    // ---- QuoteBuilder state ----
+    var skipToStepState = useState(0);
+    var skipToStep = skipToStepState[0];
+    var setSkipToStep = skipToStepState[1];
+
+    // ---- Snapshot state (captured from 3D renderer) ----
+    var snapshotState = useState(null);
+    var snapshotDataUrl = snapshotState[0];
+    var setSnapshotDataUrl = snapshotState[1];
+
+    // ---- Zone transition state ----
+    var completedZoneConfigState = useState(null);
+    var completedZoneConfig = completedZoneConfigState[0];
+    var setCompletedZoneConfig = completedZoneConfigState[1];
+
+    // ---- Track which zone just completed (for transition page) ----
+    var completedZoneIdState = useState(null);
+    var completedZoneId = completedZoneIdState[0];
+    var setCompletedZoneId = completedZoneIdState[1];
+
+    // ---- Editing from summary ----
+    var editingZoneState = useState(null);
+    var editingZone = editingZoneState[0];
+    var setEditingZone = editingZoneState[1];
 
     // Initialize configs when zones are selected
     useEffect(function() {
@@ -191,17 +237,21 @@ var WizardShell = function() {
         return function() { clearTimeout(timer); };
     }, []);
 
-    var zoneOrder = ['front', 'back', 'gate'];
-    var sortedZones = selectedZones.slice().sort(function(a, b) {
-        return zoneOrder.indexOf(a) - zoneOrder.indexOf(b);
-    });
+    // Persist wizardState to localStorage on every change
+    useEffect(function() {
+        saveWizardState(wizardState);
+    }, [wizardState]);
+
+    // Compute ordered zones from wizardState helpers
+    var orderedZones = getZoneOrder(
+        Object.assign({}, wizardState, { selectedZones: selectedZones })
+    );
     var hasGateZone = selectedZones.indexOf('gate') >= 0;
-    var totalSteps = 3; // zone, configure, measure
-    var stepNames = ['Select zones', 'Configure', 'Measure'];
 
-    var progressPercent = (step / totalSteps) * 100;
+    // Progress bar — show current step out of total
+    var progressPercent = (step / TOTAL_STEPS) * 100;
 
-    // Zone toggle
+    // ---- Zone toggle ----
     var toggleZone = function(zoneId) {
         setSelectedZones(function(prev) {
             var idx = prev.indexOf(zoneId);
@@ -212,7 +262,7 @@ var WizardShell = function() {
         });
     };
 
-    // Config change handler for current zone
+    // ---- Config change handler for current zone ----
     var handleConfigChange = function(newConfig) {
         setZoneConfigs(function(prev) {
             var updated = Object.assign({}, prev);
@@ -222,66 +272,9 @@ var WizardShell = function() {
         });
     };
 
-    // Mark current zone as configured and move to next
-    var handleZoneNext = function() {
-        setZonesConfigured(function(prev) {
-            var updated = Object.assign({}, prev);
-            updated[currentZone] = true;
-            return updated;
-        });
-
-        // Find next unconfigured zone
-        var allZones = sortedZones;
-        var currentIdx = allZones.indexOf(currentZone);
-        var nextZone = null;
-        for (var i = currentIdx + 1; i < allZones.length; i++) {
-            if (!zonesConfigured[allZones[i]]) {
-                nextZone = allZones[i];
-                break;
-            }
-        }
-
-        if (nextZone) {
-            setCurrentZone(nextZone);
-        } else {
-            // All zones configured — save design and show bridge page
-            saveWizardDesign();
-            setStep(3);
-        }
-    };
-
-    // Escape to full configurator
-    var handleEscape = function() {
-        try {
-            if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
-            if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
-            if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
-        } catch (e) { /* */ }
-        navigate('/studio');
-    };
-
-    // Confirm before leaving if wizard has progress
-    var handleLogoClick = function() {
-        if (step > 1 || selectedZones.length > 0) {
-            if (window.confirm('Leave wizard? Your progress will be saved.')) {
-                navigate('/');
-            }
-        } else {
-            navigate('/');
-        }
-    };
-
-    // Build and persist saved design for bridge page when entering step 3
-    var saveWizardDesign = function() {
-        // Use the first fence zone's config for the bridge page display
-        var primaryZone = sortedZones.find(function(z) { return z === 'front' || z === 'back'; }) || sortedZones[0];
-        var primaryConfig = zoneConfigs[primaryZone] || {};
-        var scene = primaryZone === 'back' ? 'backyard' : (primaryZone === 'gate' ? 'gates' : 'fencing');
-        var isFence = (scene === 'fencing' || scene === 'backyard');
-        var acc = primaryConfig.accessories || {};
-
-        // Capture snapshot from 3D canvas if available
-        var snapshotDataUrl = '';
+    // ---- Capture 3D snapshot ----
+    var captureSnapshot = function() {
+        var dataUrl = '';
         try {
             var canvasEl = document.querySelector('.wizard-configure-right canvas');
             var bgImgEl = document.querySelector('.wizard-configure-right img');
@@ -296,9 +289,71 @@ var WizardShell = function() {
                     ctx.drawImage(bgImgEl, 0, 0, w, h);
                 }
                 ctx.drawImage(canvasEl, 0, 0, w, h);
-                snapshotDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+                dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
             }
         } catch (e) {}
+        setSnapshotDataUrl(dataUrl);
+        return dataUrl;
+    };
+
+    // ---- Mark current zone as configured and move to next ----
+    var handleZoneNext = function() {
+        setZonesConfigured(function(prev) {
+            var updated = Object.assign({}, prev);
+            updated[currentZone] = true;
+            return updated;
+        });
+
+        // Find next unconfigured zone
+        var allZones = orderedZones;
+        var currentIdx = allZones.indexOf(currentZone);
+        var nextZone = null;
+        for (var i = currentIdx + 1; i < allZones.length; i++) {
+            if (!zonesConfigured[allZones[i]]) {
+                nextZone = allZones[i];
+                break;
+            }
+        }
+
+        if (nextZone) {
+            setCurrentZone(nextZone);
+        } else {
+            // All zones configured — save design and show bridge page (step 3)
+            saveWizardDesign();
+            setStep(3);
+        }
+    };
+
+    // ---- Escape to full configurator ----
+    var handleEscape = function() {
+        try {
+            if (zoneConfigs.front) localStorage.setItem('gv_fence_config', JSON.stringify(zoneConfigs.front));
+            if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
+            if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
+        } catch (e) { /* */ }
+        navigate('/studio');
+    };
+
+    // ---- Confirm before leaving if wizard has progress ----
+    var handleLogoClick = function() {
+        if (step > 1 || selectedZones.length > 0) {
+            if (window.confirm('Leave wizard? Your progress will be saved.')) {
+                navigate('/');
+            }
+        } else {
+            navigate('/');
+        }
+    };
+
+    // ---- Build and persist saved design for bridge page ----
+    var saveWizardDesign = function() {
+        var primaryZone = orderedZones.find(function(z) { return z === 'front' || z === 'back'; }) || orderedZones[0];
+        var primaryConfig = zoneConfigs[primaryZone] || {};
+        var scene = primaryZone === 'back' ? 'backyard' : (primaryZone === 'gate' ? 'gates' : 'fencing');
+        var isFence = (scene === 'fencing' || scene === 'backyard');
+        var acc = primaryConfig.accessories || {};
+
+        var snap = captureSnapshot();
 
         var savedDesign = {
             scene: scene,
@@ -325,7 +380,7 @@ var WizardShell = function() {
             privacyPanelColor: primaryConfig.privacyPanelColor || null,
             poolBarrier: !!(primaryConfig.poolBarrier),
             poolCompliance: primaryConfig.poolCompliance || null,
-            snapshotDataUrl: snapshotDataUrl,
+            snapshotDataUrl: snap || '',
             timestamp: new Date().toISOString(),
         };
 
@@ -335,6 +390,136 @@ var WizardShell = function() {
             if (zoneConfigs.back) localStorage.setItem('gv_back_config', JSON.stringify(zoneConfigs.back));
             if (zoneConfigs.gate) localStorage.setItem('gv_config', JSON.stringify(zoneConfigs.gate));
         } catch (e) {}
+
+        // Also update unified wizardState
+        setWizardState(function(prev) {
+            var next = Object.assign({}, prev, { selectedZones: selectedZones });
+            next = updateZoneQuote(next, primaryZone, {
+                config: primaryConfig,
+                snapshotDataUrl: snap || '',
+            });
+            return next;
+        });
+    };
+
+    // ---- Build QuoteBuilder initialConfig from zone design config ----
+    var buildQuoteInitialConfig = function(zoneId, cfg) {
+        if (!cfg) cfg = zoneConfigs[zoneId] || {};
+        var colorName = '';
+        if (cfg.color) {
+            colorName = (typeof cfg.color === 'object' && cfg.color.displayName)
+                ? cfg.color.displayName.toLowerCase().replace(/\s+/g, '-')
+                : (typeof cfg.color === 'string' ? cfg.color : '');
+        }
+        return {
+            style: cfg.styleId || '',
+            height: parseInt(cfg.height, 10) || 48,
+            color: colorName,
+            postCap: cfg.postCap || 'flat',
+            pupType: cfg.pupType || null,
+            finialType: cfg.finialType || cfg.finial || null,
+        };
+    };
+
+    // ---- QuoteBuilder completion handler ----
+    var handleQuoteComplete = function(quoteData) {
+        var zoneId = currentZone;
+        var zoneLabel = ZONE_LABELS[zoneId] || zoneId;
+        var cfg = zoneConfigs[zoneId] || {};
+
+        // Save to wizardState
+        setWizardState(function(prev) {
+            var next = Object.assign({}, prev, { selectedZones: selectedZones });
+            next = updateZoneQuote(next, zoneId, {
+                config: cfg,
+                quoteData: quoteData,
+                quoteResult: quoteData.quoteResult || { items: [], subtotal: 0, warnings: [] },
+                snapshotDataUrl: snapshotDataUrl || '',
+                status: 'complete',
+            });
+            return next;
+        });
+
+        // Store completed zone info for transition page
+        setCompletedZoneId(zoneId);
+        setCompletedZoneConfig({
+            style: cfg.styleId || '',
+            height: cfg.height || '',
+            color: cfg.color ? (cfg.color.displayName || '') : '',
+        });
+
+        // Determine what comes next
+        var currentIdx = orderedZones.indexOf(zoneId);
+        var remainingFenceZones = [];
+        var remainingGateZones = [];
+        for (var i = currentIdx + 1; i < orderedZones.length; i++) {
+            if (orderedZones[i] === 'gate') {
+                remainingGateZones.push(orderedZones[i]);
+            } else {
+                remainingFenceZones.push(orderedZones[i]);
+            }
+        }
+
+        if (remainingFenceZones.length > 0) {
+            // More fence zones remain — show transition page
+            setCurrentZone(remainingFenceZones[0]);
+            setStep(5);
+        } else if (remainingGateZones.length > 0) {
+            // Only gate zone remains — route to Design Studio gate tab
+            setCurrentZone('gate');
+            setStep(2); // Go to 3D configurator for gate
+        } else {
+            // All zones complete — show summary
+            setStep(6);
+        }
+    };
+
+    // ---- ZoneTransition handlers ----
+    var handleSameFence = function() {
+        // Copy style/color/height from completed zone, skip to Layout (step 1) in QuoteBuilder
+        var prevCfg = zoneConfigs[completedZoneId] || {};
+        setZoneConfigs(function(prev) {
+            var updated = Object.assign({}, prev);
+            var nextCfg = updated[currentZone] || getDefaultConfig(currentZone);
+            nextCfg.styleId = prevCfg.styleId;
+            nextCfg.height = prevCfg.height;
+            nextCfg.color = prevCfg.color;
+            nextCfg.postCap = prevCfg.postCap;
+            nextCfg.finialType = prevCfg.finialType;
+            nextCfg.pupType = prevCfg.pupType;
+            updated[currentZone] = nextCfg;
+            return updated;
+        });
+        setSkipToStep(1); // Skip style step, start at Layout
+        setStep(4); // Go straight to QuoteBuilder
+    };
+
+    var handleDifferentFence = function() {
+        // Full 3D configurator for next zone
+        setSkipToStep(0);
+        setStep(2);
+    };
+
+    // ---- ZoneQuoteSummary handlers ----
+    var handleEditZone = function(zoneId) {
+        setEditingZone(zoneId);
+        setCurrentZone(zoneId);
+        setSkipToStep(0);
+        setStep(4); // Go back to QuoteBuilder for that zone
+    };
+
+    var handleSubmitQuote = function() {
+        // Email submission — placeholder, will be wired to email worker
+        alert('Quote submitted! We will contact you shortly.');
+    };
+
+    var handleOrderNow = function() {
+        alert('Order placed! Our team will verify measurements before production.');
+    };
+
+    var handleTalkToExpert = function() {
+        // Could open ContactPopup or navigate
+        navigate('/studio?view=contact');
     };
 
     // Current active config for renderer
@@ -360,8 +545,8 @@ var WizardShell = function() {
                         onClick={handleLogoClick}
                     />
                     <span className="wizard-step-label">
-                        Step {step} of {totalSteps}
-                        <span className="wizard-step-name"> &mdash; {stepNames[step - 1] || ''}</span>
+                        Step {step} of {TOTAL_STEPS}
+                        <span className="wizard-step-name"> &mdash; {STEP_NAMES[step - 1] || ''}</span>
                     </span>
                 </div>
                 <div className="wizard-progress-bar">
@@ -418,12 +603,16 @@ var WizardShell = function() {
                             className="wizard-btn-primary"
                             disabled={selectedZones.length === 0}
                             onClick={function() {
-                                // If backyard selected and pool not answered, prompt
+                                // If backyard selected and pool not answered, prompt with NEW PoolPopup
                                 if (selectedZones.indexOf('back') >= 0 && !poolAnswered) {
                                     setShowPoolPopup(true);
                                     return;
                                 }
-                                setCurrentZone(sortedZones[0]);
+                                // Sync selectedZones into wizardState
+                                setWizardState(function(prev) {
+                                    return Object.assign({}, prev, { selectedZones: selectedZones });
+                                });
+                                setCurrentZone(orderedZones[0]);
                                 setStep(2);
                             }}
                         >
@@ -436,24 +625,48 @@ var WizardShell = function() {
                 </div>
             )}
 
-            {/* Pool Compliance Popup */}
+            {/* ---- Pool Popup (NEW PoolPopup component) ---- */}
             {showPoolPopup && (
-                <PoolCompliancePopup
-                    currentStyleId={zoneConfigs.back ? zoneConfigs.back.styleId : 'uab_200'}
-                    onComplete={function(result) {
+                <PoolPopup
+                    selectedStyle={poolSelectedStyle}
+                    onStyleSelect={function(styleId) { setPoolSelectedStyle(styleId); }}
+                    onConfirm={function() {
                         setShowPoolPopup(false);
-                        setPoolAnswered(result.poolBarrier ? 'yes' : 'no');
+                        setPoolAnswered('yes');
                         // Save pool data to backyard config
+                        var poolBarrier = true;
+                        var poolCompliance = {
+                            poolBarrier: true,
+                            selectedStyle: poolSelectedStyle,
+                            flushBottom: true,
+                            selfClosingHinges: true,
+                            selfLatching: true,
+                            swingOutward: true,
+                            minHeight48: true,
+                        };
                         setZoneConfigs(function(prev) {
                             var updated = Object.assign({}, prev);
                             var back = updated.back || getDefaultConfig('back');
-                            back.poolBarrier = result.poolBarrier;
-                            back.poolCompliance = result.poolCompliance;
+                            back.poolBarrier = poolBarrier;
+                            back.poolCompliance = poolCompliance;
+                            // If haven style selected, update styleId
+                            if (poolSelectedStyle === 'haven') {
+                                back.styleId = 'uab_200';
+                            } else if (poolSelectedStyle === 'horizon') {
+                                back.styleId = 'uaf_200';
+                            }
                             updated.back = back;
                             return updated;
                         });
-                        // If pool answered, proceed to step 2
-                        setCurrentZone(sortedZones[0]);
+                        // Update wizardState pool compliance
+                        setWizardState(function(prev) {
+                            return Object.assign({}, prev, {
+                                selectedZones: selectedZones,
+                                poolCompliance: poolCompliance,
+                            });
+                        });
+                        // Proceed to step 2
+                        setCurrentZone(orderedZones[0]);
                         setStep(2);
                     }}
                     onCancel={function() {
@@ -463,14 +676,14 @@ var WizardShell = function() {
                 />
             )}
 
-            {/* ---- Step 2: Configure Each Zone ---- */}
+            {/* ---- Step 2: Configure Each Zone (3D Configurator) ---- */}
             {step === 2 && activeConfig && (
                 <div className="wizard-configure">
                     <div className="wizard-configure-left">
                         {/* Zone pills (if multiple zones) */}
                         {selectedZones.length > 1 && (
                             <div className="wizard-zone-pills">
-                                {sortedZones.map(function(zoneId) {
+                                {orderedZones.map(function(zoneId) {
                                     var zone = ZONES.find(function(z) { return z.id === zoneId; });
                                     var isActive = zoneId === currentZone;
                                     var isDone = zonesConfigured[zoneId];
@@ -496,7 +709,7 @@ var WizardShell = function() {
                         <div className="wizard-config-header" style={{ padding: '20px 20px 0' }}>
                             <div className="wizard-config-label">
                                 Configuring{selectedZones.length > 1 ? ': ' + (ZONES.find(function(z) { return z.id === currentZone; }) || {}).label : ''}
-                                {selectedZones.length > 1 && ' (' + (sortedZones.indexOf(currentZone) + 1) + ' of ' + sortedZones.length + ')'}
+                                {selectedZones.length > 1 && ' (' + (orderedZones.indexOf(currentZone) + 1) + ' of ' + orderedZones.length + ')'}
                             </div>
                             <div className="wizard-config-title">Choose Your Style</div>
                         </div>
@@ -532,9 +745,9 @@ var WizardShell = function() {
                             <button
                                 className="wizard-btn-back"
                                 onClick={function() {
-                                    var idx = sortedZones.indexOf(currentZone);
+                                    var idx = orderedZones.indexOf(currentZone);
                                     if (idx > 0) {
-                                        setCurrentZone(sortedZones[idx - 1]);
+                                        setCurrentZone(orderedZones[idx - 1]);
                                     } else {
                                         setStep(1);
                                     }
@@ -543,7 +756,7 @@ var WizardShell = function() {
                                 &larr; Back
                             </button>
                             <button className="wizard-btn-primary" onClick={handleZoneNext}>
-                                {zonesConfigured[currentZone] || sortedZones.indexOf(currentZone) === sortedZones.length - 1
+                                {zonesConfigured[currentZone] || orderedZones.indexOf(currentZone) === orderedZones.length - 1
                                     ? 'Looks good, next \u2192'
                                     : 'Next zone \u2192'}
                             </button>
@@ -577,16 +790,69 @@ var WizardShell = function() {
                         navigate('/studio');
                     }}
                     onNavigateToManual={function() {
-                        navigate('/studio?view=quote');
+                        // Instead of navigating to studio, go to QuoteBuilder (step 4)
+                        setSkipToStep(0);
+                        setStep(4);
                     }}
                     onNavigateToStudio={function() {
                         setStep(2);
-                        setCurrentZone(sortedZones[sortedZones.length - 1]);
+                        setCurrentZone(orderedZones[orderedZones.length - 1]);
                     }}
                     onOpenContact={function() {}}
                     showPoolPopup={false}
                     onPoolComplete={function() {}}
                     onPoolCancel={function() {}}
+                />
+            )}
+
+            {/* ---- Step 4: QuoteBuilder (per zone, 6 internal steps) ---- */}
+            {step === 4 && currentZone && (
+                <QuoteBuilder
+                    zoneName={ZONE_LABELS[currentZone] || currentZone}
+                    zoneId={currentZone}
+                    initialConfig={buildQuoteInitialConfig(currentZone)}
+                    poolCompliance={
+                        currentZone === 'back' && zoneConfigs.back
+                            ? zoneConfigs.back.poolCompliance || null
+                            : null
+                    }
+                    snapshotDataUrl={snapshotDataUrl || ''}
+                    onComplete={handleQuoteComplete}
+                    onBack={function() {
+                        // Back goes to design review (step 3) or transition (step 5)
+                        if (editingZone) {
+                            // Came from summary edit — go back to summary
+                            setEditingZone(null);
+                            setStep(6);
+                        } else {
+                            setStep(3);
+                        }
+                    }}
+                    skipToStep={skipToStep}
+                    isFirstZone={orderedZones.indexOf(currentZone) === 0}
+                    drawToolData={null}
+                />
+            )}
+
+            {/* ---- Step 5: Zone Transition ("Same fence?") ---- */}
+            {step === 5 && completedZoneId && currentZone && (
+                <ZoneTransitionPage
+                    completedZoneName={ZONE_LABELS[completedZoneId] || completedZoneId}
+                    completedConfig={completedZoneConfig || {}}
+                    nextZoneName={ZONE_LABELS[currentZone] || currentZone}
+                    onSame={handleSameFence}
+                    onDifferent={handleDifferentFence}
+                />
+            )}
+
+            {/* ---- Step 6: Zone Quote Summary (final combined) ---- */}
+            {step === 6 && (
+                <ZoneQuoteSummary
+                    wizardState={Object.assign({}, wizardState, { selectedZones: selectedZones })}
+                    onEditZone={handleEditZone}
+                    onSubmitQuote={handleSubmitQuote}
+                    onOrderNow={handleOrderNow}
+                    onTalkToExpert={handleTalkToExpert}
                 />
             )}
         </div>
