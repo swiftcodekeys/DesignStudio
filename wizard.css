@@ -20,9 +20,25 @@
   overflow: hidden;
 }
 
-/* Allow scroll on non-configure steps (zone select, gates question, measure) */
+/* Allow scroll on non-configure steps (zone select, bridge, quote builder, summary) */
 .wizard-shell .wizard-content {
   overflow-y: auto;
+}
+.wizard-shell .bridge-page {
+  overflow-y: auto;
+  flex: 1;
+}
+.wizard-shell .qb-container {
+  overflow-y: auto;
+  flex: 1;
+}
+.wizard-shell .summary-page {
+  overflow-y: auto;
+  flex: 1;
+}
+.wizard-shell .zone-transition-overlay {
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* ---- Progress Bar ---- */
