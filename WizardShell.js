@@ -612,10 +612,34 @@ var WizardShell = function() {
                                 <strong>Pool Safety:</strong> Is any part of your backyard fence around a pool?
                             </div>
                             <div className="wizard-pool-btns">
-                                <button className={'wizard-pool-btn' + (poolAnswered === 'yes' ? ' active' : '')} onClick={function() { setPoolAnswered('yes'); setShowPoolPopup(true); }}>
+                                <button className={'wizard-pool-btn'} onClick={function() {
+                                    setPoolAnswered('yes');
+                                    // Auto-configure pool compliance: Haven, flush bottom, TruClose, MagnaLatch
+                                    var poolCompliance = {
+                                        poolBarrier: true,
+                                        selectedStyle: 'haven',
+                                        flushBottom: true,
+                                        selfClosingHinges: true,
+                                        selfLatching: true,
+                                        swingOutward: true,
+                                        minHeight48: true,
+                                    };
+                                    setZoneConfigs(function(prev) {
+                                        var updated = Object.assign({}, prev);
+                                        var back = updated.back || getDefaultConfig('back');
+                                        back.poolBarrier = true;
+                                        back.poolCompliance = poolCompliance;
+                                        back.styleId = 'uab_200'; // Haven — pool compliant
+                                        updated.back = back;
+                                        return updated;
+                                    });
+                                    setWizardState(function(prev) {
+                                        return Object.assign({}, prev, { poolCompliance: poolCompliance });
+                                    });
+                                }}>
                                     Yes
                                 </button>
-                                <button className={'wizard-pool-btn' + (poolAnswered === 'no' ? ' active' : '')} onClick={function() { setPoolAnswered('no'); }}>
+                                <button className={'wizard-pool-btn'} onClick={function() { setPoolAnswered('no'); }}>
                                     No
                                 </button>
                             </div>
@@ -627,9 +651,11 @@ var WizardShell = function() {
                             className="wizard-btn-primary"
                             disabled={selectedZones.length === 0}
                             onClick={function() {
-                                // If backyard selected and pool not answered, prompt with NEW PoolPopup
+                                // If backyard selected and pool not answered, nudge them
                                 if (selectedZones.indexOf('back') >= 0 && !poolAnswered) {
-                                    setShowPoolPopup(true);
+                                    // Scroll to pool question
+                                    var poolEl = document.querySelector('.wizard-pool-inline');
+                                    if (poolEl) poolEl.scrollIntoView({ behavior: 'smooth' });
                                     return;
                                 }
                                 trackZoneSelection(selectedZones);
@@ -650,57 +676,7 @@ var WizardShell = function() {
                 </div>
             )}
 
-            {/* ---- Pool Popup (NEW PoolPopup component) ---- */}
-            {showPoolPopup && (
-                <PoolPopup
-                    selectedStyle={poolSelectedStyle}
-                    onStyleSelect={function(styleId) { setPoolSelectedStyle(styleId); }}
-                    onConfirm={function() {
-                        setShowPoolPopup(false);
-                        setPoolAnswered('yes');
-                        trackZoneSelection(selectedZones);
-                        // Save pool data to backyard config
-                        var poolBarrier = true;
-                        var poolCompliance = {
-                            poolBarrier: true,
-                            selectedStyle: poolSelectedStyle,
-                            flushBottom: true,
-                            selfClosingHinges: true,
-                            selfLatching: true,
-                            swingOutward: true,
-                            minHeight48: true,
-                        };
-                        setZoneConfigs(function(prev) {
-                            var updated = Object.assign({}, prev);
-                            var back = updated.back || getDefaultConfig('back');
-                            back.poolBarrier = poolBarrier;
-                            back.poolCompliance = poolCompliance;
-                            // If haven style selected, update styleId
-                            if (poolSelectedStyle === 'haven') {
-                                back.styleId = 'uab_200';
-                            } else if (poolSelectedStyle === 'horizon') {
-                                back.styleId = 'uaf_200';
-                            }
-                            updated.back = back;
-                            return updated;
-                        });
-                        // Update wizardState pool compliance
-                        setWizardState(function(prev) {
-                            return Object.assign({}, prev, {
-                                selectedZones: selectedZones,
-                                poolCompliance: poolCompliance,
-                            });
-                        });
-                        // Proceed to step 2
-                        setCurrentZone(orderedZones[0]);
-                        setStep(2);
-                    }}
-                    onCancel={function() {
-                        setShowPoolPopup(false);
-                        setPoolAnswered('no');
-                    }}
-                />
-            )}
+            {/* Pool popup removed — Yes/No inline handles pool compliance directly */}
 
             {/* ---- Step 2: Configure Each Zone (3D Configurator) ---- */}
             {step === 2 && activeConfig && (

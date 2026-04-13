@@ -605,8 +605,8 @@
   }
 }
 
-/* Tablet: same stacked layout */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Tablet: same stacked layout (only for actual tablets, not laptops) */
+@media (min-width: 769px) and (max-width: 900px) {
   .wizard-configure {
     flex-direction: column;
   }
