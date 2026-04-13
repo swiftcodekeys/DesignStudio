@@ -2,11 +2,12 @@
 // React.createElement, var, function declarations, vanilla CSS
 
 import React from 'react';
-import { Check, Info } from '@phosphor-icons/react';
+import { Check, Info, SwimmingPool, ShieldCheck } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
 import { PRIVACY_STYLES } from './configData';
 
-// ---- Style image mappings (gate_styles folder) ----
+// ---- Style image mappings ----
+// Gate-view images from ifence_previews/gate_styles/
 var STYLE_IMAGES = {
   'horizon':        'assets/ifence_previews/gate_styles/san_marino_15.png',
   'haven':          'assets/ifence_previews/gate_styles/boca_grande_45.png',
@@ -15,33 +16,27 @@ var STYLE_IMAGES = {
   'savannah':       'assets/ifence_previews/gate_styles/bella_terra_51.png',
   'horizon-pro':    'assets/ifence_previews/gate_styles/santa_monica_9.png',
   'charleston-pro': 'assets/ifence_previews/gate_styles/charleston_pro.png',
+  'lexington':      'assets/ifence_previews/gate_styles/excelsior_30.png',
+  'eclipse':        'assets/ifence_previews/gate_styles/new_orleans_21.png',
+  'defender':       'assets/ifence_previews/gate_styles/castile_36.png',
 };
 
-// ---- Style definitions per grade ----
-var STYLES_BY_GRADE = {
-  residential: [
-    { id: 'horizon',        name: 'Horizon',        badge: 'POPULAR' },
-    { id: 'haven',          name: 'Haven',           badge: 'POOL' },
-    { id: 'charleston',     name: 'Charleston',      badge: 'POPULAR' },
-    { id: 'vanguard',       name: 'Vanguard',        badge: null },
-    { id: 'savannah',       name: 'Savannah',        badge: null },
-    { id: 'horizon-pro',    name: 'Horizon Pro',     badge: 'PUPPY READY' },
-    { id: 'charleston-pro', name: 'Charleston Pro',  badge: null },
-  ],
-  commercial: [
-    { id: 'horizon',        name: 'Horizon',         badge: 'POPULAR' },
-    { id: 'charleston',     name: 'Charleston',      badge: 'POPULAR' },
-    { id: 'vanguard',       name: 'Vanguard',        badge: null },
-    { id: 'horizon-pro',    name: 'Horizon Pro',     badge: null },
-    { id: 'charleston-pro', name: 'Charleston Pro',  badge: null },
-  ],
-  industrial: [
-    { id: 'horizon',        name: 'Horizon',         badge: null },
-    { id: 'charleston',     name: 'Charleston',      badge: null },
-    { id: 'horizon-pro',    name: 'Horizon Pro',     badge: null },
-    { id: 'charleston-pro', name: 'Charleston Pro',  badge: null },
-  ],
-};
+// ---- Full style catalog with metadata ----
+var ALL_STYLES = [
+  { id: 'horizon',        name: 'Horizon',        sub: 'Flat Top',                   badge: 'POPULAR',     poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: 'horizon-pro' },
+  { id: 'haven',          name: 'Haven',           sub: 'Flat Top Flush',             badge: 'POOL',        poolSafe: true,  grades: ['residential'], proVariant: null },
+  { id: 'charleston',     name: 'Charleston',      sub: 'Spear Top',                  badge: 'POPULAR',     poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: 'charleston-pro' },
+  { id: 'vanguard',       name: 'Vanguard',        sub: 'Flat Top w/ Spears',         badge: null,          poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'savannah',       name: 'Savannah',        sub: 'Staggered Spear',            badge: null,          poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'lexington',      name: 'Lexington',       sub: 'Convex',                     badge: 'DECORATIVE',  poolSafe: false, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'eclipse',        name: 'Eclipse',         sub: 'Concave',                    badge: 'DECORATIVE',  poolSafe: false, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'horizon-pro',    name: 'Horizon Pro',     sub: 'Flat Top \u00B7 1\u00BD" Spacing', badge: 'PUPPY READY', poolSafe: true, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'charleston-pro', name: 'Charleston Pro',  sub: 'Spear Top \u00B7 1\u00BD" Spacing', badge: 'CLASSIC',    poolSafe: true, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'defender',       name: 'Defender',        sub: 'Industrial Security',        badge: 'SECURITY',    poolSafe: false, grades: ['industrial'], proVariant: null },
+];
+
+// Pro spacing is only available for styles that have a pro variant
+var PRO_SPACING_STYLES = ['horizon', 'charleston', 'vanguard', 'savannah', 'horizon-pro', 'charleston-pro'];
 
 // ---- Heights per grade ----
 var HEIGHTS_BY_GRADE = {
@@ -112,13 +107,24 @@ function QuoteStep1_Style(props) {
   var poolCompliance = props.poolCompliance;
 
   var grade = data.grade || 'residential';
-  var availableStyles = STYLES_BY_GRADE[grade] || STYLES_BY_GRADE.residential;
   var availableHeights = HEIGHTS_BY_GRADE[grade] || HEIGHTS_BY_GRADE.residential;
 
-  // If current style not available for grade, clear it
+  // Pool compliance: lock flush bottom, filter styles
+  var poolLocked = !!(poolCompliance && poolCompliance.poolBarrier);
+
+  // Build available styles: filter by grade, then by pool if applicable
+  var availableStyles = ALL_STYLES.filter(function(s) {
+    return s.grades.indexOf(grade) >= 0;
+  });
+
+  // If pool project: only show pool-safe styles
+  if (poolLocked) {
+    availableStyles = availableStyles.filter(function(s) { return s.poolSafe; });
+  }
+
+  // If current style not available, clear it
   var styleValid = !data.style || availableStyles.some(function(s) { return s.id === data.style; });
   if (!styleValid && data.style) {
-    // will be cleared on next render cycle
     setTimeout(function() { update({ style: '' }); }, 0);
   }
 
@@ -131,10 +137,14 @@ function QuoteStep1_Style(props) {
     setTimeout(function() { update({ height: closest }); }, 0);
   }
 
-  // Pool compliance: lock flush bottom, suggest Haven
-  var poolLocked = !!(poolCompliance && poolCompliance.poolBarrier);
+  // Pro spacing availability — only for styles that support it
+  var proSpacingAvailable = PRO_SPACING_STYLES.indexOf(data.style) >= 0;
 
-  // Pro spacing tip
+  // If pro spacing selected but style doesn't support it, reset to standard
+  if (data.spacing === 'pro' && !proSpacingAvailable) {
+    setTimeout(function() { update({ spacing: 'standard' }); }, 0);
+  }
+
   var isProSpacing = data.spacing === 'pro';
 
   // Racking warning: puppy + butterflies/scrolls
@@ -228,36 +238,57 @@ function QuoteStep1_Style(props) {
     ) : null,
 
     // ---- Style ----
-    sectionHeader('Style', {
+    data.fenceType !== 'privacy' ? sectionHeader('Style', {
       title: 'Fence Styles',
-      text: 'Each style has a distinct look. Horizon is a classic flat-top. Charleston features decorative spear-top pickets. Haven is specifically designed for pool code compliance.',
-    }),
-    poolLocked ? el('div', { className: 'qs1-pool-note' },
-      'Pool project detected. Haven style is recommended for code compliance.'
+      text: 'Each style has a distinct look. Horizon is a classic flat-top. Charleston features decorative spear-top pickets. Haven is specifically designed for pool code compliance. Any flat-top style can be made pool-safe with a flush bottom rail.',
+    }) : null,
+
+    // Pool info banner
+    data.fenceType !== 'privacy' && poolLocked ? el('div', { className: 'qs1-pool-banner' },
+      React.createElement(SwimmingPool, { size: 18, weight: 'fill', style: { flexShrink: 0 } }),
+      el('div', null,
+        el('strong', null, 'Pool project \u2014 showing pool-safe styles only'),
+        el('div', { className: 'qs1-pool-banner-sub' },
+          'Haven is our most popular pool fence. All styles below can be configured with flush bottom rails for BOCA/IRC compliance.'
+        )
+      )
     ) : null,
-    el('div', { className: 'qs1-style-grid' },
+
+    // Style grid (ornamental only)
+    data.fenceType !== 'privacy' ? el('div', { className: 'qs1-style-grid' },
       availableStyles.map(function(style) {
         var imgSrc = STYLE_IMAGES[style.id] || '';
+        var isSelected = data.style === style.id;
+        var badgeClass = style.badge ? 'qs1-badge qs1-badge-' + style.badge.toLowerCase().replace(/\s+/g, '-') : '';
         return el('button', {
           key: style.id,
-          className: 'qs1-style-card' + (data.style === style.id ? ' selected' : ''),
+          className: 'qs1-style-card' + (isSelected ? ' selected' : ''),
           onClick: function() { update({ style: style.id }); },
         },
           imgSrc ? el('img', { src: imgSrc, alt: style.name, className: 'qs1-style-img' }) : null,
           el('div', { className: 'qs1-style-name' }, style.name),
-          style.badge ? el('span', { className: 'qs1-badge qs1-badge-' + style.badge.toLowerCase().replace(/\s+/g, '-') }, style.badge) : null,
-          data.style === style.id ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
+          el('div', { className: 'qs1-style-sub' }, style.sub),
+          // Badges
+          el('div', { className: 'qs1-badge-row' },
+            style.badge ? el('span', { className: badgeClass }, style.badge) : null,
+            style.poolSafe && !poolLocked ? el('span', { className: 'qs1-badge qs1-badge-pool-safe' },
+              React.createElement(ShieldCheck, { size: 10, weight: 'fill' }),
+              ' POOL SAFE'
+            ) : null,
+            style.id === 'haven' ? el('span', { className: 'qs1-badge qs1-badge-pool-fav' }, '\u2605 #1 POOL CHOICE') : null
+          ),
+          isSelected ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
         );
       })
-    ),
+    ) : null,
 
-    // ---- Picket Spacing ----
-    sectionHeader('Picket Spacing', {
+    // ---- Picket Spacing (conditional — only when style supports it) ----
+    data.fenceType !== 'privacy' && proSpacingAvailable ? sectionHeader('Picket Spacing', {
       title: 'Picket Spacing',
       text: 'Standard spacing has pickets at regular intervals. Pro spacing adds additional pickets between each standard picket for a denser look and enhanced security.',
       imageSrc: 'assets/ifence_previews/config_options/extreme_spacing_116.png',
-    }),
-    el('div', { className: 'qs1-card-row' },
+    }) : null,
+    data.fenceType !== 'privacy' && proSpacingAvailable ? el('div', { className: 'qs1-card-row' },
       selCard(data.spacing === 'standard', function() { update({ spacing: 'standard' }); },
         el('div', null,
           el('div', { className: 'qs1-card-title' }, 'Standard'),
@@ -270,17 +301,17 @@ function QuoteStep1_Style(props) {
           el('div', { className: 'qs1-card-desc' }, 'Extra pickets for density')
         )
       )
-    ),
+    ) : null,
     isProSpacing ? el('div', { className: 'qs1-tip' },
-      'Pro spacing already includes extra pickets — puppy pickets may not be needed.'
+      'Pro spacing already includes extra pickets \u2014 puppy pickets may not be needed.'
     ) : null,
 
     // ---- Puppy Pickets ----
-    sectionHeader('Puppy Pickets', {
+    data.fenceType !== 'privacy' ? sectionHeader('Puppy Pickets', {
       title: 'Puppy Pickets',
       text: 'Smaller pickets added to the bottom section of your fence to prevent small pets from squeezing through. Multiple classic styles available with decorative finials.',
-    }),
-    el('label', { className: 'qs1-checkbox-row' },
+    }) : null,
+    data.fenceType !== 'privacy' ? el('label', { className: 'qs1-checkbox-row' },
       el('input', {
         type: 'checkbox',
         checked: !!data.puppyPickets,
@@ -290,8 +321,8 @@ function QuoteStep1_Style(props) {
         },
       }),
       el('span', null, 'Add puppy pickets to my panels')
-    ),
-    data.puppyPickets ? el('div', { className: 'qs1-puppy-grid' },
+    ) : null,
+    data.puppyPickets && data.fenceType !== 'privacy' ? el('div', { className: 'qs1-puppy-grid' },
       PUPPY_STYLES.map(function(ps) {
         return el('button', {
           key: ps.id,
@@ -313,12 +344,17 @@ function QuoteStep1_Style(props) {
       title: 'Fence Height',
       text: 'Height is measured from ground to top of picket. Taller fences provide more privacy and security. Available heights vary by grade.',
     }),
+    poolLocked && data.height < 48 ? el('div', { className: 'qs1-pool-note' },
+      'Pool code requires minimum 48" fence height.'
+    ) : null,
     el('div', { className: 'qs1-height-grid' },
       availableHeights.map(function(h) {
+        var tooShortForPool = poolLocked && h < 48;
         return el('button', {
           key: h,
-          className: 'qs1-height-card' + (data.height === h ? ' selected' : ''),
-          onClick: function() { update({ height: h }); },
+          className: 'qs1-height-card' + (data.height === h ? ' selected' : '') + (tooShortForPool ? ' disabled' : ''),
+          onClick: function() { if (!tooShortForPool) update({ height: h }); },
+          disabled: tooShortForPool,
         },
           el('div', { className: 'qs1-height-val' }, h + '"'),
           el('div', { className: 'qs1-height-ft' }, (h / 12).toFixed(1) + ' ft')
@@ -368,7 +404,7 @@ function QuoteStep1_Style(props) {
       text: 'Standard bottom rail sits above ground level. Flush bottom rail sits at ground level, required for pool code compliance to prevent gaps.',
     }),
     poolLocked ? el('div', { className: 'qs1-pool-note' },
-      'Pool compliance requires flush bottom rail — auto-selected.'
+      'Pool compliance requires flush bottom rail \u2014 auto-selected.'
     ) : null,
     el('div', { className: 'qs1-toggle-row' },
       el('button', {

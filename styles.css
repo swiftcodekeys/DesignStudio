@@ -4837,7 +4837,22 @@ html, body {
 .qs1-badge-popular { background: #6BA3C2; color: #fff; }
 .qs1-badge-pool { background: #38a169; color: #fff; }
 .qs1-badge-puppy-ready { background: #805ad5; color: #fff; }
+.qs1-badge-classic { background: #1B3A5C; color: #fff; }
+.qs1-badge-decorative { background: #d4753a; color: #fff; }
+.qs1-badge-security { background: #c53030; color: #fff; }
 .qs1-badge-premium { background: linear-gradient(135deg, #a0a0a0, #d4d4d4); color: #333; }
+.qs1-badge-pool-safe { background: #ebf8ff; color: #2b6cb0; display: inline-flex; align-items: center; gap: 2px; }
+.qs1-badge-pool-fav { background: #f0fff4; color: #276749; font-weight: 700; }
+.qs1-badge-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.qs1-style-sub { font-size: 10px; color: #8e95a0; margin-top: 1px; }
+
+/* Pool banner */
+.qs1-pool-banner {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 8px;
+  padding: 12px 14px; margin-bottom: 12px; font-size: 13px; color: #2c5282;
+}
+.qs1-pool-banner-sub { font-size: 11px; color: #4a90b8; margin-top: 2px; font-weight: 400; }
 
 /* Check indicator */
 .qs1-check {
