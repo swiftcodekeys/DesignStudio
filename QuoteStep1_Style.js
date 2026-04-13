@@ -344,17 +344,16 @@ function QuoteStep1_Style(props) {
       title: 'Fence Height',
       text: 'Height is measured from ground to top of picket. Taller fences provide more privacy and security. Available heights vary by grade.',
     }),
-    poolLocked && data.height < 48 ? el('div', { className: 'qs1-pool-note' },
-      'Pool code requires minimum 48" fence height.'
-    ) : null,
     el('div', { className: 'qs1-height-grid' },
-      availableHeights.map(function(h) {
-        var tooShortForPool = poolLocked && h < 48;
+      availableHeights.filter(function(h) {
+        // Pool projects: remove heights under 48" (taller is always fine)
+        if (poolLocked && h < 48) return false;
+        return true;
+      }).map(function(h) {
         return el('button', {
           key: h,
-          className: 'qs1-height-card' + (data.height === h ? ' selected' : '') + (tooShortForPool ? ' disabled' : ''),
-          onClick: function() { if (!tooShortForPool) update({ height: h }); },
-          disabled: tooShortForPool,
+          className: 'qs1-height-card' + (data.height === h ? ' selected' : ''),
+          onClick: function() { update({ height: h }); },
         },
           el('div', { className: 'qs1-height-val' }, h + '"'),
           el('div', { className: 'qs1-height-ft' }, (h / 12).toFixed(1) + ' ft')
