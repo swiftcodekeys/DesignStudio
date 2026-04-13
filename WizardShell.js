@@ -634,12 +634,28 @@ var WizardShell = function() {
                                         return updated;
                                     });
                                     setWizardState(function(prev) {
-                                        return Object.assign({}, prev, { poolCompliance: poolCompliance });
+                                        return Object.assign({}, prev, {
+                                            selectedZones: selectedZones,
+                                            poolCompliance: poolCompliance,
+                                        });
                                     });
+                                    // Auto-advance to configurator
+                                    trackZoneSelection(selectedZones);
+                                    setCurrentZone(orderedZones[0]);
+                                    setStep(2);
                                 }}>
-                                    Yes
+                                    Yes — configure for pool code
                                 </button>
-                                <button className={'wizard-pool-btn'} onClick={function() { setPoolAnswered('no'); }}>
+                                <button className={'wizard-pool-btn'} onClick={function() {
+                                    setPoolAnswered('no');
+                                    // Also auto-advance
+                                    trackZoneSelection(selectedZones);
+                                    setWizardState(function(prev) {
+                                        return Object.assign({}, prev, { selectedZones: selectedZones });
+                                    });
+                                    setCurrentZone(orderedZones[0]);
+                                    setStep(2);
+                                }}>
                                     No
                                 </button>
                             </div>
