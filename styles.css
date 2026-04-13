@@ -3842,6 +3842,10 @@ html, body {
   background: #f7fafc;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+/* Compact variant when inside wizard (no separate topbar needed) */
+.bridge-page--compact {
+  min-height: 0;
+}
 .bridge-topbar {
   background: #1B3A5C;
   padding: 14px 24px;
@@ -3871,9 +3875,15 @@ html, body {
   margin: 0 auto;
   padding: 32px 24px;
 }
+.bridge-page--compact .bridge-content {
+  padding: 20px 24px;
+}
 .bridge-header {
   text-align: center;
   margin-bottom: 28px;
+}
+.bridge-header--compact {
+  margin-bottom: 16px;
 }
 .bridge-header-label {
   font-size: 10px;
@@ -3883,32 +3893,45 @@ html, body {
   margin-bottom: 6px;
 }
 .bridge-header-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   color: #1B3A5C;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 .bridge-header-subtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: #718096;
   max-width: 480px;
   margin: 0 auto;
 }
+.bridge-edit-link {
+  display: inline-block;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: #6BA3C2;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+}
+.bridge-edit-link:hover { color: #1B3A5C; }
 
 .bridge-columns {
   display: flex;
-  gap: 24px;
+  gap: 28px;
   align-items: flex-start;
 }
-.bridge-left, .bridge-right { flex: 1; min-width: 0; }
+.bridge-left { flex: 1.1; min-width: 0; }
+.bridge-right { flex: 1; min-width: 0; }
 
 /* Snapshot */
 .bridge-snapshot {
   background: #0c1420;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .bridge-snapshot-img {
   width: 100%;
@@ -3957,8 +3980,8 @@ html, body {
 .bridge-selections {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 18px;
+  border-radius: 10px;
+  padding: 14px 16px;
 }
 .bridge-selections-title {
   font-size: 10px;
@@ -4020,9 +4043,9 @@ html, body {
 .bridge-address-card {
   background: #fff;
   border: 1.5px solid #6BA3C2;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 .bridge-address-title {
   font-size: 16px;
@@ -4102,7 +4125,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .bridge-divider-line {
   flex: 1;
@@ -4125,7 +4148,7 @@ html, body {
   border: 1.5px solid #6BA3C2;
   border-radius: 12px;
   padding: 16px 20px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
@@ -4148,9 +4171,9 @@ html, body {
 /* Contact section */
 .bridge-contact {
   text-align: center;
-  padding: 14px;
+  padding: 10px 14px;
   background: #f8fafc;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px dashed #CBD5E0;
 }
 .bridge-contact-title {

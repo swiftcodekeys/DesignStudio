@@ -178,29 +178,24 @@ var DesignReviewPage = function(props) {
     var isPoolReady = hasDesign && saved.poolBarrier && POOL_STYLES.indexOf(saved.styleId) >= 0;
 
     return (
-        <div className="bridge-page">
-            {/* Top bar */}
-            <div className="bridge-topbar">
-                <div className="bridge-topbar-brand">
-                    <span className="bridge-topbar-highlight">GRANDVIEW</span> Fence | Design Studio
-                </div>
-                <button className="bridge-topbar-back" onClick={onNavigateToStudio}>
-                    &larr; Back to Design Tool
-                </button>
-            </div>
+        <div className="bridge-page bridge-page--compact">
 
             <div className="bridge-content">
-                {/* Header */}
-                <div className="bridge-header">
-                    <div className="bridge-header-label">DESIGN STUDIO</div>
+                {/* Header — compact, single line */}
+                <div className="bridge-header bridge-header--compact">
                     <h1 className="bridge-header-title">
                         {hasDesign ? 'Your Design is Saved' : 'Get Your Fence Quote'}
                     </h1>
                     <p className="bridge-header-subtitle">
                         {hasDesign
-                            ? "You'll have a chance to review and edit all options before your quote is finalized."
+                            ? "Review your selections below, then choose how to measure."
                             : 'Enter your property address or measurements to get started.'}
                     </p>
+                    {hasDesign && (
+                        <button className="bridge-edit-link" onClick={onNavigateToStudio}>
+                            &larr; Back to Design Tool
+                        </button>
+                    )}
                 </div>
 
                 <div className="bridge-columns">
