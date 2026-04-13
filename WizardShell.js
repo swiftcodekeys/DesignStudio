@@ -804,11 +804,14 @@ var WizardShell = function() {
             {step === 3 && (
                 <DesignReviewPage
                     onNavigateToDraw={function(location) {
-                        try { localStorage.setItem('gv_start_scene', 'draw'); } catch (e) {}
-                        navigate('/studio');
+                        // Save address, then go to QuoteBuilder with it
+                        try {
+                            localStorage.setItem('gv_bridge_location', JSON.stringify(location));
+                        } catch (e) {}
+                        setSkipToStep(0);
+                        setStep(4);
                     }}
                     onNavigateToManual={function() {
-                        // Instead of navigating to studio, go to QuoteBuilder (step 4)
                         setSkipToStep(0);
                         setStep(4);
                     }}
