@@ -5304,3 +5304,247 @@ html, body {
 @media (max-width: 480px) {
   .qb-extras-finial-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ============================================================
+   QuoteStep5 — Shipping & Contact
+   ============================================================ */
+.qb-ship-container { display: flex; flex-direction: column; gap: 24px; }
+.qb-ship-icon { color: var(--brand); margin-bottom: 4px; }
+
+/* Form fields grid */
+.qb-ship-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.qb-ship-full { grid-column: 1 / -1; }
+.qb-ship-input {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.qb-ship-input:focus { border-color: var(--brand); }
+.qb-ship-select { cursor: pointer; }
+.qb-ship-zip { max-width: 120px; }
+
+/* Email validation error */
+.qb-ship-email-err {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: #e53e3e;
+  margin-top: -4px;
+}
+
+/* Same-as-install toggle row */
+.qb-ship-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.qb-ship-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Contact summary (zones 2+) */
+.qb-ship-contact-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.qb-ship-edit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.qb-ship-edit-link:hover { background: var(--active-bg); }
+
+@media (max-width: 480px) {
+  .qb-ship-fields { grid-template-columns: 1fr; }
+  .qb-ship-toggle-row { flex-direction: column; align-items: flex-start; }
+}
+
+/* ============================================================
+   QuoteStep6 — Review & Submit
+   ============================================================ */
+.qb-review-container { display: flex; flex-direction: column; gap: 20px; }
+
+/* Section blocks */
+.qb-review-section {
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.qb-review-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.qb-review-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+.qb-review-edit:hover { background: var(--active-bg); }
+
+/* Details rows */
+.qb-review-details { display: flex; flex-direction: column; gap: 6px; }
+.qb-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 2px 0;
+}
+.qb-review-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.qb-review-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+  max-width: 60%;
+}
+
+/* Materials table */
+.qb-review-materials { background: #fff; }
+.qb-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.qb-review-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-hint);
+  padding: 6px 4px;
+  border-bottom: 2px solid var(--border);
+}
+.qb-review-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.qb-review-num { text-align: right; }
+.qb-review-empty {
+  font-size: 13px;
+  color: var(--text-hint);
+  text-align: center;
+  padding: 24px;
+}
+
+/* Subtotal */
+.qb-review-subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0 0 0;
+  margin-top: 6px;
+  border-top: 2px solid var(--text-primary);
+}
+.qb-review-subtotal span:first-child {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.qb-review-subtotal-amount {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+/* Warnings */
+.qb-review-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.qb-review-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fffbeb;
+  border: 1px solid #f6e05e;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #92400e;
+}
+.qb-review-warning svg { flex-shrink: 0; color: #d69e2e; }
+
+/* Verification disclaimer */
+.qb-review-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f0fff4;
+  border: 1px solid #c6f6d5;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #276749;
+}
+.qb-review-disclaimer svg { flex-shrink: 0; color: #38a169; }
+
+/* CTA button */
+.qb-review-cta {
+  width: 100%;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--cta);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.qb-review-cta:hover { background: var(--cta-hover); transform: translateY(-1px); }
+.qb-review-cta:active { transform: translateY(0); }

@@ -7,9 +7,8 @@ import QuoteStep1_Style from './QuoteStep1_Style';
 import QuoteStep2_Layout from './QuoteStep2_Layout';
 import QuoteStep3_Gates from './QuoteStep3_Gates';
 import QuoteStep4_Extras from './QuoteStep4_Extras';
-// Future steps imported as they're built:
-// import QuoteStep5_Shipping from './QuoteStep5_Shipping';
-// import QuoteStep6_Review from './QuoteStep6_Review';
+import QuoteStep5_Shipping from './QuoteStep5_Shipping';
+import QuoteStep6_Review from './QuoteStep6_Review';
 
 var STEP_LABELS = ['Style & Config', 'Layout & Posts', 'Gates', 'Extras', 'Shipping', 'Review'];
 
@@ -75,9 +74,24 @@ function QuoteBuilder(props) {
   if (step === 3) {
     stepContent = React.createElement(QuoteStep4_Extras, { data: data, update: update });
   }
-  // steps 4-5 wired in Task 10
-  // if (step === 4) stepContent = React.createElement(QuoteStep5_Shipping, { data: data, update: update });
-  // if (step === 5) stepContent = React.createElement(QuoteStep6_Review, { data: data, update: update });
+  // step 4 — Shipping
+  if (step === 4) {
+    stepContent = React.createElement(QuoteStep5_Shipping, {
+      data: data,
+      update: update,
+      isFirstZone: props.isFirstZone !== false,
+    });
+  }
+  // step 5 — Review
+  if (step === 5) {
+    stepContent = React.createElement(QuoteStep6_Review, {
+      data: data,
+      update: update,
+      onEditStep: setStep,
+      onComplete: props.onComplete,
+      zoneName: props.zoneName || 'Your Fence',
+    });
+  }
 
   return React.createElement('div', { className: 'qb-container' },
 
