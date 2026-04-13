@@ -1174,6 +1174,527 @@ git commit -m "feat: add educational images for racking, posts, heights, grades"
 
 ---
 
+## Phase 5: Additional Features (Tasks 16-21)
+
+---
+
+### Task 16: Draw Tool Corner Angle Detection Fix
+
+**Files:**
+- Modify: `DrawYardView.js`
+
+The draw tool currently counts every intermediate vertex as a corner (`line.points.length - 2`). This over-counts — a straight line with 3 points registers as 1 corner when it should be 0. Fix: calculate the angle between consecutive segments and only count as a corner if the direction change exceeds 15°.
+
+- [ ] **Step 1: Add angle calculation helper**
+
+Add this function near the top of DrawYardView.js (after the distance utilities, around line 95):
+
+```js
+// Calculate angle between three points (in degrees)
+// Returns 0 for straight, 90 for right angle, 180 for U-turn
+function angleBetweenPoints(p1, p2, p3) {
+  var dx1 = p2.lng - p1.lng;
+  var dy1 = p2.lat - p1.lat;
+  var dx2 = p3.lng - p2.lng;
+  var dy2 = p3.lat - p2.lat;
+  var angle1 = Math.atan2(dy1, dx1);
+  var angle2 = Math.atan2(dy2, dx2);
+  var diff = Math.abs(angle2 - angle1) * (180 / Math.PI);
+  if (diff > 180) diff = 360 - diff;
+  return diff;
+}
+
+// Count corners using angle threshold (default 15 degrees)
+function countCornersWithAngle(line, threshold) {
+  if (!threshold) threshold = 15;
+  if (!line.points || line.points.length < 3) return 0;
+  var corners = 0;
+  for (var i = 1; i < line.points.length - 1; i++) {
+    var angle = angleBetweenPoints(line.points[i - 1], line.points[i], line.points[i + 1]);
+    if (angle > threshold) corners++;
+  }
+  return corners;
+}
+```
+
+- [ ] **Step 2: Replace naive corner counting**
+
+At line 903 (the `cornerCount` calculation in the stats section), replace:
+```js
+cornerCount += line.points.length - 2;
+```
+with:
+```js
+cornerCount += countCornersWithAngle(line);
+```
+
+At line 1668-1670 (the final output object), replace:
+```js
+if (line.points.length > 2) corners += line.points.length - 2;
+```
+with:
+```js
+corners += countCornersWithAngle(line);
+```
+
+- [ ] **Step 3: Verify in browser**
+
+Run: `npm start`
+Draw a fence line with 4+ points that are roughly straight. Verify corner count shows 0 (not points-2). Draw a right-angle turn. Verify it counts as 1 corner.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add DrawYardView.js
+git commit -m "fix: draw tool corner detection — use angle threshold instead of vertex count"
+```
+
+---
+
+### Task 17: Multi-Zone Email Template
+
+**Files:**
+- Modify: `workers/email-worker/worker.js`
+
+The existing email worker sends a single-zone quote. The new flow sends multi-zone quotes with a grand total. Update both the sales and customer email templates to handle the new `zoneQuotes` payload format.
+
+- [ ] **Step 1: Update worker.js to handle multi-zone payload**
+
+The new payload from ZoneQuoteSummary will include:
+```js
+{
+  source: 'design-studio-quote',
+  quoteId: 'GV-XXXXXX',
+  firstName: '...', lastName: '...', email: '...', phone: '...',
+  zipCode: '...', location: '...',
+  zones: [
+    { zoneId: 'back', zoneName: 'Backyard', style: 'Charleston', grade: 'residential',
+      height: '48"', linearFootage: 225, accessories: '...', subtotal: 4200.00,
+      items: [...] },
+    { zoneId: 'front', zoneName: 'Front Yard', ... },
+    { zoneId: 'gate', zoneName: 'Driveway Gate', ... },
+  ],
+  grandTotal: 7988.00,
+  snapshotDataUrls: { back: 'data:image/jpeg;base64,...', gate: 'data:image/jpeg;base64,...' },
+}
+```
+
+Update `buildSalesEmailHtml()` and `buildCustomerEmailHtml()` to:
+- Detect multi-zone format: `if (p.zones && p.zones.length > 0)`
+- Render a section per zone with zone name, style, subtotal
+- Show grand total at the bottom
+- Fall back to existing single-zone format for backward compatibility
+
+Add a new helper function `buildZoneSectionHtml(zone)` that renders one zone's details as a table row group.
+
+- [ ] **Step 2: Update customer email to include per-zone summary**
+
+The customer email should show each zone with its key selections and subtotal, followed by the grand total. Include the "View Design Studio" CTA button.
+
+- [ ] **Step 3: Test locally**
+
+Use `wrangler dev` (if available) or deploy to staging worker and test with a curl POST:
+```bash
+curl -X POST https://grandview-email-worker.sarah-13a.workers.dev \
+  -H "Content-Type: application/json" \
+  -d '{"source":"design-studio-quote","quoteId":"GV-TEST01","firstName":"Test","email":"test@test.com","zones":[{"zoneName":"Backyard","style":"Charleston","subtotal":4200}],"grandTotal":4200}'
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add workers/email-worker/worker.js
+git commit -m "feat: multi-zone email template — per-zone subtotals + grand total"
+```
+
+---
+
+### Task 18: PDF Quote Download
+
+**Files:**
+- Create: `quoteRenderer.js`
+
+Generate a branded PDF quote from the combined summary data. Uses browser-native approach (render HTML → `window.print()` with print-specific CSS) rather than adding a PDF library dependency.
+
+- [ ] **Step 1: Create quoteRenderer.js**
+
+```js
+// quoteRenderer.js — Generate printable/PDF quote from zone data
+// Uses a hidden iframe with print-optimized HTML, triggered by window.print()
+
+function generateQuoteHtml(state) {
+  var zones = state.selectedZones || [];
+  var grandTotal = 0;
+  var contact = state.contactInfo || {};
+  var shipping = state.shippingAddress || {};
+
+  var zoneSections = zones.map(function(zoneId) {
+    var zone = state.zoneQuotes[zoneId];
+    if (!zone || zone.status !== 'complete') return '';
+    var config = zone.config || {};
+    var result = zone.quoteResult || {};
+    grandTotal += result.subtotal || 0;
+
+    var itemRows = (result.items || []).map(function(item) {
+      return '<tr>'
+        + '<td style="padding:6px 0;border-bottom:1px solid #eee;">' + item.label + '</td>'
+        + '<td style="padding:6px 0;border-bottom:1px solid #eee;text-align:center;">' + (item.qty || '') + '</td>'
+        + '<td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;">$' + (item.unitPrice || 0).toFixed(2) + '</td>'
+        + '<td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;font-weight:600;">$' + (item.total || 0).toFixed(2) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    var zoneName = zoneId === 'front' ? 'Front Yard' : zoneId === 'back' ? 'Backyard' : 'Driveway Gate';
+
+    return '<div style="margin-bottom:24px;">'
+      + '<h3 style="margin:0 0 8px;color:#1B3A5C;font-size:16px;border-bottom:2px solid #6BA3C2;padding-bottom:4px;">' + zoneName + '</h3>'
+      + '<p style="margin:0 0 8px;font-size:12px;color:#666;">'
+      + (config.style || '') + ' · ' + (config.height || '') + '" · ' + (config.color || '')
+      + '</p>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+      + '<tr style="background:#f0f4f8;">'
+      + '<th style="text-align:left;padding:6px 0;">Item</th>'
+      + '<th style="text-align:center;padding:6px 0;">Qty</th>'
+      + '<th style="text-align:right;padding:6px 0;">Unit</th>'
+      + '<th style="text-align:right;padding:6px 0;">Total</th>'
+      + '</tr>'
+      + itemRows
+      + '<tr><td colspan="3" style="padding:8px 0;text-align:right;font-weight:700;">Zone Subtotal</td>'
+      + '<td style="padding:8px 0;text-align:right;font-weight:700;font-size:14px;">$' + (result.subtotal || 0).toFixed(2) + '</td></tr>'
+      + '</table>'
+      + '</div>';
+  }).join('');
+
+  return '<!DOCTYPE html><html><head><title>Grandview Fence Quote</title>'
+    + '<style>body{font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:40px;color:#333;}'
+    + '@media print{body{padding:20px;}}</style></head><body>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">'
+    + '<div><img src="assets/logo-email.png" alt="Grandview Fence" style="height:50px;" />'
+    + '<div style="font-size:11px;color:#888;margin-top:4px;">grandviewfence.com | (855) FENCE-30</div></div>'
+    + '<div style="text-align:right;"><div style="font-size:11px;color:#888;">Quote Date</div>'
+    + '<div style="font-size:13px;font-weight:600;">' + new Date().toLocaleDateString() + '</div></div></div>'
+    + '<div style="margin-bottom:20px;padding:12px;background:#f8f9fa;border-radius:8px;">'
+    + '<div style="font-size:12px;"><strong>Customer:</strong> ' + (contact.name || '') + '</div>'
+    + '<div style="font-size:12px;"><strong>Email:</strong> ' + (contact.email || '') + '</div>'
+    + '<div style="font-size:12px;"><strong>Ship to:</strong> ' + [shipping.street, shipping.city, shipping.state, shipping.zip].filter(Boolean).join(', ') + '</div>'
+    + '</div>'
+    + zoneSections
+    + '<div style="margin-top:16px;padding:16px;background:#1B3A5C;border-radius:8px;color:#fff;display:flex;justify-content:space-between;align-items:center;">'
+    + '<span style="font-size:16px;font-weight:800;">Grand Total</span>'
+    + '<span style="font-size:22px;font-weight:800;">$' + grandTotal.toFixed(2) + '</span></div>'
+    + '<div style="margin-top:16px;font-size:10px;color:#888;text-align:center;">'
+    + 'All measurements verified by our team before production. Pricing valid for 30 days.<br/>'
+    + 'Grandview Fence LLC | SDVOSB | Veteran-Owned | Woman-Owned</div>'
+    + '</body></html>';
+}
+
+export function downloadQuotePdf(state) {
+  var html = generateQuoteHtml(state);
+  var iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+
+  setTimeout(function() {
+    iframe.contentWindow.print();
+    setTimeout(function() { document.body.removeChild(iframe); }, 1000);
+  }, 250);
+}
+```
+
+- [ ] **Step 2: Wire PDF download button into ZoneQuoteSummary.js**
+
+In ZoneQuoteSummary.js, import `downloadQuotePdf` from `quoteRenderer.js` and add a "Download PDF" button next to the CTAs:
+
+```js
+import { downloadQuotePdf } from './quoteRenderer';
+// In the CTA section:
+React.createElement('button', {
+  className: 'summary-pdf-btn',
+  onClick: function() { downloadQuotePdf(wizardState); },
+}, 'Download PDF Quote')
+```
+
+- [ ] **Step 3: Verify in browser**
+
+Click "Download PDF" in the combined summary. Browser print dialog should open with a clean, branded quote showing all zones and grand total.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add quoteRenderer.js ZoneQuoteSummary.js
+git commit -m "feat: PDF quote download via print-to-PDF with branded template"
+```
+
+---
+
+### Task 19: Save & Resume (Email Link)
+
+**Files:**
+- Create: `quoteSaver.js`
+- Modify: `app.js`
+
+Allow buyers to save their in-progress quote and get an emailed link to resume later. Uses URL hash encoding of the wizard state (compressed).
+
+- [ ] **Step 1: Create quoteSaver.js**
+
+```js
+// quoteSaver.js — Save & resume quote via URL
+// Encodes wizard state into a compact URL hash, emails link to buyer
+
+import { loadWizardState, saveWizardState } from './wizardState';
+
+function encodeState(state) {
+  // Strip snapshot data URLs (too large for URL) and encode as base64
+  var slim = Object.assign({}, state);
+  if (slim.zoneQuotes) {
+    var cleaned = {};
+    Object.keys(slim.zoneQuotes).forEach(function(k) {
+      cleaned[k] = Object.assign({}, slim.zoneQuotes[k], { snapshotDataUrl: null });
+    });
+    slim.zoneQuotes = cleaned;
+  }
+  try {
+    return btoa(encodeURIComponent(JSON.stringify(slim)));
+  } catch (e) { return null; }
+}
+
+function decodeState(hash) {
+  try {
+    return JSON.parse(decodeURIComponent(atob(hash)));
+  } catch (e) { return null; }
+}
+
+export function getSaveLink() {
+  var state = loadWizardState();
+  var encoded = encodeState(state);
+  if (!encoded) return null;
+  return window.location.origin + window.location.pathname + '#resume=' + encoded;
+}
+
+export function checkForResume() {
+  var hash = window.location.hash;
+  if (!hash || !hash.startsWith('#resume=')) return false;
+  var encoded = hash.replace('#resume=', '');
+  var state = decodeState(encoded);
+  if (state) {
+    saveWizardState(state);
+    // Clean URL
+    window.history.replaceState(null, '', window.location.pathname);
+    return true;
+  }
+  return false;
+}
+
+export function emailSaveLink(email, quoteId) {
+  var link = getSaveLink();
+  if (!link) return Promise.resolve(false);
+
+  return fetch('https://grandview-email-worker.sarah-13a.workers.dev', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source: 'save-quote-link',
+      email: email,
+      quoteId: quoteId || 'draft',
+      resumeLink: link,
+    }),
+  }).then(function(r) { return r.ok; }).catch(function() { return false; });
+}
+```
+
+- [ ] **Step 2: Add "Save for Later" button to QuoteBuilder footer**
+
+In QuoteBuilder.js, add a small "Save for Later" link in the footer bar that opens a mini-form asking for email, then calls `emailSaveLink()`.
+
+- [ ] **Step 3: Update app.js to check for resume on load**
+
+In app.js, call `checkForResume()` on mount. If it returns true, route to the wizard view so the buyer picks up where they left off.
+
+- [ ] **Step 4: Update email worker to handle save-link emails**
+
+In `workers/email-worker/worker.js`, add handling for `source: 'save-quote-link'` — sends a simple email with the resume link and "Continue Your Quote" CTA button.
+
+- [ ] **Step 5: Verify in browser**
+
+Fill out a few steps in the QuoteBuilder, click "Save for Later", enter email, verify email sends with resume link. Open the link in a new incognito tab, verify state restores.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add quoteSaver.js QuoteBuilder.js app.js workers/email-worker/worker.js
+git commit -m "feat: save & resume quotes via emailed link"
+```
+
+---
+
+### Task 20: Funnel Analytics Tracking
+
+**Files:**
+- Create: `analytics.js`
+
+Lightweight analytics to track where buyers drop off in the quote flow. No external dependencies — sends events to the existing Cloudflare email worker which can log to GAS/Google Sheets.
+
+- [ ] **Step 1: Create analytics.js**
+
+```js
+// analytics.js — Lightweight funnel tracking
+// Sends events to GAS via the email worker for Google Sheets logging
+
+var WORKER_URL = 'https://grandview-email-worker.sarah-13a.workers.dev';
+
+function trackEvent(event, data) {
+  var payload = {
+    source: 'analytics',
+    event: event,
+    timestamp: new Date().toISOString(),
+    sessionId: getSessionId(),
+    data: data || {},
+  };
+
+  // Fire and forget — don't block UI
+  try {
+    navigator.sendBeacon(WORKER_URL, JSON.stringify(payload));
+  } catch (e) {
+    // Fallback for browsers without sendBeacon
+    fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(function() {});
+  }
+}
+
+function getSessionId() {
+  var key = 'gv_session_id';
+  var id = sessionStorage.getItem(key);
+  if (!id) {
+    id = 'ses_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+// Pre-built event helpers
+export function trackZoneSelection(zones) { trackEvent('zone_select', { zones: zones }); }
+export function trackStepEnter(step, zone) { trackEvent('step_enter', { step: step, zone: zone }); }
+export function trackStepComplete(step, zone) { trackEvent('step_complete', { step: step, zone: zone }); }
+export function trackQuoteComplete(zone, subtotal) { trackEvent('quote_complete', { zone: zone, subtotal: subtotal }); }
+export function trackSummaryView(grandTotal) { trackEvent('summary_view', { grandTotal: grandTotal }); }
+export function trackSubmit(quoteId, grandTotal) { trackEvent('quote_submit', { quoteId: quoteId, grandTotal: grandTotal }); }
+export function trackDropoff(step, zone) { trackEvent('dropoff', { step: step, zone: zone }); }
+export function trackPdfDownload(quoteId) { trackEvent('pdf_download', { quoteId: quoteId }); }
+export function trackSaveForLater(email) { trackEvent('save_for_later', { hasEmail: !!email }); }
+```
+
+- [ ] **Step 2: Wire analytics into QuoteBuilder and WizardShell**
+
+Import and call tracking functions at key points:
+- `trackZoneSelection()` when zones are picked in WizardShell
+- `trackStepEnter()` when a QuoteBuilder step renders
+- `trackStepComplete()` when Next is clicked
+- `trackQuoteComplete()` when zone quote finishes
+- `trackSummaryView()` when combined summary loads
+- `trackSubmit()` when quote is submitted
+- `trackDropoff()` on page unload if mid-flow (via `beforeunload`)
+
+- [ ] **Step 3: Update email worker to log analytics events**
+
+In `workers/email-worker/worker.js`, add handling for `source: 'analytics'` — forward to GAS endpoint for Google Sheets logging. Log: event name, session ID, timestamp, data.
+
+- [ ] **Step 4: Verify events fire**
+
+Open browser dev tools Network tab. Walk through the quote flow. Verify beacon/fetch calls go out at each step transition.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add analytics.js QuoteBuilder.js WizardShell.js workers/email-worker/worker.js
+git commit -m "feat: funnel analytics — track step-by-step dropoff via GAS/Sheets"
+```
+
+---
+
+### Task 21: Shipping Estimate by ZIP
+
+**Files:**
+- Create: `shippingEstimate.js`
+
+Rough shipping estimate based on ZIP code. Aluminum fence ships LTL freight — cost varies by distance from manufacturer (Ultra is in NJ). Provide a range, not an exact number.
+
+- [ ] **Step 1: Create shippingEstimate.js**
+
+```js
+// shippingEstimate.js — Rough shipping estimate by ZIP
+// Aluminum fence ships LTL freight from NJ. Cost varies by distance zone.
+// These are estimates — actual shipping quoted at order confirmation.
+
+var SHIPPING_ZONES = [
+  { zips: /^(0[0-9]|1[0-9]|2[0-7])/, zone: 'northeast', label: 'Northeast (nearby)', range: [150, 350] },
+  { zips: /^(2[8-9]|3[0-9])/, zone: 'southeast', label: 'Southeast', range: [250, 500] },
+  { zips: /^(4[0-9]|5[0-3])/, zone: 'midwest', label: 'Midwest', range: [300, 600] },
+  { zips: /^(5[4-9]|6[0-9]|7[0-9])/, zone: 'central', label: 'Central / South', range: [350, 700] },
+  { zips: /^(8[0-9]|9[0-9])/, zone: 'west', label: 'West Coast', range: [500, 1000] },
+];
+
+export function getShippingEstimate(zip) {
+  if (!zip || zip.length < 2) return null;
+  var prefix = zip.substring(0, 2);
+
+  for (var i = 0; i < SHIPPING_ZONES.length; i++) {
+    if (SHIPPING_ZONES[i].zips.test(prefix)) {
+      return {
+        zone: SHIPPING_ZONES[i].zone,
+        label: SHIPPING_ZONES[i].label,
+        low: SHIPPING_ZONES[i].range[0],
+        high: SHIPPING_ZONES[i].range[1],
+        disclaimer: 'Estimate based on distance from manufacturer. Actual shipping quoted at order confirmation.',
+      };
+    }
+  }
+
+  return {
+    zone: 'unknown',
+    label: 'Your area',
+    low: 200,
+    high: 800,
+    disclaimer: 'Shipping varies by location. We\'ll provide an exact quote after you submit.',
+  };
+}
+```
+
+- [ ] **Step 2: Wire into QuoteStep5_Shipping.js**
+
+When buyer enters a ZIP code, call `getShippingEstimate(zip)` and show:
+```
+Estimated shipping to [zone label]: $[low] – $[high]
+[disclaimer text]
+```
+
+Show this as an info card below the ZIP field.
+
+- [ ] **Step 3: Verify in browser**
+
+Enter different ZIP codes (07001, 30301, 48001, 90210) and verify different ranges show.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add shippingEstimate.js QuoteStep5_Shipping.js
+git commit -m "feat: rough shipping estimate by ZIP code zone"
+```
+
+---
+
 ## Verification Checklist
 
 After all tasks complete, verify these scenarios work end-to-end:
@@ -1193,3 +1714,9 @@ After all tasks complete, verify these scenarios work end-to-end:
 - [ ] Racking surcharge appears when terrain is sloped
 - [ ] Puppy/butterflies warn about racking limitation
 - [ ] Gate hardware per gate, pool auto-locks
+- [ ] Draw tool counts corners by angle (>15°), not vertex count
+- [ ] Multi-zone email sends with per-zone subtotals + grand total
+- [ ] PDF download renders branded quote with all zones
+- [ ] Save for Later emails resume link, resume link restores state
+- [ ] Analytics events fire at each step transition (check Network tab)
+- [ ] Shipping estimate shows range based on ZIP code
