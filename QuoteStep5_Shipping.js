@@ -2,7 +2,7 @@
 // React.createElement, var, function declarations, vanilla CSS
 
 import React, { useState } from 'react';
-import { Truck, HardHat, Question, PencilSimple } from '@phosphor-icons/react';
+import { Truck, HardHat, Question, PencilSimple, Package } from '@phosphor-icons/react';
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -130,6 +130,19 @@ function QuoteStep5_Shipping(props) {
           className: 'qs1-toggle' + (data.sameAsInstall === false ? ' active' : ''),
           onClick: function() { update({ sameAsInstall: false }); },
         }, 'Different Site')
+      )
+    ),
+
+    // ---- Shipping Info ----
+    el('div', { className: 'qs5-shipping-info' },
+      el('div', { className: 'qs5-shipping-badge' },
+        el('span', { className: 'qs5-shipping-quoted' },
+          React.createElement(Package, { size: 18, weight: 'duotone' }),
+          ' Shipping will be quoted separately'
+        )
+      ),
+      el('p', { className: 'qs5-shipping-note' },
+        'Aluminum fence ships via LTL freight. Our team will provide a shipping quote with your order confirmation.'
       )
     ),
 

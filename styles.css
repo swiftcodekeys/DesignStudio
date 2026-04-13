@@ -6174,3 +6174,28 @@ html, body {
   color: #2e7d32;
   padding: 4px 8px;
 }
+
+/* === Shipping Info === */
+.qs5-shipping-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0f7fb;
+  border-radius: 10px;
+  border-left: 4px solid var(--brand, #6BA3C2);
+}
+.qs5-shipping-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a2e);
+}
+.qs5-shipping-free { color: #38a169; display: flex; align-items: center; gap: 6px; }
+.qs5-shipping-quoted { color: var(--text-secondary, #5a6270); display: flex; align-items: center; gap: 6px; }
+.qs5-shipping-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #5a6270);
+  line-height: 1.5;
+}
