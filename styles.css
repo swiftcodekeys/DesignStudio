@@ -6199,3 +6199,609 @@ html, body {
   color: var(--text-secondary, #5a6270);
   line-height: 1.5;
 }
+
+/* ============================================================
+   MOBILE RESPONSIVENESS — Comprehensive Breakpoints
+   Added: tablet (768px) and phone (480px) for all components
+   ============================================================ */
+
+/* ---- Tablet (max-width: 768px) ---- */
+@media (max-width: 768px) {
+
+  /* --- QuoteBuilder Shell --- */
+  .qb-container {
+    max-width: 100%;
+    padding: 16px 12px 100px;
+  }
+
+  .qb-snapshot-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .qb-step-dots {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    padding: 0 4px;
+    gap: 2px;
+    margin-bottom: 20px;
+  }
+  .qb-step-dots::-webkit-scrollbar { display: none; }
+
+  .qb-dot {
+    flex: 0 0 auto;
+    min-width: 60px;
+    max-width: 80px;
+  }
+
+  .qb-dot-label {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .qb-step-content {
+    min-height: 200px;
+  }
+
+  .qb-footer {
+    padding: 10px 12px;
+  }
+  .qb-back-btn,
+  .qb-next-btn,
+  .qb-submit-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  /* --- QuoteStep1: Style & Config grids → 2 columns --- */
+  .qs1-style-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .qs1-color-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .qs1-height-grid {
+    gap: 6px;
+  }
+  .qs1-height-card {
+    min-width: 56px;
+    padding: 10px 6px;
+  }
+
+  .qs1-card-row {
+    flex-wrap: wrap;
+  }
+  .qs1-card {
+    min-width: 100px;
+    padding: 12px;
+  }
+
+  .qs1-toggle {
+    padding: 10px 12px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  .qs1-postcap-card {
+    min-width: 100px;
+    padding: 10px;
+  }
+
+  .qs1-puppy-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .qs1-checkbox-row {
+    min-height: 44px;
+  }
+  .qs1-checkbox-row input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* --- Step 2: Layout & Posts --- */
+  .qb-layout-draw-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+
+  /* --- Step 3: Gates --- */
+  .qb-gates-type-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .qb-gates-toggle {
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .qb-gates-hw-option {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .qb-gates-select {
+    min-height: 44px;
+    font-size: 14px;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .qb-gates-add-btn {
+    min-height: 44px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* --- Step 4: Extras & Upgrades --- */
+  .qb-extras-finial-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .qb-extras-thumb-card {
+    padding: 8px 4px;
+    min-height: 44px;
+  }
+
+  .qb-extras-accent-row,
+  .qb-extras-acc-row {
+    min-height: 44px;
+    padding: 10px 10px;
+  }
+
+  .qb-extras-accent-row input[type="checkbox"],
+  .qb-extras-acc-row input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* --- Step 5: Shipping & Contact --- */
+  .qb-ship-input,
+  .qb-ship-select {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  /* --- Step 6: Review --- */
+  .qb-review-section {
+    padding: 12px;
+  }
+
+  .qb-review-cta {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  /* --- Wizard: Gate Explore & Pool --- */
+  .wizard-gate-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .wizard-gate-explore-btn,
+  .wizard-gate-skip-btn {
+    min-height: 44px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+
+  .wizard-pool-btn {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .wizard-step-title {
+    font-size: 18px;
+  }
+
+  /* --- ZoneTransitionPage --- */
+  .zone-transition-overlay {
+    padding: 16px;
+  }
+
+  .zone-transition-card {
+    padding: 24px 20px 20px;
+    max-width: 100%;
+  }
+
+  .zone-transition-btn {
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+
+  .zone-transition-btn-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* --- ZoneQuoteSummary --- */
+  .summary-zones {
+    gap: 14px;
+  }
+
+  .summary-zone-card {
+    padding: 14px 14px 10px;
+  }
+
+  .summary-ctas {
+    flex-direction: column;
+  }
+
+  .summary-cta-btn {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .summary-grand-total-bar {
+    flex-direction: column;
+    text-align: center;
+    gap: 4px;
+  }
+
+  .summary-edit-btn {
+    min-height: 44px;
+  }
+
+  /* --- Save for Later --- */
+  .qb-save-form {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .qb-save-input {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .qb-save-send-btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
+
+/* ---- Phone (max-width: 480px) ---- */
+@media (max-width: 480px) {
+
+  /* --- QuoteBuilder Shell --- */
+  .qb-container {
+    padding: 10px 8px 100px;
+  }
+
+  .qb-snapshot-header {
+    padding: 8px 10px;
+  }
+  .qb-snapshot-img {
+    width: 60px;
+    height: 40px;
+  }
+  .qb-snapshot-zone {
+    font-size: 13px;
+  }
+
+  .qb-step-dots {
+    margin-bottom: 16px;
+  }
+  .qb-dot {
+    min-width: 36px;
+    max-width: 44px;
+  }
+  .qb-dot-label {
+    display: none;
+  }
+  .qb-dot-num {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .qb-footer {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .qb-back-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .qb-next-btn,
+  .qb-submit-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  /* --- QuoteStep1: Style & Config grids → 1 column on phone --- */
+  .qs1-style-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .qs1-style-img {
+    height: 70px;
+  }
+
+  .qs1-color-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .qs1-card-row {
+    flex-direction: column;
+  }
+  .qs1-card {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .qs1-toggle-row {
+    flex-direction: column;
+  }
+  .qs1-toggle {
+    min-height: 48px;
+    border-radius: 8px !important;
+  }
+  .qs1-toggle:first-child { border-radius: 8px !important; }
+  .qs1-toggle:last-child { border-radius: 8px !important; }
+
+  .qs1-postcap-row {
+    flex-direction: column;
+  }
+  .qs1-postcap-card {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .qs1-puppy-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .qs1-height-grid {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* --- Step 3: Gates → single column --- */
+  .qb-gates-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qb-gates-toggle-row {
+    flex-direction: column;
+  }
+  .qb-gates-toggle {
+    min-height: 48px;
+    font-size: 13px;
+  }
+
+  .qb-gates-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .qb-gates-estate-card {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  /* --- Step 4: Extras → compact grid --- */
+  .qb-extras-finial-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .qb-extras-accent-img {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* --- Step 5: Shipping → already handled by existing 480px query --- */
+
+  /* --- Step 6: Review --- */
+  .qb-review-section {
+    padding: 10px;
+  }
+
+  /* --- Wizard: Stack gate cards, pool buttons full width --- */
+  .wizard-gate-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .wizard-gate-card {
+    width: 100%;
+  }
+
+  .wizard-gate-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wizard-gate-explore-btn,
+  .wizard-gate-skip-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .wizard-pool-btns {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .wizard-pool-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .wizard-step-title {
+    font-size: 16px;
+  }
+  .wizard-step-desc {
+    font-size: 13px;
+  }
+
+  /* --- ZoneTransitionPage --- */
+  .zone-transition-card {
+    padding: 20px 16px 16px;
+    border-radius: 14px;
+  }
+
+  .zone-transition-check {
+    width: 52px;
+    height: 52px;
+  }
+
+  .zone-transition-title {
+    font-size: 17px;
+  }
+
+  .zone-transition-question {
+    font-size: 14px;
+  }
+
+  .zone-transition-btn {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .zone-transition-btn-label {
+    font-size: 14px;
+  }
+
+  .zone-transition-btn-desc {
+    font-size: 11px;
+  }
+
+  /* --- ZoneQuoteSummary --- */
+  .summary-page {
+    padding: 20px 8px 48px;
+  }
+
+  .summary-title {
+    font-size: 20px;
+  }
+
+  .summary-ref {
+    font-size: 11px;
+  }
+
+  .summary-grand-amount {
+    font-size: 22px;
+  }
+
+  .summary-zone-card {
+    padding: 12px 12px 10px;
+  }
+
+  .summary-zone-config {
+    font-size: 12px;
+  }
+
+  .summary-zone-materials {
+    font-size: 11px;
+  }
+
+  .summary-grand-total-bar {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .summary-cta-btn {
+    font-size: 13px;
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+
+  .summary-disclaimer {
+    font-size: 10px;
+  }
+
+  .summary-badges {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+  }
+
+  /* --- Save for Later (phone refinement) --- */
+  .qb-save-link {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  /* --- Shipping info --- */
+  .qs5-shipping-info {
+    padding: 12px;
+  }
+  .qs5-shipping-badge {
+    font-size: 13px;
+  }
+}
+
+/* ---- Touch-friendly global overrides ---- */
+@media (pointer: coarse) {
+  /* Ensure all interactive elements meet 44px minimum */
+  .qb-back-btn,
+  .qb-next-btn,
+  .qb-submit-btn,
+  .qs1-toggle,
+  .qs1-card,
+  .qs1-style-card,
+  .qs1-height-card,
+  .qs1-color-card,
+  .qs1-postcap-card,
+  .qs1-puppy-card,
+  .qs1-checkbox-row,
+  .qb-gates-toggle,
+  .qb-gates-hw-option,
+  .qb-gates-select,
+  .qb-gates-add-btn,
+  .qb-extras-thumb-card,
+  .qb-extras-accent-row,
+  .qb-extras-acc-row,
+  .qb-ship-input,
+  .qb-ship-select,
+  .qb-review-cta,
+  .wizard-gate-explore-btn,
+  .wizard-gate-skip-btn,
+  .wizard-pool-btn,
+  .zone-transition-btn,
+  .summary-cta-btn,
+  .summary-edit-btn,
+  .qb-save-send-btn {
+    min-height: 44px;
+  }
+
+  /* Remove hover-dependent UI for touch devices */
+  .qs1-card:hover,
+  .qs1-style-card:hover,
+  .qs1-height-card:hover,
+  .qs1-color-card:hover,
+  .qs1-postcap-card:hover,
+  .qs1-puppy-card:hover,
+  .qb-gates-toggle:hover,
+  .qb-extras-thumb-card:hover,
+  .qb-extras-accent-row:hover,
+  .qb-extras-acc-row:hover,
+  .zone-transition-btn:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
