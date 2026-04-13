@@ -4873,6 +4873,11 @@ html, body {
 }
 .qs1-height-card:hover { border-color: #b0bec5; }
 .qs1-height-card.selected { border-color: #6BA3C2; background: #f0f7ff; }
+.qs1-height-card.disabled, .qs1-height-card:disabled {
+  opacity: 0.35; cursor: not-allowed; border-color: #e8eaed; background: #f5f5f5;
+  text-decoration: line-through;
+}
+.qs1-height-card.disabled:hover, .qs1-height-card:disabled:hover { border-color: #e8eaed; }
 .qs1-height-val { font-size: 18px; font-weight: 800; color: #1a1a2e; }
 .qs1-height-ft { font-size: 10px; color: #5a6270; }
 
