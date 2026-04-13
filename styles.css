@@ -5202,3 +5202,105 @@ html, body {
   .qb-gates-type-grid { grid-template-columns: 1fr; }
   .qb-gates-toggle-row { flex-direction: column; }
 }
+
+/* ============================================================
+   Step 4 — Extras & Upgrades
+   Prefix: qb-extras-
+   ============================================================ */
+
+/* Outer shell */
+.qb-extras-step { display: flex; flex-direction: column; gap: 24px; }
+.qb-extras-section { display: flex; flex-direction: column; gap: 12px; }
+
+/* Pre-fill banner */
+.qb-extras-prefill-banner {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; color: #166534;
+  background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;
+  padding: 10px 14px;
+}
+
+/* Finial thumbnail grid */
+.qb-extras-finial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 10px;
+}
+.qb-extras-thumb-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--card-bg); border: 2px solid var(--border); border-radius: 10px;
+  padding: 10px 6px; cursor: pointer; transition: all 0.15s;
+  text-align: center;
+}
+.qb-extras-thumb-card:hover { border-color: var(--brand); }
+.qb-extras-thumb-card.active {
+  border-color: var(--brand); background: var(--active-bg);
+}
+.qb-extras-thumb-img {
+  width: 52px; height: 52px; object-fit: contain; border-radius: 6px;
+}
+.qb-extras-thumb-none {
+  width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--text-hint); border-radius: 6px;
+  background: var(--border);
+}
+.qb-extras-thumb-name {
+  font-size: 11px; font-weight: 700; color: var(--text-primary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* Panel accents list */
+.qb-extras-accent-list { display: flex; flex-direction: column; gap: 8px; }
+.qb-extras-accent-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 10px; cursor: pointer; transition: all 0.15s;
+}
+.qb-extras-accent-row:hover { border-color: var(--brand); }
+.qb-extras-accent-row.checked {
+  border-color: var(--brand); background: var(--active-bg);
+}
+.qb-extras-accent-row input[type="checkbox"] {
+  accent-color: var(--brand); width: 16px; height: 16px; flex-shrink: 0;
+}
+.qb-extras-accent-img {
+  width: 44px; height: 44px; object-fit: contain; border-radius: 6px; flex-shrink: 0;
+}
+.qb-extras-accent-name {
+  font-size: 13px; font-weight: 700; color: var(--text-primary); flex: 1;
+}
+
+/* Racking warning */
+.qb-extras-warning {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: #92400e;
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;
+  padding: 8px 12px; margin-top: 4px;
+}
+
+/* Post accessories */
+.qb-extras-accessory-list { display: flex; flex-direction: column; gap: 8px; }
+.qb-extras-acc-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 10px; cursor: pointer; transition: all 0.15s;
+}
+.qb-extras-acc-row:hover { border-color: var(--brand); }
+.qb-extras-acc-row.checked {
+  border-color: var(--brand); background: var(--active-bg);
+}
+.qb-extras-acc-row input[type="checkbox"] {
+  accent-color: var(--brand); width: 16px; height: 16px; flex-shrink: 0;
+}
+.qb-extras-acc-body { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.qb-extras-acc-name {
+  font-size: 13px; font-weight: 700; color: var(--text-primary);
+}
+.qb-extras-acc-desc {
+  font-size: 11px; color: var(--text-secondary);
+}
+
+/* Extras responsive */
+@media (max-width: 480px) {
+  .qb-extras-finial-grid { grid-template-columns: repeat(3, 1fr); }
+}
