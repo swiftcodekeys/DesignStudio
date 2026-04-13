@@ -4586,3 +4586,24 @@ html, body {
   font-family: inherit;
 }
 .area-return-back:hover { text-decoration: underline; }
+
+/* === Info Popup === */
+.info-popup-wrapper { position: relative; display: inline-flex; align-items: center; }
+.info-popup-trigger {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--border, #e8eaed);
+  border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  color: #666; margin-left: 4px; padding: 0; transition: background 0.15s;
+}
+.info-popup-trigger:hover { background: #d0d5dd; }
+.info-popup-content {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  border: 1px solid #e0e0e0; padding: 14px; width: 280px; z-index: 1000;
+  animation: infoPopupIn 0.15s ease-out;
+}
+@keyframes infoPopupIn { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.info-popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.info-popup-title { font-size: 13px; font-weight: 700; color: var(--text-primary, #1a1a2e); }
+.info-popup-close { background: none; border: none; cursor: pointer; color: #999; padding: 2px; }
+.info-popup-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
+.info-popup-text { font-size: 12px; color: #555; line-height: 1.5; margin: 0; }
