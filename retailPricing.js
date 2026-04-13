@@ -82,7 +82,7 @@ export var STYLES = {
       commercial: [48, 60, 72],
       industrial: [48, 60, 72, 84, 96, 108, 120],
     },
-    poolCompliant: true,
+    poolCompliant: false,
     rackable: true,
   },
   savannah: {
@@ -96,7 +96,7 @@ export var STYLES = {
       commercial: [48, 60, 72],
       industrial: [48, 60, 72, 84, 96, 108, 120],
     },
-    poolCompliant: true,
+    poolCompliant: false,
     rackable: true,
   },
   lexington: {
@@ -426,6 +426,19 @@ export var ACCESSORY_PRICING = {
     'welded':    45.75,    // Welded Flange — errata #4 corrected from $43.75
     'welded-4':  39.75,    // Welded Flange (4" & 5" square)
   },
+  hinges: {
+    standard:           33.50,
+    truclose:           95.50,
+    'ultra-adjustable': 333.50,
+  },
+  latches: {
+    lokklatch:           58.50,
+    'magna-latch':       186.50,
+    'lokklatch-deluxe':  175.00,
+    'lokklatch-magnetic': 227.00,
+  },
+  dropRod:        39.25,
+  externalAccess: 33.50,
 };
 
 // ---------------------------------------------------------------------------
@@ -441,6 +454,20 @@ export var PANEL_LENGTH_FT = {
   commercial: 6,
   industrial: 8,
 };
+
+// ---------------------------------------------------------------------------
+// COLOR_OPTIONS — all 8 available powder coat colors for QuoteBuilder dropdown
+// ---------------------------------------------------------------------------
+export var COLOR_OPTIONS = [
+  { id: 'textured-black',  label: 'Textured Black',  hex: '#0c0c0c', premium: false },
+  { id: 'gloss-black',     label: 'Gloss Black',     hex: '#090909', premium: false },
+  { id: 'textured-bronze', label: 'Textured Bronze', hex: '#42382c', premium: false },
+  { id: 'gloss-bronze',    label: 'Gloss Bronze',    hex: '#42382c', premium: false },
+  { id: 'textured-white',  label: 'Textured White',  hex: '#f2f2f2', premium: false },
+  { id: 'gloss-white',     label: 'Gloss White',     hex: '#f4f4f4', premium: false },
+  { id: 'textured-khaki',  label: 'Textured Khaki',  hex: '#cdbeaf', premium: false },
+  { id: 'silver',          label: 'Silver',          hex: '#c8c8c8', premium: true  },
+];
 
 // ---------------------------------------------------------------------------
 // STYLE_ID_MAP — configData/fenceConfigData styleId → retailPricing key
