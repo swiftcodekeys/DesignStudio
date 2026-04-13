@@ -46,7 +46,6 @@ module.exports = {
       'process.env.STRIPE_PUBLISHABLE_KEY': JSON.stringify(''),
       'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || ''),
       'process.env.ANTHROPIC_API_KEY': JSON.stringify(''),
-      'process.env.NODE_ENV': JSON.stringify('production'),
     })
   ],
   devServer: {
