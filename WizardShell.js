@@ -804,12 +804,12 @@ var WizardShell = function() {
             {step === 3 && (
                 <DesignReviewPage
                     onNavigateToDraw={function(location) {
-                        // Save address, then go to QuoteBuilder with it
+                        // Save address, then open the draw tool in the Design Studio
                         try {
                             localStorage.setItem('gv_bridge_location', JSON.stringify(location));
+                            localStorage.setItem('gv_start_scene', 'draw');
                         } catch (e) {}
-                        setSkipToStep(0);
-                        setStep(4);
+                        navigate('/studio');
                     }}
                     onNavigateToManual={function() {
                         setSkipToStep(0);

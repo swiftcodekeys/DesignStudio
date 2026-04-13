@@ -134,15 +134,20 @@ function QuoteBuilder(props) {
 
     // ---- Snapshot header ----
     props.snapshotDataUrl ? React.createElement('div', { className: 'qb-snapshot-header' },
-      React.createElement('img', { src: props.snapshotDataUrl, className: 'qb-snapshot-img', alt: 'Design preview' }),
-      React.createElement('div', { className: 'qb-snapshot-info' },
-        React.createElement('div', { className: 'qb-snapshot-zone' }, props.zoneName || 'Your Fence'),
-        React.createElement('div', { className: 'qb-snapshot-details' },
-          (data.style || '') + ' \u00B7 ' + (data.height || '') + '" \u00B7 ' + (data.color || '').replace(/-/g, ' ')
+      React.createElement('div', { className: 'qb-snapshot-image-wrap' },
+        React.createElement('img', { src: props.snapshotDataUrl, className: 'qb-snapshot-img', alt: 'Your fence design' }),
+        React.createElement('div', { className: 'qb-snapshot-overlay' },
+          React.createElement('div', { className: 'qb-snapshot-headline' }, 'Your New Fence'),
+          React.createElement('div', { className: 'qb-snapshot-config' },
+            (data.style ? data.style.charAt(0).toUpperCase() + data.style.slice(1).replace(/_/g, ' ') : '') +
+            (data.height ? ' \u00B7 ' + data.height + '"' : '') +
+            (data.color ? ' \u00B7 ' + data.color.replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) : '')
+          )
         )
       ),
       React.createElement('div', { className: 'qb-snapshot-prefill' },
-        '\u2705 Pre-filled from your Design Studio selections'
+        React.createElement(ArrowRight, { size: 14, style: { flexShrink: 0 } }),
+        ' Pre-filled from your design \u2014 let\u2019s finalize your quote'
       )
     ) : null,
 
