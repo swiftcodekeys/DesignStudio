@@ -4,8 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
 import QuoteStep1_Style from './QuoteStep1_Style';
+import QuoteStep2_Layout from './QuoteStep2_Layout';
 // Future steps imported as they're built:
-// import QuoteStep2_Layout from './QuoteStep2_Layout';
 // import QuoteStep3_Gates from './QuoteStep3_Gates';
 // import QuoteStep4_Extras from './QuoteStep4_Extras';
 // import QuoteStep5_Shipping from './QuoteStep5_Shipping';
@@ -60,8 +60,14 @@ function QuoteBuilder(props) {
       poolCompliance: props.poolCompliance,
     });
   }
-  // steps 1-5 wired in Tasks 7-10
-  // if (step === 1) stepContent = React.createElement(QuoteStep2_Layout, { data: data, update: update });
+  if (step === 1) {
+    stepContent = React.createElement(QuoteStep2_Layout, {
+      data: data,
+      update: update,
+      drawToolData: props.drawToolData,
+    });
+  }
+  // steps 2-5 wired in Tasks 8-10
   // if (step === 2) stepContent = React.createElement(QuoteStep3_Gates, { data: data, update: update });
   // if (step === 3) stepContent = React.createElement(QuoteStep4_Extras, { data: data, update: update });
   // if (step === 4) stepContent = React.createElement(QuoteStep5_Shipping, { data: data, update: update });
