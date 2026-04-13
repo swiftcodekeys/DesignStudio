@@ -5730,3 +5730,369 @@ html, body {
   color: var(--text-secondary);
   line-height: 1.4;
 }
+
+/* ============================================================
+   ZoneQuoteSummary — combined multi-zone summary page
+   Prefix: .summary-*
+   ============================================================ */
+
+/* ── Page shell ─────────────────────────────────────────── */
+.summary-page {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #f0f4f8 0%, #e8edf3 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 60px;
+  box-sizing: border-box;
+}
+
+.summary-empty {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.summary-header {
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 28px;
+}
+
+.summary-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.summary-header-check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.summary-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.summary-ref {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Zone cards container ───────────────────────────────── */
+.summary-zones {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(27, 58, 92, 0.10);
+}
+
+/* ── Individual zone card ───────────────────────────────── */
+.summary-zone-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-zone-card:last-child {
+  border-bottom: none;
+}
+
+/* ── Zone card header row ───────────────────────────────── */
+.summary-zone-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.summary-zone-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-zone-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--brand);
+  text-transform: uppercase;
+}
+
+.summary-zone-subtotal {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+/* ── Config summary & materials ─────────────────────────── */
+.summary-zone-config {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
+
+.summary-zone-materials {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
+
+/* ── Warnings list ──────────────────────────────────────── */
+.summary-zone-warnings {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summary-zone-warnings li {
+  font-size: 12px;
+  font-weight: 500;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+/* ── Edit button ────────────────────────────────────────── */
+.summary-zone-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.summary-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.summary-edit-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgba(107, 163, 194, 0.07);
+}
+
+.summary-edit-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Grand total bar ────────────────────────────────────── */
+.summary-grand-total-bar {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px;
+  background: var(--text-primary);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 4px 24px rgba(27, 58, 92, 0.16);
+  box-sizing: border-box;
+}
+
+.summary-grand-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.summary-grand-amount {
+  font-size: 30px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+/* ── Disclaimer ─────────────────────────────────────────── */
+.summary-disclaimer {
+  width: 100%;
+  max-width: 680px;
+  margin: 18px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  line-height: 1.4;
+}
+
+/* ── CTA buttons block ──────────────────────────────────── */
+.summary-ctas {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.summary-cta-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 15px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  letter-spacing: 0.1px;
+  line-height: 1.3;
+}
+
+.summary-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(27, 58, 92, 0.12);
+}
+
+.summary-cta-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Order Now — CTA orange */
+.summary-cta-order {
+  background: var(--cta);
+  color: #ffffff;
+  border-color: var(--cta);
+}
+
+.summary-cta-order:hover {
+  background: #c4672e;
+  border-color: #c4672e;
+}
+
+/* Submit Quote Request — brand blue */
+.summary-cta-submit {
+  background: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand);
+}
+
+.summary-cta-submit:hover {
+  background: #5792b1;
+  border-color: #5792b1;
+}
+
+/* Talk to an Expert — outline */
+.summary-cta-expert {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.summary-cta-expert:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgba(107, 163, 194, 0.06);
+}
+
+/* Download PDF — outline, lighter */
+.summary-cta-pdf {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.summary-cta-pdf:hover {
+  border-color: var(--text-secondary);
+  background: rgba(90, 98, 112, 0.05);
+}
+
+/* ── Footer badges ──────────────────────────────────────── */
+.summary-badges {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.summary-badges-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .summary-page {
+    padding: 24px 12px 48px;
+  }
+
+  .summary-title {
+    font-size: 22px;
+  }
+
+  .summary-grand-amount {
+    font-size: 24px;
+  }
+
+  .summary-zone-card {
+    padding: 16px 16px 12px;
+  }
+
+  .summary-grand-total-bar {
+    padding: 18px 16px;
+  }
+
+  .summary-cta-btn {
+    font-size: 14px;
+    padding: 13px 18px;
+  }
+}
