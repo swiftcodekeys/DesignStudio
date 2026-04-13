@@ -12,6 +12,7 @@ import {
   Medal,
 } from '@phosphor-icons/react';
 import { getGrandTotal, getZoneOrder } from './wizardState';
+import { downloadQuotePdf } from './quoteRenderer';
 
 // ─── el() shorthand ───────────────────────────────────────────────────────────
 function el(tag, props) {
@@ -165,7 +166,7 @@ function ZoneQuoteSummary(props) {
   });
 
   function handleDownloadPDF() {
-    console.log('PDF download — will be wired in Task 18');
+    downloadQuotePdf(wizardState);
   }
 
   // ─── Empty state guard
