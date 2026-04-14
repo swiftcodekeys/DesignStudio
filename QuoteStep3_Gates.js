@@ -29,16 +29,17 @@ var GATE_TYPES = [
 var WIDTHS_WALK   = [36, 42, 48, 60, 72];
 var WIDTHS_DRIVE  = [72, 84, 96, 120, 144];
 
+// IDs must match retailPricing.js keys (hinges, latches) — drift causes $0 pricing
 var HINGE_OPTIONS = [
-  { id: 'standard',   name: 'Standard',              price: 33.50, unit: '/pair', info: 'Heavy-duty steel hinges, field adjustable' },
-  { id: 'truclose',   name: 'TruClose Self-Closing',  price: 95.50, unit: '/pair', info: 'Polymer self-closing hinge \u2014 required for pool code compliance' },
-  { id: 'ultra-adj',  name: 'Ultra Adjustable',        price: 333.50, unit: '/pair', info: 'Tension-adjustable, 3-way alignment. Requires 4\u00d74 posts.' },
+  { id: 'standard',           name: 'Standard',              price: 33.50, unit: '/pair', info: 'Heavy-duty steel hinges, field adjustable' },
+  { id: 'truclose',           name: 'TruClose Self-Closing',  price: 95.50, unit: '/pair', info: 'Polymer self-closing hinge \u2014 required for pool code compliance' },
+  { id: 'ultra-adjustable',   name: 'Ultra Adjustable',        price: 333.50, unit: '/pair', info: 'Tension-adjustable, 3-way alignment. Requires 4\u00d74 posts.' },
 ];
 
 var LATCH_OPTIONS = [
-  { id: 'lokklatch',         name: 'LokkLatch',           price: 58.50,  info: 'Key-lockable gravity latch' },
-  { id: 'magnalatch-pool',   name: 'MagnaLatch Pool',     price: 186.50, info: 'Magnetic, key-lockable, self-latching \u2014 pool code compliant' },
-  { id: 'lokklatch-deluxe',  name: 'LokkLatch Deluxe',    price: 175.00, info: 'Premium key-lockable gravity latch with dual access' },
+  { id: 'lokklatch',          name: 'LokkLatch',           price: 58.50,  info: 'Key-lockable gravity latch' },
+  { id: 'magna-latch',        name: 'MagnaLatch Pool',     price: 186.50, info: 'Magnetic, key-lockable, self-latching \u2014 pool code compliant' },
+  { id: 'lokklatch-deluxe',   name: 'LokkLatch Deluxe',    price: 175.00, info: 'Premium key-lockable gravity latch with dual access' },
   { id: 'lokklatch-magnetic', name: 'LokkLatch Magnetic', price: 227.00, info: 'Magnetic key-lockable latch, dual-side keyed' },
 ];
 
@@ -80,8 +81,28 @@ function QuoteStep3_Gates(props) {
   }
 
   function addGate() {
-    var newGates = gates.concat([Object.assign({}, DEFAULT_GATE)]);
+    var newGate = Object.assign({}, DEFAULT_GATE);
+    if (isPool) {
+      newGate.hinge = 'truclose';
+      newGate.latch = 'magna-latch';
+    }
+    var newGates = gates.concat([newGate]);
     update({ gates: newGates });
+  }
+
+  // Pool lockout: when pool compliance is active, force hinge/latch state to compliant values
+  // (not just display override — pricing reads gate.hinge/gate.latch, so state must match)
+  if (isPool && gates.length > 0) {
+    var needsCorrection = gates.some(function(g) {
+      return g.hinge !== 'truclose' || g.latch !== 'magna-latch';
+    });
+    if (needsCorrection) {
+      var corrected = gates.map(function(g) {
+        if (g.hinge === 'truclose' && g.latch === 'magna-latch') return g;
+        return Object.assign({}, g, { hinge: 'truclose', latch: 'magna-latch' });
+      });
+      setTimeout(function() { update({ gates: corrected }); }, 0);
+    }
   }
 
   // ---- Gate Type Reference cards ----
@@ -109,10 +130,10 @@ function QuoteStep3_Gates(props) {
     var wideThreshold = isDouble ? 144 : 72;
     var needsUFrame = gate.widthInches > wideThreshold;
 
-    // Pool lockout
+    // Pool lockout: state is corrected by the useEffect-like block above, so just read from gate
     var poolLocked = isPool;
-    var hingeVal = poolLocked ? 'truclose' : gate.hinge;
-    var latchVal = poolLocked ? 'magnalatch-pool' : gate.latch;
+    var hingeVal = gate.hinge;
+    var latchVal = gate.latch;
 
     return el('div', { key: index, className: 'qb-gates-card' },
       el('div', { className: 'qb-gates-card-header' },
@@ -202,7 +223,11 @@ function QuoteStep3_Gates(props) {
               dir.charAt(0).toUpperCase() + dir.slice(1)
             );
           })
-        )
+        ),
+        poolLocked ? el('div', { className: 'qb-gates-hint qb-gates-pool-hint' },
+          React.createElement(Warning, { size: 12 }),
+          ' Pool code: gate must swing AWAY from pool. Choose the direction that opens outward.'
+        ) : null
       ),
 
       // Hardware — Hinges
@@ -239,7 +264,7 @@ function QuoteStep3_Gates(props) {
         el('div', { className: 'qb-gates-hw-list' },
           LATCH_OPTIONS.map(function(l) {
             var selected = latchVal === l.id;
-            var locked = poolLocked && l.id !== 'magnalatch-pool';
+            var locked = poolLocked && l.id !== 'magna-latch';
             return el('label', {
               key: l.id,
               className: 'qb-gates-hw-option' + (selected ? ' selected' : '') + (locked ? ' locked' : ''),
