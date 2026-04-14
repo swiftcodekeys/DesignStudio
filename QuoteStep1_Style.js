@@ -22,17 +22,18 @@ var STYLE_IMAGES = {
 };
 
 // ---- Full style catalog with metadata ----
+// poolCompliance: 'default' = flush bottom standard (free), 'upgrade' = flush bottom available as upcharge, 'none' = not pool-rated
 var ALL_STYLES = [
-  { id: 'horizon',        name: 'Horizon',        sub: 'Flat Top',                   badge: 'POPULAR',     poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: 'horizon-pro' },
-  { id: 'haven',          name: 'Haven',           sub: 'Flat Top Flush',             badge: 'POOL',        poolSafe: true,  grades: ['residential'], proVariant: null },
-  { id: 'charleston',     name: 'Charleston',      sub: 'Spear Top',                  badge: 'POPULAR',     poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: 'charleston-pro' },
-  { id: 'vanguard',       name: 'Vanguard',        sub: 'Flat Top w/ Spears',         badge: null,          poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: null },
-  { id: 'savannah',       name: 'Savannah',        sub: 'Staggered Spear',            badge: null,          poolSafe: true,  grades: ['residential', 'commercial', 'industrial'], proVariant: null },
-  { id: 'lexington',      name: 'Lexington',       sub: 'Convex',                     badge: 'DECORATIVE',  poolSafe: false, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
-  { id: 'eclipse',        name: 'Eclipse',         sub: 'Concave',                    badge: 'DECORATIVE',  poolSafe: false, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
-  { id: 'horizon-pro',    name: 'Horizon Pro',     sub: 'Flat Top \u00B7 1\u00BD" Spacing', badge: 'PUPPY READY', poolSafe: true, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
-  { id: 'charleston-pro', name: 'Charleston Pro',  sub: 'Spear Top \u00B7 1\u00BD" Spacing', badge: 'CLASSIC',    poolSafe: true, grades: ['residential', 'commercial', 'industrial'], proVariant: null },
-  { id: 'defender',       name: 'Defender',        sub: 'Industrial Security',        badge: 'SECURITY',    poolSafe: false, grades: ['industrial'], proVariant: null },
+  { id: 'horizon',        name: 'Horizon',        sub: 'Flat Top',                   badge: 'POPULAR',     poolSafe: true,  poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: 'horizon-pro' },
+  { id: 'haven',          name: 'Haven',           sub: 'Flat Top Flush',             badge: 'POOL',        poolSafe: true,  poolCompliance: 'default', grades: ['residential'], proVariant: null },
+  { id: 'charleston',     name: 'Charleston',      sub: 'Spear Top',                  badge: 'POPULAR',     poolSafe: true,  poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: 'charleston-pro' },
+  { id: 'vanguard',       name: 'Vanguard',        sub: 'Flat Top w/ Spears',         badge: null,          poolSafe: true,  poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'savannah',       name: 'Savannah',        sub: 'Staggered Spear',            badge: null,          poolSafe: true,  poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'lexington',      name: 'Lexington',       sub: 'Convex',                     badge: 'DECORATIVE',  poolSafe: true,  poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'eclipse',        name: 'Eclipse',         sub: 'Concave',                    badge: 'DECORATIVE',  poolSafe: true,  poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'horizon-pro',    name: 'Horizon Pro',     sub: 'Flat Top \u00B7 1\u00BD" Spacing', badge: 'PUPPY READY', poolSafe: true, poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'charleston-pro', name: 'Charleston Pro',  sub: 'Spear Top \u00B7 1\u00BD" Spacing', badge: 'CLASSIC',    poolSafe: true, poolCompliance: 'upgrade', grades: ['residential', 'commercial', 'industrial'], proVariant: null },
+  { id: 'defender',       name: 'Defender',        sub: 'Industrial Security',        badge: 'SECURITY',    poolSafe: false, poolCompliance: 'none',    grades: ['industrial'], proVariant: null },
 ];
 
 // Pro spacing is only available for styles that have a pro variant
