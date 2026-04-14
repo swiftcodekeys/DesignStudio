@@ -532,13 +532,115 @@ var WizardShell = function() {
         setStep(4); // Go back to QuoteBuilder for that zone
     };
 
+    // Submit the completed multi-zone quote to the Grandview CRM worker.
+    // Posts to D1 via /leads; admin can then process in the CRM.
+    var CRM_ENDPOINT = 'https://grandview-crm.sarah-13a.workers.dev/leads';
+
+    var buildQuotePayload = function() {
+        var quoteId = 'GV-' + Math.floor(100000 + Math.random() * 900000);
+        var primarySnapshot = null;
+
+        var zones = (selectedZones || []).map(function(zoneId) {
+            var zq = (wizardState.zoneQuotes && wizardState.zoneQuotes[zoneId]) || {};
+            var cfg = zq.config || {};
+            var qd = zq.quoteData || {};
+            var qr = zq.quoteResult || { items: [], subtotal: 0 };
+
+            if (!primarySnapshot && zq.snapshotDataUrl) primarySnapshot = zq.snapshotDataUrl;
+
+            var colorId = '';
+            if (cfg.color) {
+                colorId = typeof cfg.color === 'string'
+                    ? cfg.color
+                    : (cfg.color.id || cfg.color.displayName || '');
+            }
+
+            return {
+                zoneId: zoneId,
+                zoneName: ZONE_LABELS[zoneId] || zoneId,
+                style: cfg.styleId || '',
+                grade: cfg.grade || '',
+                height: cfg.height || '',
+                color: colorId,
+                linearFootage: qd.linearFeet || qd.runs || 0,
+                corners: qd.corners || 0,
+                gateCount: (qd.gates && qd.gates.length) || 0,
+                items: qr.items || [],
+                subtotal: qr.subtotal || 0,
+            };
+        });
+
+        var grandTotal = getGrandTotal(
+            Object.assign({}, wizardState, { selectedZones: selectedZones })
+        );
+
+        return {
+            quoteId: quoteId,
+            Name: (wizardState.contactInfo && wizardState.contactInfo.name) || '',
+            Email: (wizardState.contactInfo && wizardState.contactInfo.email) || '',
+            Phone: (wizardState.contactInfo && wizardState.contactInfo.phone) || '',
+            ZIP: (wizardState.shippingAddress && wizardState.shippingAddress.zip) || '',
+            followUpPref: 'email',
+            installPlan: wizardState.installPlan || '',
+            shippingAddress: wizardState.shippingAddress || null,
+            zones: zones,
+            grandTotal: grandTotal,
+            snapshotDataUrl: primarySnapshot,
+            source: 'quote-builder-wizard',
+        };
+    };
+
+    var submitQuoteToCRM = function(orderingIntent) {
+        var payload = buildQuotePayload();
+        payload.submitAction = orderingIntent; // 'quote' | 'order'
+
+        return fetch(CRM_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }).then(function(data) {
+            return { ok: true, quoteId: payload.quoteId, data: data };
+        }).catch(function(err) {
+            console.error('Quote submit failed:', err);
+            return { ok: false, error: err.message || String(err), quoteId: payload.quoteId };
+        });
+    };
+
     var handleSubmitQuote = function() {
-        // Email submission — placeholder, will be wired to email worker
-        alert('Quote submitted! We will contact you shortly.');
+        submitQuoteToCRM('quote').then(function(result) {
+            if (result.ok) {
+                alert(
+                    'Quote submitted successfully!\n\nConfirmation ID: ' + result.quoteId +
+                    '\n\nOur team will review your selections and reach out within one business day.'
+                );
+            } else {
+                alert(
+                    'Sorry, something went wrong submitting your quote.\n\n' +
+                    'Reference ID: ' + result.quoteId + '\n' +
+                    'Please try again or call us at (517) 555-GV01.'
+                );
+            }
+        });
     };
 
     var handleOrderNow = function() {
-        alert('Order placed! Our team will verify measurements before production.');
+        submitQuoteToCRM('order').then(function(result) {
+            if (result.ok) {
+                alert(
+                    'Order placed!\n\nConfirmation ID: ' + result.quoteId +
+                    '\n\nOur team will verify measurements and contact you to finalize before production.'
+                );
+            } else {
+                alert(
+                    'Sorry, something went wrong placing your order.\n\n' +
+                    'Reference ID: ' + result.quoteId + '\n' +
+                    'Please try again or call us at (517) 555-GV01.'
+                );
+            }
+        });
     };
 
     var handleTalkToExpert = function() {
