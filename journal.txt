@@ -619,11 +619,104 @@ COMMIT
   (see next commit on feat/quote-redesign)
 
 REMAINING IN BUG-FIX BATCH (awaiting go-ahead per user instruction)
-  Task 2  Pool compliance: smart defaults (no hiding)
+  Task 2  Pool compliance: smart defaults (no hiding)  — DONE (see below)
   Task 3  Live per-LF price estimate
   Task 4  3D snapshot in review + quote form
   Task 5  Escape hatch modal on every wizard step
   Task 6  Zone flow — per-zone draw + inherit prompt
   Task 7  Driveway gate mini-flow (separate, last)
   Task 8  Build + deploy + live smoke test
+
+
+2026-04-16 — TASK 2: Pool compliance smart defaults (warn, don't wall)
+═══════════════════════════════════════════════════════════════════════
+
+PROBLEM
+  When poolCompliance.poolBarrier was true, QuoteStep1_Style hid all
+  non-poolSafe styles (filter at line 122-124) and removed heights
+  under 48" from the grid (filter at line 349-353). This blocked users
+  instead of guiding them. Spec: "Warn, don't wall."
+
+FIX APPLIED
+  QuoteStep1_Style.js
+    - Exported new POOL_MIN_HEIGHT_BY_STYLE map:
+        haven family         → 48"
+        horizon / vanguard   → 54"
+        charleston / spear   → 60"
+        (defender intentionally absent — flagged "not recommended")
+    - Removed poolSafe style filter. All styles now visible in pool mode.
+    - Removed height-grid filter. All heights visible; warning instead.
+    - Banner text updated: "Pool code compliance auto-configured"
+      (was: "showing pool-safe styles only").
+    - Per-style badges in pool mode:
+        haven family         → green "POOL READY"
+        other pool-capable   → gray "POOL CONFIGURABLE"
+        defender             → red "NOT RECOMMENDED FOR POOLS"
+    - Inline note under style grid:
+        "Pool code compliance auto-configured. Flush bottom and
+         minimum height selected for your style."
+    - Yellow warning shown when selected height < style minimum:
+        "Heads up — this height may not meet pool code for this style.
+         Haven styles are the safest choice at 48". Always verify with
+         your local inspector."
+
+  QuoteBuilder.js
+    - Imports POOL_MIN_HEIGHT_BY_STYLE.
+    - Extended the poolCompliance useEffect to auto-bump height to
+      max(current, min-for-style) in addition to forcing flush bottom.
+    - Dependency changed to [props.poolCompliance, data.style] so the
+      bump fires when the user switches styles under pool mode.
+    - Auto-bump only raises the floor; user can manually lower (and
+      gets the yellow warning).
+
+  styles.css
+    - Added 3 new badge classes:
+        .qs1-badge-pool-ready         (green, bold)
+        .qs1-badge-pool-configurable  (neutral gray)
+        .qs1-badge-pool-warn          (red, bold)
+
+VERIFICATION (evidence, via Playwright against dist :5173, full wizard)
+  Flow: /wizard → Backyard → "Yes — configure for pool code" → advance
+        through configurator → Design Review → "Continue to Full Quote"
+        → QuoteStep1_Style.
+
+  Residential grade, pool mode:
+    · 9 styles visible (Haven + 8 pool-capable, no Defender because
+      Defender is industrial-grade only)
+    · Haven badges: [POOL, POOL READY]           → green
+    · Horizon:      [POPULAR, POOL CONFIGURABLE] → neutral
+    · Charleston:   [POPULAR, POOL CONFIGURABLE]
+    · Vanguard:     [POOL CONFIGURABLE]
+    · Eclipse:      [DECORATIVE, POOL CONFIGURABLE]
+    · Charleston Pro:[CLASSIC, POOL CONFIGURABLE]
+    · Default height: 54" (flat-top min), flush bottom active.
+
+  Auto-bump (click 42", then click Charleston):
+    · 42" selected manually → yellow warning text rendered
+    · Switched to Charleston → height auto-bumped to 60" (spear min)
+    · Warning cleared because 60" ≥ min.
+
+  Industrial grade (switched in same session), pool mode:
+    · Defender visible, badges: [SECURITY, NOT RECOMMENDED FOR POOLS]
+    · Defender NOT blocked — still clickable.
+
+  Build: webpack compiled successfully in 4030 ms, 0 errors.
+  Console: 0 errors during flow (1 benign Three.js texture warning
+  elsewhere, unrelated).
+
+FILES CHANGED
+  QuoteStep1_Style.js   (~30 lines; map, filters, badges, note, warning)
+  QuoteBuilder.js       (~10 lines; import + extended useEffect)
+  styles.css            (3 new CSS classes)
+
+NOT TOUCHED (per scope directive)
+  No terrain, slope, rackability, or post-calculation code modified.
+
+  Note: the Design Studio's in-configurator styleTab (step 2 of the
+  wizard — FloatingPanel-based 3D tool) uses a separate style ID space
+  (uaf_200, uab_200, etc.) and was NOT modified. Task 2 spec's style
+  IDs (horizon, haven, charleston, etc.) only map to QuoteStep1_Style.
+  If the step-2 configurator also needs pool-guidance badges, that's
+  a follow-up item — current Task 2 acceptance criteria all reference
+  QuoteStep1_Style behavior.
 

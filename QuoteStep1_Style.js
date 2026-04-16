@@ -39,6 +39,22 @@ var ALL_STYLES = [
 // Pro spacing is only available for styles that have a pro variant
 var PRO_SPACING_STYLES = ['horizon', 'charleston', 'vanguard', 'savannah', 'horizon-pro', 'charleston-pro'];
 
+// ---- Pool-code minimum heights per style family (Task 2) ----
+// Haven family is purpose-built flush-bottom and meets code at 48".
+// Flat-top styles need 54"+ to prevent climbing toeholds.
+// Spear-top need 60"+ per BOCA/IRC guidance.
+// Defender is industrial-security — flagged "Not recommended" below.
+export var POOL_MIN_HEIGHT_BY_STYLE = {
+  'haven': 48, 'haven-lite': 48, 'haven-plus': 48, 'haven-guard': 48,
+  'horizon': 54, 'horizon-pro': 54, 'vanguard': 54, 'vanguard-pro': 54,
+  'charleston': 60, 'charleston-pro': 60,
+  'savannah': 60, 'savannah-pro': 60,
+  'eclipse': 60, 'eclipse-pro': 60,
+  'lexington': 60, 'lexington-pro': 60,
+};
+var POOL_HAVEN_FAMILY = ['haven', 'haven-lite', 'haven-plus', 'haven-guard'];
+function isHavenFamily(id) { return POOL_HAVEN_FAMILY.indexOf(id) >= 0; }
+
 // ---- Heights per grade ----
 var HEIGHTS_BY_GRADE = {
   residential: [36, 42, 48, 54, 60, 72],
@@ -113,15 +129,12 @@ function QuoteStep1_Style(props) {
   // Pool compliance: lock flush bottom, filter styles
   var poolLocked = !!(poolCompliance && poolCompliance.poolBarrier);
 
-  // Build available styles: filter by grade, then by pool if applicable
+  // Build available styles: filter by grade only. In pool mode we keep
+  // ALL styles visible and guide the user with badges/warnings instead
+  // of hiding — see Task 2 ("warn, don't wall").
   var availableStyles = ALL_STYLES.filter(function(s) {
     return s.grades.indexOf(grade) >= 0;
   });
-
-  // If pool project: only show pool-safe styles
-  if (poolLocked) {
-    availableStyles = availableStyles.filter(function(s) { return s.poolSafe; });
-  }
 
   // If current style not available, clear it
   var styleValid = !data.style || availableStyles.some(function(s) { return s.id === data.style; });
@@ -244,13 +257,13 @@ function QuoteStep1_Style(props) {
       text: 'Each style has a distinct look. Horizon is a classic flat-top. Charleston features decorative spear-top pickets. Haven is specifically designed for pool code compliance. Any flat-top style can be made pool-safe with a flush bottom rail.',
     }) : null,
 
-    // Pool info banner
+    // Pool info banner — keep all styles visible; guide with per-card badges below
     data.fenceType !== 'privacy' && poolLocked ? el('div', { className: 'qs1-pool-banner' },
       React.createElement(SwimmingPool, { size: 18, weight: 'fill', style: { flexShrink: 0 } }),
       el('div', null,
-        el('strong', null, 'Pool project \u2014 showing pool-safe styles only'),
+        el('strong', null, 'Pool code compliance auto-configured'),
         el('div', { className: 'qs1-pool-banner-sub' },
-          'Haven is our most popular pool fence. All styles below can be configured with flush bottom rails for BOCA/IRC compliance.'
+          'Flush bottom rail and minimum height selected for your style. Haven is purpose-built for pools; other styles work at code-compliant heights.'
         )
       )
     ) : null,
@@ -261,6 +274,8 @@ function QuoteStep1_Style(props) {
         var imgSrc = STYLE_IMAGES[style.id] || '';
         var isSelected = data.style === style.id;
         var badgeClass = style.badge ? 'qs1-badge qs1-badge-' + style.badge.toLowerCase().replace(/\s+/g, '-') : '';
+        var havenFam = isHavenFamily(style.id);
+        var isDefender = style.id === 'defender';
         return el('button', {
           key: style.id,
           className: 'qs1-style-card' + (isSelected ? ' selected' : ''),
@@ -272,15 +287,28 @@ function QuoteStep1_Style(props) {
           // Badges
           el('div', { className: 'qs1-badge-row' },
             style.badge ? el('span', { className: badgeClass }, style.badge) : null,
+            // Pre-pool "pool safe" badge (kept for non-pool projects)
             style.poolSafe && !poolLocked ? el('span', { className: 'qs1-badge qs1-badge-pool-safe' },
               React.createElement(ShieldCheck, { size: 10, weight: 'fill' }),
               ' POOL SAFE'
             ) : null,
-            style.id === 'haven' ? el('span', { className: 'qs1-badge qs1-badge-pool-fav' }, '\u2605 #1 POOL CHOICE') : null
+            style.id === 'haven' && !poolLocked ? el('span', { className: 'qs1-badge qs1-badge-pool-fav' }, '\u2605 #1 POOL CHOICE') : null,
+            // Pool-mode per-style guidance badges (Task 2)
+            poolLocked && havenFam ? el('span', { className: 'qs1-badge qs1-badge-pool-ready' },
+              React.createElement(ShieldCheck, { size: 10, weight: 'fill' }),
+              ' POOL READY'
+            ) : null,
+            poolLocked && !havenFam && !isDefender ? el('span', { className: 'qs1-badge qs1-badge-pool-configurable' }, 'POOL CONFIGURABLE') : null,
+            poolLocked && isDefender ? el('span', { className: 'qs1-badge qs1-badge-pool-warn' }, 'NOT RECOMMENDED FOR POOLS') : null
           ),
           isSelected ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
         );
       })
+    ) : null,
+
+    // Inline pool-note under the style grid
+    data.fenceType !== 'privacy' && poolLocked ? el('div', { className: 'qs1-pool-note' },
+      'Pool code compliance auto-configured. Flush bottom and minimum height selected for your style.'
     ) : null,
 
     // ---- Picket Spacing (conditional — only when style supports it) ----
@@ -346,11 +374,7 @@ function QuoteStep1_Style(props) {
       text: 'Height is measured from ground to top of picket. Taller fences provide more privacy and security. Available heights vary by grade.',
     }),
     el('div', { className: 'qs1-height-grid' },
-      availableHeights.filter(function(h) {
-        // Pool projects: remove heights under 48" (taller is always fine)
-        if (poolLocked && h < 48) return false;
-        return true;
-      }).map(function(h) {
+      availableHeights.map(function(h) {
         return el('button', {
           key: h,
           className: 'qs1-height-card' + (data.height === h ? ' selected' : ''),
@@ -361,6 +385,11 @@ function QuoteStep1_Style(props) {
         );
       })
     ),
+    // Pool-code warning when selected height is below style minimum
+    poolLocked && data.style && POOL_MIN_HEIGHT_BY_STYLE[data.style] && data.height < POOL_MIN_HEIGHT_BY_STYLE[data.style] ? el('div', { className: 'qs1-warning' },
+      'Heads up \u2014 this height may not meet pool code for this style. ',
+      'Haven styles are the safest choice at 48". Always verify with your local inspector.'
+    ) : null,
 
     // ---- Color ----
     sectionHeader('Color', {

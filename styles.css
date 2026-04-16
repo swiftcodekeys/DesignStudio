@@ -4917,6 +4917,10 @@ html, body {
 .qs1-badge-premium { background: linear-gradient(135deg, #a0a0a0, #d4d4d4); color: #333; }
 .qs1-badge-pool-safe { background: #ebf8ff; color: #2b6cb0; display: inline-flex; align-items: center; gap: 2px; }
 .qs1-badge-pool-fav { background: #f0fff4; color: #276749; font-weight: 700; }
+/* Task 2 pool-mode guidance badges (warn, don't wall) */
+.qs1-badge-pool-ready { background: #c6f6d5; color: #22543d; display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+.qs1-badge-pool-configurable { background: #edf2f7; color: #4a5568; font-weight: 600; }
+.qs1-badge-pool-warn { background: #fed7d7; color: #9b2c2c; font-weight: 700; }
 .qs1-badge-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
 .qs1-style-sub { font-size: 10px; color: #8e95a0; margin-top: 1px; }
 

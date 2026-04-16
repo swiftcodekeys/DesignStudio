@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
 import { emailSaveLink } from './quoteSaver';
 import { trackStepEnter, trackStepComplete } from './analytics';
-import QuoteStep1_Style from './QuoteStep1_Style';
+import QuoteStep1_Style, { POOL_MIN_HEIGHT_BY_STYLE } from './QuoteStep1_Style';
 import QuoteStep2_Layout from './QuoteStep2_Layout';
 import QuoteStep3_Gates from './QuoteStep3_Gates';
 import QuoteStep4_Extras from './QuoteStep4_Extras';
@@ -75,12 +75,20 @@ function QuoteBuilder(props) {
     });
   }
 
-  // Lock flush bottom rail for pool compliance
+  // Pool compliance smart defaults (Task 2 — warn, don't wall):
+  //   - Auto-select flush bottom rail
+  //   - Auto-bump height to the minimum compliant for the current style
+  //     when the user has chosen (or just switched to) that style. Users
+  //     can still manually lower height afterwards; they just get a
+  //     yellow warning (shown by QuoteStep1_Style).
   useEffect(function() {
-    if (props.poolCompliance && props.poolCompliance.poolBarrier && data.bottomRail !== 'flush') {
-      update({ bottomRail: 'flush' });
-    }
-  }, [props.poolCompliance]);
+    if (!(props.poolCompliance && props.poolCompliance.poolBarrier)) return;
+    var patch = {};
+    if (data.bottomRail !== 'flush') patch.bottomRail = 'flush';
+    var min = POOL_MIN_HEIGHT_BY_STYLE[data.style];
+    if (min && data.height < min) patch.height = min;
+    if (Object.keys(patch).length) update(patch);
+  }, [props.poolCompliance, data.style]);
 
   // Track step enters
   useEffect(function() {
