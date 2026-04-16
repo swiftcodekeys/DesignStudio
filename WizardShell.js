@@ -313,6 +313,12 @@ var WizardShell = function() {
             }
         } catch (e) {}
         setSnapshotDataUrl(dataUrl);
+        // Task 4 — also store snapshot under its own key so downstream
+        // consumers (QuoteBuilder header, ZoneQuoteSummary, confirmation
+        // emails) can read it directly without decoding gv_saved_design.
+        try {
+            if (dataUrl) localStorage.setItem('gv_design_snapshot', dataUrl);
+        } catch (e) {}
         return dataUrl;
     };
 

@@ -176,6 +176,20 @@ function ZoneQuoteSummary(props) {
     );
   }
 
+  // Task 4: surface the 3D snapshot on the final confirmation page so
+  // the customer sees what they designed alongside the quote summary.
+  var confirmSnapshot = '';
+  try {
+    confirmSnapshot = localStorage.getItem('gv_design_snapshot') || '';
+    if (!confirmSnapshot) {
+      var raw = localStorage.getItem('gv_saved_design');
+      if (raw) {
+        var sd = JSON.parse(raw);
+        confirmSnapshot = (sd && sd.snapshotDataUrl) || '';
+      }
+    }
+  } catch (e) {}
+
   return el('div', { className: 'summary-page' },
 
     // ─── Page header
@@ -190,6 +204,11 @@ function ZoneQuoteSummary(props) {
         )
       )
     ),
+
+    // ─── Snapshot hero (Task 4)
+    confirmSnapshot ? el('div', { className: 'summary-snapshot' },
+      el('img', { src: confirmSnapshot, alt: 'Your fence design', className: 'summary-snapshot-img' })
+    ) : null,
 
     // ─── Zone cards
     el('div', { className: 'summary-zones' },

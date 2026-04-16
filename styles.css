@@ -3939,6 +3939,7 @@ html, body {
   border-radius: 12px;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  min-height: 280px;
 }
 .bridge-snapshot-badge {
   position: absolute;
@@ -4760,9 +4761,15 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Snapshot header — hero style */
+/* Snapshot header — hero style; sticky on desktop so the user
+   keeps eyes on their design while answering QuoteBuilder questions */
 .qb-snapshot-header {
   margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  padding-top: 8px;
 }
 .qb-snapshot-image-wrap {
   position: relative; border-radius: 12px; overflow: hidden;
@@ -4929,6 +4936,18 @@ html, body {
 }
 .qs1-estimate-range { font-size: 15px; font-weight: 700; color: #1a1a2e; }
 .qs1-estimate-note { font-size: 11px; color: #718096; margin-top: 4px; font-weight: 500; }
+
+/* Task 4 — summary confirmation snapshot */
+.summary-snapshot {
+  max-width: 900px; margin: 0 auto 20px;
+  border-radius: 12px; overflow: hidden;
+  background: #0c1420; border: 1px solid #e2e8f0;
+}
+.summary-snapshot-img {
+  width: 100%; display: block;
+  aspect-ratio: 16 / 9; object-fit: cover;
+  min-height: 280px;
+}
 
 /* Task 3 Review-page per-LF estimate summary */
 .qb-review-estimate {
@@ -6371,6 +6390,9 @@ html, body {
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px 12px;
+    /* On mobile: keep at top but don't burn vertical real estate
+       with sticky — let it scroll out of view as user goes down. */
+    position: static;
   }
 
   .qb-step-dots {

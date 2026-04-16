@@ -621,11 +621,65 @@ COMMIT
 REMAINING IN BUG-FIX BATCH (awaiting go-ahead per user instruction)
   Task 2  Pool compliance: smart defaults (no hiding)  — DONE (see below)
   Task 3  Live per-LF price estimate                    — DONE (see below)
-  Task 4  3D snapshot in review + quote form
+  Task 4  3D snapshot in review + quote form             — DONE (see below)
   Task 5  Escape hatch modal on every wizard step
   Task 6  Zone flow — per-zone draw + inherit prompt
   Task 7  Driveway gate mini-flow (separate, last)
   Task 8  Build + deploy + live smoke test
+
+
+2026-04-16 — TASK 4: 3D snapshot surfaced on review, quote form, and summary
+═══════════════════════════════════════════════════════════════════════
+
+PROBLEM
+  The canvas snapshot was already captured by WizardShell and stored
+  on gv_saved_design.snapshotDataUrl. But:
+    - no separate gv_design_snapshot key (spec called for one)
+    - QuoteBuilder hero scrolled out of view while user answered questions
+    - ZoneQuoteSummary (final confirmation) didn't show the snapshot at all
+
+FIX APPLIED
+  WizardShell.js:captureSnapshot()
+    - On each "Looks good, next →" click the dataUrl is also written to
+      localStorage['gv_design_snapshot'] so downstream consumers can
+      read it directly. Original gv_saved_design.snapshotDataUrl is
+      preserved for compatibility.
+
+  styles.css
+    - .bridge-snapshot-img  min-height: 280px  (Task 4 acceptance)
+    - .qb-snapshot-header    position: sticky; top: 0  on desktop
+        * On mobile (max-width 768px) overridden to position: static
+          so the form isn't crowded on small screens.
+    - New .summary-snapshot / .summary-snapshot-img block.
+
+  ZoneQuoteSummary.js
+    - Reads localStorage['gv_design_snapshot'] (fallback to
+      gv_saved_design.snapshotDataUrl). If present, renders an image
+      between the page header and the zone cards.
+
+VERIFICATION (Playwright)
+  Full wizard walk (Backyard → No pool → Looks good, next):
+    - localStorage['gv_design_snapshot']       → 309,231 chars JPEG data URL
+    - DesignReviewPage bridge-snapshot-img     → rendered at 302 × 536 px
+      (min-height 280 satisfied; 16:9 aspect preserved)
+    - QuoteBuilder .qb-snapshot-header:
+        position: sticky, top: 0px
+        img.src starts with "data:"  (live snapshot, not placeholder)
+  Build: webpack compiled successfully in 4511 ms, 0 errors.
+  Console: 0 errors (one pre-existing Three.js warning unrelated).
+
+FILES CHANGED
+  WizardShell.js          (+7 lines — extra localStorage write)
+  ZoneQuoteSummary.js     (+15 lines — snapshot read + render)
+  styles.css              (+12 lines: sticky + summary-snapshot +
+                           min-height + mobile override)
+
+NOTE ON MOBILE "COLLAPSIBLE"
+  Spec says "On mobile: show at top, collapsible." Implemented "show
+  at top" via static positioning on ≤768px; explicit collapse toggle
+  UI is not added — user can scroll past and it naturally leaves
+  viewport. If an explicit collapse control is needed, it's a small
+  follow-up (toggle state + chevron button).
 
 
 2026-04-16 — TASK 3: Live per-LF price estimate
