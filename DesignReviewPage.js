@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PoolCompliancePopup from './PoolCompliancePopup';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import { FENCE_STYLES as GATE_STYLES, POST_CAPS, FINIALS, ARCH_STYLES } from './configData';
+import {
+    STYLES as PRICING_STYLES, PANEL_PRICING, POST_PRICING, POST_LENGTH_MAP,
+    DEFAULT_POST_SPEC, PANEL_LENGTH_FT, STYLE_ID_MAP,
+} from './retailPricing';
 
 // Human-readable label lookups
 var STYLE_NAMES = {};
@@ -16,6 +20,40 @@ var LEAF_NAMES = { '1': 'Single', '2': 'Double' };
 
 // Pool-compliant styles
 var POOL_STYLES = ['uab_200', 'uaf_200', 'uaf_250'];
+
+// Build per-linear-foot estimate from saved design
+function estimatePricing(saved) {
+    if (!saved || !saved.styleId) return null;
+
+    var grandviewName = STYLE_ID_MAP[saved.styleId] || saved.styleId;
+    var styleInfo = PRICING_STYLES[grandviewName];
+    if (!styleInfo) return null;
+
+    var ultraModel = styleInfo.ultraModel;
+    var height = parseInt(saved.height) || 48;
+    var panelPrices = PANEL_PRICING[ultraModel];
+    if (!panelPrices) return null;
+
+    var panelPrice = panelPrices[height] || panelPrices[48] || 0;
+    var panelWidthFt = (PANEL_LENGTH_FT && PANEL_LENGTH_FT.residential) || 6;
+
+    var postLength = POST_LENGTH_MAP[height] || 84;
+    var postSpec = DEFAULT_POST_SPEC || { size: '2x2', wall: '.060' };
+    var postPrices = POST_PRICING[postSpec.size] && POST_PRICING[postSpec.size][postSpec.wall];
+    var postPrice = postPrices ? (postPrices[postLength] || 0) : 0;
+
+    var perFoot = (panelPrice / panelWidthFt) + (postPrice / panelWidthFt);
+
+    return {
+        styleName: styleInfo.name,
+        ultraModel: ultraModel,
+        height: height,
+        panelPrice: panelPrice,
+        panelWidthFt: panelWidthFt,
+        postPrice: postPrice,
+        perLinearFoot: perFoot,
+    };
+}
 
 function loadSavedDesign() {
     try {
@@ -176,9 +214,12 @@ var DesignReviewPage = function(props) {
     }
 
     var isPoolReady = hasDesign && saved.poolBarrier && POOL_STYLES.indexOf(saved.styleId) >= 0;
+    var pricing = hasDesign ? estimatePricing(saved) : null;
+
+    var fmt = function(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
 
     return (
-        <div className="bridge-page bridge-page--compact">
+        <div className="bridge-page bridge-page--compact" style={{ overflowY: 'auto' }}>
 
             <div className="bridge-content">
                 {/* Header — compact, single line */}
@@ -240,6 +281,51 @@ var DesignReviewPage = function(props) {
                                 </button>
                             </div>
                         )}
+
+                        {/* Itemized Price Estimate */}
+                        {pricing && (
+                            <div className="bridge-pricing">
+                                <div className="bridge-pricing-title">PRICE ESTIMATE</div>
+                                <div className="bridge-pricing-subtitle">
+                                    Ultra retail &mdash; based on your selections
+                                </div>
+                                <table className="bridge-pricing-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th style={{ textAlign: 'right' }}>Unit</th>
+                                            <th style={{ textAlign: 'right' }}>Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>{pricing.styleName} Panel &mdash; {pricing.height}" ({pricing.ultraModel})</td>
+                                            <td style={{ textAlign: 'right' }}>{pricing.panelWidthFt}' section</td>
+                                            <td style={{ textAlign: 'right' }}>{fmt(pricing.panelPrice)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Residential Post &mdash; 2" sq</td>
+                                            <td style={{ textAlign: 'right' }}>each</td>
+                                            <td style={{ textAlign: 'right' }}>{fmt(pricing.postPrice)}</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colSpan="2"><strong>Estimated per linear foot</strong></td>
+                                            <td style={{ textAlign: 'right' }}><strong>{fmt(pricing.perLinearFoot)}</strong>/ft</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                                <div className="bridge-pricing-note">
+                                    Gates, hardware, accessories, and shipping calculated in the next step.
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Primary CTA — Continue to Quote */}
+                        <button className="bridge-quote-cta" onClick={onNavigateToManual}>
+                            Continue to Full Quote &rarr;
+                        </button>
                     </div>
 
                     {/* RIGHT: Address + Actions */}

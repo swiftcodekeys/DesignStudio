@@ -4198,6 +4198,80 @@ html, body {
   margin-top: 4px;
 }
 
+/* ---- Itemized Pricing Estimate ---- */
+.bridge-pricing {
+  background: #fff;
+  border: 1px solid #E8E8E8;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.bridge-pricing-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #6BA3C2;
+  margin-bottom: 2px;
+}
+.bridge-pricing-subtitle {
+  font-size: 11px;
+  color: #8e95a0;
+  margin-bottom: 12px;
+}
+.bridge-pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.bridge-pricing-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8e95a0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 0;
+  border-bottom: 1px solid #E8E8E8;
+}
+.bridge-pricing-table td {
+  padding: 8px 0;
+  color: #1a1a2e;
+  border-bottom: 1px solid #f0f0f0;
+}
+.bridge-pricing-table tfoot td {
+  padding-top: 10px;
+  border-bottom: none;
+  font-size: 14px;
+  color: #1B3A5C;
+}
+.bridge-pricing-note {
+  font-size: 11px;
+  color: #8e95a0;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* ---- Primary CTA ---- */
+.bridge-quote-cta {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px;
+  background: #D4753A;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.bridge-quote-cta:hover {
+  opacity: 0.9;
+}
+
 /* ============================================================
    Pool Compliance Popup
    ============================================================ */
