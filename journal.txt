@@ -362,3 +362,268 @@ REMAINING (Tasks 4-11):
 
 SPEC: docs/superpowers/specs/2026-04-05-design-to-quote-bridge-design.md
 PLAN: docs/superpowers/plans/2026-04-05-design-to-quote-bridge.md
+
+
+2026-04-16 — Admin App Crash + Review Page Fixes + Quiz Hosting Discussion
+══════════════════════════════════════════════════════════════════════════
+
+SESSION CONTEXT
+  - Branch: feat/quote-redesign (in sync with origin)
+  - Deploy targets:
+      · Design Studio    → designstudio-csy.pages.dev / studio.grandviewfence.com
+      · Admin CRM UI     → grandview-admin.pages.dev
+      · CRM Worker + D1  → grandview-crm.sarah-13a.workers.dev (D1: grandview-crm)
+  - Last commits reviewed: 6b38563, 2af1ea0, a07d258
+
+POOL COMPLIANCE — PRICE BOOK RECONCILIATION
+  User recollection: "4 pool styles + 4 more that can be made pool"
+  Parsed doc (ULTRA_PRICEBOOK_MARCH2026_PARSED.md line 147) claimed only 3
+  Ultra SKUs qualify (UAF-200, UAB-200, UAF-250). That is an INTERPRETATION
+  lifted from ultrafence.com/poolfences.html marketing page.
+
+  Raw Easy Order Form v4.0 (page 1-11 / PAGE 14 of pricebook_main.txt) has:
+    "Standard Bottom   A   B (upcharge)   Flush Bottom"
+    "Does Fence Need to Comply with BOCA Code for Pools?"
+  This is a GENERIC form. Customer writes STYLE NUMBER in Box 10, checks
+  A or B in Box 4. Flush bottom is a config option on any style, not a
+  separate product. User's recollection is correct — parsed summary is wrong.
+
+  Working interpretation for Bug 1 (pool filter):
+    - 4 pool-recommended (flush standard): Haven, Haven Lite, Haven Plus, Haven Guard
+    - 4 pool-capable with flush-bottom upgrade: Horizon Pro, Vanguard Pro,
+      plus spear-top candidates (Charleston/Savannah/Lexington/Eclipse at 54"+)
+    - Hide only Defender (poolCompliance: 'none')
+    - Height filter: 48" allowed on 2-rail flush configs (Haven, Haven Lite);
+      54"+ required on 3-rail/spear-top pool builds
+  NOT YET IMPLEMENTED — awaiting final style list confirmation from user.
+
+SEED SCRIPT FOR FAKE CRM LEADS
+  Added scripts/seed-fake-leads.js. POSTs 4 varied leads to /leads:
+    #5 Amanda Reyes      — Haven 48" pool backyard             — $7,607.25
+    #6 David Kowalski    — Charleston 60" back + front         — $14,609.50
+    #7 Priya Patel       — Horizon back + front + drive gate   — $14,858.50
+    #8 Marcus Johnson    — Vanguard 12' drive gate only        — $4,005.00
+  All returned 201 Created. Commit: 5df0928 chore: seed script for fake CRM leads
+  Pushed to origin/feat/quote-redesign.
+
+BUG FOUND — ADMIN APP CRASHES ON LEAD CLICK
+  Root cause: schema mismatch between wizard payload and admin reader.
+    · Wizard items:  { sku, qty, unit, desc, price, total }
+    · Admin expects: { name, qty, retailEach }
+    · PricingEngine.jsx:43  fmt(item.retailEach) → undefined.toFixed(2) THROWS
+    · Error bubbles past the map, whole QuoteDetail fails to render
+  Related latent mismatches (don't crash, return 0 / NaN):
+    · ZoneCard.jsx:14         items.reduce((s, it) => s + (it.retailEach * it.qty), 0)
+    · QuoteDetail.jsx:421     retail += (it.retailEach || 0) * (it.qty || 0)
+
+  FIX APPLIED (admin-app — NOT git-tracked yet):
+    · PricingEngine.jsx
+        - fmt() coerces non-finite → 0
+        - New normalizeItem() reads item.retailEach ?? item.price ?? 0 and
+          name || desc || sku
+    · ZoneCard.jsx
+        - Same coercion via itemRetail() helper
+    · QuoteDetail.jsx
+        - Safe fmt() + Number() coercion in MultiZoneQuote totals
+
+  BUILD + DEPLOY:
+    npm run build   (vite build → dist/)
+    npx wrangler pages deploy dist --project-name grandview-admin
+    Live at: grandview-admin.pages.dev (preview: ed47ef1d.grandview-admin.pages.dev)
+
+  TODO: initialize grandview-quote-system as a git repo and commit the fix.
+        Currently that directory reports: "fatal: your current branch 'master'
+        does not have any commits yet".
+
+PO NUMBER FORMAT CHANGED
+  Old: GV-NNNN (sequential from 2601, counter in po_counters table)
+  New: LASTNAME-001, LASTNAME-002 per customer last name
+  Logic: extract last word of lead.name, uppercase, strip non-A-Z, count
+  existing po_number LIKE 'LASTNAME-%', next = count + 1, zero-pad to 3 digits.
+
+  Files changed:
+    · worker/src/index.js handleGeneratePO — rewrote to query by prefix
+    · admin-app/src/components/POGenerator.jsx — format hint text
+    · admin-app/src/utils/api.js — mock PO uses MOCK-001 style
+
+  DEPLOY:
+    worker:    npx wrangler deploy (Version: fd61bff0-314d-42c8-811e-b860d548b2dd)
+    admin UI:  npx wrangler pages deploy dist --project-name grandview-admin
+
+DESIGN REVIEW PAGE FIXES (fence-tool repo, feat/quote-redesign)
+  Reported: "review page not taking me to quote and cant scroll need the
+             itemized price quote"
+  Also console warning (non-blocking):
+    THREE.WebGLRenderer: image is not power of two (1160x1096). Resized to 1024x1024
+
+  FIXES APPLIED (NOT YET COMMITTED):
+    1. Scroll — inline style={{ overflowY: 'auto' }} on .bridge-page wrapper.
+       Parent .wizard-shell has overflow:hidden + height:100vh. The existing
+       CSS rule .wizard-shell .bridge-page { overflow-y: auto; flex: 1 } was
+       being defeated by .bridge-page--compact { min-height: 0 } specificity.
+    2. "Continue to Full Quote →" primary CTA button. Orange (#D4753A), full
+       width, calls onNavigateToManual (goes to step 4 QuoteBuilder). Before,
+       the only in-wizard path to quote was a secondary "Enter Footage
+       Manually" card on the right column — easy to miss.
+    3. Itemized price estimate table (left column, under selections):
+         - Panel price (by style ultraModel + height, from PANEL_PRICING)
+         - Post price (DEFAULT_POST_SPEC, from POST_PRICING)
+         - Per linear foot estimate = (panel + post) ÷ panelWidthFt
+         - Note: gates/hardware/shipping in next step
+       New helper estimatePricing(saved) reads from retailPricing.js.
+       New CSS block added to styles.css after .bridge-contact-phone.
+
+  Three.js warning: cosmetic (auto-resize). Low priority. To suppress, pad
+  any non-POT source texture/snapshot to the nearest power-of-two on export,
+  or set renderer.capabilities.isWebGL2 path to avoid the warning.
+
+  Dev server still running (background task bv1u4b1jj). Verified webpack
+  build: compiled successfully.
+
+QUIZ HOSTING — DISCUSSION (NO CODE YET)
+  User request: host fence quiz on CF at quiz.grandviewfence.com, mirror
+  studio.grandviewfence.com setup. Auto-populate quiz selections into the
+  wizard when the user chooses "turn this into a quote."
+
+  Correction to user's mental model:
+    · CF Pages preview branches ARE publicly reachable. "Hosted on its own
+      branch" = URL like feat-quiz.project.pages.dev — not indexed but
+      discoverable. Branch-based deploy gives isolation, NOT privacy.
+    · localStorage does NOT cross subdomains. quiz.grandviewfence.com and
+      studio.grandviewfence.com are separate origins for storage purposes.
+      Handoff must be via URL params, domain-scoped cookies, or a backend.
+
+  Three options considered:
+    A. Two CF Pages projects, SAME fence-tool repo:
+         - designstudio project → studio domain
+         - grandview-quiz project → quiz domain (needs build:quiz npm script
+           + webpack.quiz.config.js that only bundles /quiz entry)
+         - Both deploy on push to main
+         - Separate privacy controls per project
+         - Smaller bundles per deploy
+    B. Two repos:
+         - fence-tool → studio
+         - fence-quiz (standalone, already exists) → quiz
+         - Pro: simplest deploy config
+         - Con: duplicate components/styles/data between repos
+    C. Single bundle, subdomain routing via CF Worker:
+         - REJECTED — both apps ship in same bundle, no privacy gain.
+
+  Handoff strategies evaluated:
+    1. URL token on navigation (recommended):
+         quiz "Get Quote" → studio.grandviewfence.com/wizard?q=<base64 of
+         {styleId, height, color, poolBarrier, puppy}> → wizard decodes and
+         prefills wizardState. Survives refresh, shareable as a link.
+    2. Optional redundancy: POST quiz results to CRM worker (/quiz endpoint)
+       so leads are captured even without click-through. Adds analytics.
+    3. Cookie on .grandviewfence.com — rejected, blocked by tracking-prevention
+       in Safari/Firefox.
+
+  RECOMMENDED: Option A + URL-token handoff.
+    - Keeps product data and images in one repo (no drift)
+    - Separate deploy lifecycle, bundle size, privacy per CF project
+    - URL token is the most robust cross-origin handoff
+
+  OPEN QUESTIONS (awaiting user answer before any code change):
+    1. Option A, B, or a variant?
+    2. DNS setup for quiz.grandviewfence.com — which registrar/DNS host?
+    3. Should the quiz CF project allow preview branches, or production-only
+       builds (main-only, no public preview URLs)?
+    4. Handoff richness — should wizard SKIP the 3D configurator after a
+       quiz handoff (go straight to QuoteBuilder), or still render the 3D
+       preview of the picked style so the customer sees it before quoting?
+
+PENDING WORK (not started; task list active)
+  #1 Bug 5: Fix duplicate address entry in draw tool (blocks scroll-through)
+  #2 Bug 4: Save page shows all zones, not just last
+  #3 Bug 1: Pool compliance filters style + height in wizard
+  #4 Bug 2: Fix zone flow — per-zone draw + inherit prompt
+  #5 Bug 3: Separate driveway gate flow, move to last
+
+UNCOMMITTED CHANGES AT END OF SESSION
+  fence-tool:
+    · DesignReviewPage.js  — imports + estimatePricing + pricing section + CTA
+    · styles.css           — .bridge-pricing* + .bridge-quote-cta
+  grandview-quote-system (NOT a git repo yet):
+    · admin-app/src/components/PricingEngine.jsx — normalizeItem() + safe fmt()
+    · admin-app/src/components/ZoneCard.jsx      — itemRetail() + safe fmt()
+    · admin-app/src/components/QuoteDetail.jsx   — safe fmt() + Number coerce
+    · admin-app/src/components/POGenerator.jsx   — format hint text
+    · admin-app/src/utils/api.js                 — mock PO format
+    · worker/src/index.js                        — handleGeneratePO rewrite
+  Admin app and worker are deployed (live) but source is untracked.
+  Fence-tool changes are local only — not yet committed to feat/quote-redesign.
+
+
+2026-04-16 — TASK 1: Fix duplicate address entry in Draw Tool (Bug 5)
+════════════════════════════════════════════════════════════════════════
+
+PROBLEM
+  After entering an address in the wizard (DesignReviewPage step 3), the
+  Draw Tool mounted with its own AddressEntry overlay — forcing the user
+  to type the address a second time before the map would render.
+
+ROOT CAUSE
+  DrawYardView.js:1533 initialized location state as `useState(null)`.
+  The wizard flow writes the geocoded address to
+    localStorage['gv_bridge_location'] = { address, lat, lng }
+  (DesignReviewPage.js:176, WizardShell.js:911) and sets
+    localStorage['gv_start_scene'] = 'draw'
+  before navigating to /studio. app.js:194-198 consumes gv_start_scene
+  to auto-switch to the draw tab, but DrawYardView never read
+  gv_bridge_location — so the overlay at line 1763 ( if (!location) )
+  short-circuited BEFORE the map.
+
+FIX APPLIED (DrawYardView.js:1533-1548)
+  Replaced null init with a lazy initializer that hydrates from
+  localStorage['gv_bridge_location']:
+    useState(function() {
+      try {
+        var saved = localStorage.getItem('gv_bridge_location');
+        if (saved) {
+          var loc = JSON.parse(saved);
+          if (loc && typeof loc.lat === 'number' &&
+              typeof loc.lng === 'number' && loc.address) {
+            return loc;
+          }
+        }
+      } catch (e) {}
+      return null;
+    });
+  Guards on typeof lat/lng/address mean malformed values fall back to
+  null, keeping AddressEntry as a safety net.
+
+VERIFICATION (evidence, not assertion)
+  - npx webpack --mode development → compiled successfully in 6186 ms
+  - Local serve on :5173 (SPA mode), Playwright-driven browser:
+      (a) localStorage set with {address, lat, lng} + gv_start_scene='draw',
+          navigated /studio
+            · .draw-address-overlay  : NOT present
+            · .draw-container        : present
+            · body text showed satellite map disclaimer
+            → MAP LOADS IMMEDIATELY, no re-entry. PASS.
+      (b) localStorage cleared, navigated /studio?tab=draw (bypasses
+          DesignReviewPage):
+            · .draw-address-overlay  : present
+            · .draw-address-input    : present
+            → Fallback AddressEntry still works. PASS.
+  - Console: 0 errors in both paths.
+
+FILES CHANGED
+  DesignStudio: DrawYardView.js (one useState initializer, ~14 lines)
+
+NOT TOUCHED (per user scope directive received mid-task)
+  No terrain, slope, rackability, or post-calculation logic modified.
+
+COMMIT
+  (see next commit on feat/quote-redesign)
+
+REMAINING IN BUG-FIX BATCH (awaiting go-ahead per user instruction)
+  Task 2  Pool compliance: smart defaults (no hiding)
+  Task 3  Live per-LF price estimate
+  Task 4  3D snapshot in review + quote form
+  Task 5  Escape hatch modal on every wizard step
+  Task 6  Zone flow — per-zone draw + inherit prompt
+  Task 7  Driveway gate mini-flow (separate, last)
+  Task 8  Build + deploy + live smoke test
+

@@ -1530,7 +1530,21 @@ var DrawYardView = function(props) {
     var mapsReady = mapsReadyState[0];
     var setMapsReady = mapsReadyState[1];
 
-    var locationState = useState(null);
+    // Hydrate from wizard-provided address (gv_bridge_location) if present.
+    // Only ONE address entry should ever appear in the full flow — when the
+    // wizard already captured an address, skip straight to the map.
+    var locationState = useState(function() {
+        try {
+            var saved = localStorage.getItem('gv_bridge_location');
+            if (saved) {
+                var loc = JSON.parse(saved);
+                if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number' && loc.address) {
+                    return loc;
+                }
+            }
+        } catch (e) {}
+        return null;
+    });
     var location = locationState[0];
     var setLocation = locationState[1];
 
