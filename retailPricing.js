@@ -470,6 +470,61 @@ export var COLOR_OPTIONS = [
 ];
 
 // ---------------------------------------------------------------------------
+// estimatePerFootRange(data) — live per-linear-foot retail estimate
+//
+// Input: { style, height, spacing, grade } (data shape from QuoteStep1_Style)
+// Output: { low, mid, high, ultraModel, panelPrice, postPrice, panelWidthFt }
+//         or null if the needed inputs are missing / unknown.
+//
+// Panels + posts only. Returns a ±15% band as a retail range (we quote
+// gates/extras/shipping separately downstream). Pro spacing swaps to
+// the Pro ultraModel when available.
+// ---------------------------------------------------------------------------
+export function estimatePerFootRange(data) {
+  if (!data || !data.style) return null;
+  var styleInfo = STYLES[data.style];
+  if (!styleInfo) return null;
+
+  var usePro = data.spacing === 'pro' && styleInfo.ultraModelPro;
+  var ultraModel = usePro ? styleInfo.ultraModelPro : styleInfo.ultraModel;
+
+  var grade = data.grade || 'residential';
+  if (grade !== 'residential' && grade !== 'commercial' && grade !== 'industrial') {
+    grade = 'residential';
+  }
+  if (grade === 'commercial') ultraModel = ultraModel + '-C';
+  else if (grade === 'industrial') ultraModel = ultraModel + '-I';
+
+  var panelPrices = PANEL_PRICING[ultraModel];
+  if (!panelPrices) return null;
+
+  var height = parseInt(data.height, 10) || 48;
+  var panelPrice = panelPrices[height] || panelPrices[48] || panelPrices[60] || 0;
+  if (!panelPrice) return null;
+
+  var panelWidthFt = PANEL_LENGTH_FT[grade] || 6;
+
+  var postLength = POST_LENGTH_MAP[height] || 84;
+  var postSpec = DEFAULT_POST_SPEC[grade] || DEFAULT_POST_SPEC.residential;
+  var postRates = POST_PRICING[postSpec.size] && POST_PRICING[postSpec.size][postSpec.wall];
+  var postPrice = postRates ? (postRates[postLength] || 0) : 0;
+
+  var perFoot = (panelPrice + postPrice) / panelWidthFt;
+  var band = 0.15;
+
+  return {
+    ultraModel: ultraModel,
+    height: height,
+    panelPrice: panelPrice,
+    postPrice: postPrice,
+    panelWidthFt: panelWidthFt,
+    mid: perFoot,
+    low: perFoot * (1 - band),
+    high: perFoot * (1 + band),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // STYLE_ID_MAP — configData/fenceConfigData styleId → retailPricing key
 // ---------------------------------------------------------------------------
 export var STYLE_ID_MAP = {

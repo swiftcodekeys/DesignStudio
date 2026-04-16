@@ -4,6 +4,12 @@
 import React from 'react';
 import { PencilSimple, Warning, ShieldCheck, Package } from '@phosphor-icons/react';
 import { calculateZoneQuote } from './priceCalculator';
+import { estimatePerFootRange } from './retailPricing';
+
+function fmtDollarsInt(n) {
+  if (n == null || isNaN(n)) return '$0';
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -257,7 +263,31 @@ function QuoteStep6_Review(props) {
       el('div', { className: 'qb-review-subtotal' },
         el('span', null, 'Estimated Subtotal'),
         el('span', { className: 'qb-review-subtotal-amount' }, fmt(subtotal))
-      )
+      ),
+
+      // ---- Per-LF rate + total range (Task 3) ----
+      (function() {
+        var est = estimatePerFootRange(data);
+        if (!est) return null;
+        var lf = Number(data.linearFeet) || 0;
+        return el('div', { className: 'qb-review-estimate' },
+          el('div', { className: 'qb-review-estimate-row' },
+            el('span', null, 'Estimated per linear foot'),
+            el('span', { className: 'qb-review-estimate-value' },
+              fmtDollarsInt(est.low) + '\u2013' + fmtDollarsInt(est.high)
+            )
+          ),
+          lf > 0 ? el('div', { className: 'qb-review-estimate-row' },
+            el('span', null, 'Estimated range for ' + lf + ' ft of fence'),
+            el('span', { className: 'qb-review-estimate-value' },
+              fmtDollarsInt(est.low * lf) + '\u2013' + fmtDollarsInt(est.high * lf)
+            )
+          ) : null,
+          el('div', { className: 'qb-review-estimate-note' },
+            'Final pricing confirmed in your full quote.'
+          )
+        );
+      })()
     ),
 
     // ======== Verification Disclaimer ========

@@ -5,6 +5,11 @@ import React from 'react';
 import { Check, Info, SwimmingPool, ShieldCheck } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
 import { PRIVACY_STYLES } from './configData';
+import { estimatePerFootRange } from './retailPricing';
+
+function fmtDollarsInt(n) {
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
 
 // ---- Style image mappings ----
 // Gate-view images from ifence_previews/gate_styles/
@@ -471,7 +476,24 @@ function QuoteStep1_Style(props) {
         el('div', { className: 'qs1-card-desc' }, 'Upgrade'),
         data.postCap === 'ball' ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 12, weight: 'bold' })) : null
       )
-    )
+    ),
+
+    // ---- Live per-linear-foot price estimate (Task 3) ----
+    // Renders only once we have enough inputs. Updates on every re-render
+    // because style/height/spacing are state, so React recomputes on change.
+    (function() {
+      if (data.fenceType === 'privacy') return null;
+      var est = estimatePerFootRange(data);
+      if (!est) return null;
+      return el('div', { className: 'qs1-estimate' },
+        el('div', { className: 'qs1-estimate-range' },
+          'Estimated: ' + fmtDollarsInt(est.low) + '\u2013' + fmtDollarsInt(est.high) + ' per linear foot'
+        ),
+        el('div', { className: 'qs1-estimate-note' },
+          'Gates, posts & shipping calculated in your quote'
+        )
+      );
+    })()
   );
 }
 

@@ -620,12 +620,84 @@ COMMIT
 
 REMAINING IN BUG-FIX BATCH (awaiting go-ahead per user instruction)
   Task 2  Pool compliance: smart defaults (no hiding)  — DONE (see below)
-  Task 3  Live per-LF price estimate
+  Task 3  Live per-LF price estimate                    — DONE (see below)
   Task 4  3D snapshot in review + quote form
   Task 5  Escape hatch modal on every wizard step
   Task 6  Zone flow — per-zone draw + inherit prompt
   Task 7  Driveway gate mini-flow (separate, last)
   Task 8  Build + deploy + live smoke test
+
+
+2026-04-16 — TASK 3: Live per-LF price estimate
+═══════════════════════════════════════════════════════════════════════
+
+PROBLEM
+  Users configured style/height/color without ever seeing a price
+  until they submitted contact info. The Review step had a full
+  subtotal from calculateZoneQuote but no prominent per-LF rate and
+  no explicit ±15% range.
+
+FIX APPLIED
+  retailPricing.js
+    - New export: estimatePerFootRange(data).
+        Input:  { style, height, spacing, grade }
+        Output: { ultraModel, panelPrice, postPrice, panelWidthFt,
+                  mid, low, high }  (low/high = mid × 1 ± 0.15)
+        Honors Pro spacing (swaps to ultraModelPro when available)
+        and grade (appends -C / -I to ultraModel).
+
+  QuoteStep1_Style.js
+    - Imports estimatePerFootRange.
+    - Appends a live estimate block to the config panel:
+        "Estimated: $LOW–$HIGH per linear foot"
+        "Gates, posts & shipping calculated in your quote"
+      Skipped for Privacy fenceType, and when estimate returns null.
+
+  QuoteStep6_Review.js
+    - Imports estimatePerFootRange.
+    - Appends a per-LF + total-range block right under the existing
+      subtotal:
+        · "Estimated per linear foot: $LOW–$HIGH"
+        · (when linearFeet > 0) "Estimated range for N ft of fence:
+          $totalLow–$totalHigh"
+        · "Final pricing confirmed in your full quote."
+    - Existing items table + subtotal unchanged.
+
+  styles.css
+    - New blocks: .qs1-estimate / .qs1-estimate-range /
+                  .qs1-estimate-note
+                  .qb-review-estimate* (3 classes)
+
+VERIFICATION (evidence, via Playwright, full wizard)
+  Style step live updates (confirmed one style/height change per row):
+    Horizon    54"  →  $30–$41 per LF  (panel $162 + post $49.35)
+    Horizon    72"  →  $30–$40
+    Haven      72"  →  $22–$29  (falls back to 48" panel; no 72" SKU)
+    Haven      48"  →  $28–$38  (panel $153 + post $49.35)
+    Charleston 60"  →  $31–$42  (panel $171.50 + post $49.35)
+  All recomputed without page reload.
+
+  Review page:
+    Charleston 60" + 150 LF →
+       "Estimated per linear foot: $31–$42"
+       "Estimated range for 150 ft of fence: $4,693–$6,349"
+       "Final pricing confirmed in your full quote."
+    Subtotal $5,570.60 (from calculateZoneQuote) falls within range.
+
+  Build: webpack compiled successfully in 3880 ms, 0 errors.
+  Console: 0 errors during flow.
+
+FILES CHANGED
+  retailPricing.js     (+54 lines, new estimatePerFootRange export)
+  QuoteStep1_Style.js  (+20 lines, import + live-range block)
+  QuoteStep6_Review.js (+30 lines, import + review estimate block)
+  styles.css           (2 new CSS blocks)
+
+NOT TOUCHED (per scope directive)
+  No terrain/slope/rackability/post-calculation questions added.
+  Post-price gaps in the 72" residential bucket (missing post length
+  96" in .060 wall) cause that one combination to show panel-only
+  pricing — noted as a separate data issue, not Task 3 scope.
 
 
 2026-04-16 — TASK 2: Pool compliance smart defaults (warn, don't wall)
