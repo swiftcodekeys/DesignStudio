@@ -21,6 +21,32 @@ import {
 } from './wizardState';
 import { trackZoneSelection, trackQuoteComplete, trackSummaryView, trackDropoff } from './analytics';
 
+// Decode a quiz handoff token from the URL (?q=<base64url>).
+// Returns { styleId, height, color, poolBarrier, puppy, zones } or null if absent/invalid.
+function decodeQuizToken() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var token = params.get('q');
+        if (!token) return null;
+        // base64url → base64
+        var b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        var json = atob(b64);
+        var payload = JSON.parse(json);
+        return {
+            styleId: payload.s || '',
+            height: String(payload.h || 48),
+            color: payload.c || 'black',
+            poolBarrier: !!payload.p,
+            puppy: !!payload.k,
+            zones: Array.isArray(payload.z) && payload.z.length ? payload.z : ['back'],
+        };
+    } catch (e) {
+        console.warn('Failed to decode quiz token:', e);
+        return null;
+    }
+}
+
 /* ---- SVG Icons ---- */
 var CheckSvg = function() {
     return (
@@ -236,6 +262,71 @@ var WizardShell = function() {
             setRendererReady(true);
         }, 1500);
         return function() { clearTimeout(timer); };
+    }, []);
+
+    // Apply quiz handoff token if present (?q=<base64>). Runs once on mount.
+    useEffect(function() {
+        var token = decodeQuizToken();
+        if (!token) return;
+
+        // Map quiz style id → wizard style id (they currently use different keys)
+        var styleMap = {
+            horizon: 'uaf_200', 'horizon-pro': 'uaf_201',
+            haven: 'uab_200',
+            vanguard: 'uaf_250', 'vanguard-pro': 'uaf_251',
+            charleston: 'uas_100', 'charleston-pro': 'uas_101',
+            savannah: 'uas_150',
+            lexington: 'uas_350',
+            eclipse: 'uas_300',
+            defender: 'uad_100',
+        };
+        var wizardStyleId = styleMap[token.styleId] || token.styleId;
+
+        setSelectedZones(token.zones);
+        setPoolAnswered(token.poolBarrier ? 'yes' : 'no');
+
+        var poolCompliance = token.poolBarrier ? {
+            poolBarrier: true,
+            selectedStyle: 'haven',
+            flushBottom: true,
+            selfClosingHinges: true,
+            selfLatching: true,
+            swingOutward: true,
+            minHeight48: true,
+        } : null;
+
+        var newConfigs = {};
+        token.zones.forEach(function(zoneId) {
+            var cfg = getDefaultConfig(zoneId);
+            if (wizardStyleId) cfg.styleId = wizardStyleId;
+            if (token.height) cfg.height = String(token.height);
+            if (zoneId === 'back' && poolCompliance) {
+                cfg.poolBarrier = true;
+                cfg.poolCompliance = poolCompliance;
+                cfg.styleId = 'uab_200'; // force Haven for pool
+            }
+            if (token.puppy) cfg.pupType = cfg.pupType || 'pupfl';
+            newConfigs[zoneId] = cfg;
+        });
+        setZoneConfigs(newConfigs);
+
+        setWizardState(function(prev) {
+            return Object.assign({}, prev, {
+                selectedZones: token.zones,
+                poolCompliance: poolCompliance,
+                fromQuiz: true,
+            });
+        });
+
+        // Jump past zone selection into the configurator for the first zone
+        setCurrentZone(token.zones[0]);
+        setStep(2);
+        trackZoneSelection(token.zones);
+
+        // Clean the URL so reload doesn't re-apply
+        try {
+            window.history.replaceState({}, '', window.location.pathname);
+        } catch (e) {}
     }, []);
 
     // Persist wizardState to localStorage on every change

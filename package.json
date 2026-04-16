@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack serve --mode development --open",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "start:quiz": "webpack serve --config webpack.quiz.config.js --mode development --open",
+    "build:quiz": "webpack --config webpack.quiz.config.js --mode production"
   },
   "keywords": [],
   "author": "",

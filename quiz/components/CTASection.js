@@ -3,7 +3,8 @@
  */
 import React, { useState, useEffect } from 'react';
 import { COLORS, FONTS } from '../styles/quizStyles';
-import { buildDesignStudioUrl } from '../matchingEngine';
+import { buildDesignStudioUrl, buildWizardUrl } from '../matchingEngine';
+import { useQuiz } from '../QuizContext';
 import { ctaClicked } from '../analytics';
 import useMediaQuery from '../useMediaQuery';
 
@@ -126,7 +127,7 @@ function getCTAContent(tierLabel) {
   };
 }
 
-function CTACard({ item, isPrimary, studioUrl }) {
+function CTACard({ item, isPrimary, studioUrl, wizardUrl }) {
   var _hover = useState(false), hovered = _hover[0], setHovered = _hover[1];
 
   var cardStyle = {
@@ -153,7 +154,13 @@ function CTACard({ item, isPrimary, studioUrl }) {
     animation: isPrimary ? 'quizCtaPulse 2s ease-in-out infinite' : 'none',
   };
 
-  var href = item.useStudioUrl ? studioUrl : '#';
+  // 'instant_quote' / 'request_quote' → wizard with quiz payload
+  // 'design_studio' / 'explore' → 3D studio with matched style
+  // otherwise → '#'
+  var quoteCtas = ['instant_quote', 'request_quote'];
+  var href = quoteCtas.indexOf(item.ctaName) >= 0
+    ? wizardUrl
+    : (item.useStudioUrl ? studioUrl : '#');
 
   return (
     <div style={cardStyle}>
@@ -198,8 +205,10 @@ export default function CTASection({ tier, system }) {
     injectKeyframes();
   }, []);
 
+  var quizState = useQuiz().state;
   var content = getCTAContent(tier.label);
   var studioUrl = buildDesignStudioUrl(system);
+  var wizardUrl = buildWizardUrl(system, quizState && quizState.answers);
 
   return (
     <div style={{
@@ -227,8 +236,8 @@ export default function CTASection({ tier, system }) {
         gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
         gap: 20,
       }}>
-        <CTACard item={content.primary} isPrimary={true} studioUrl={studioUrl} />
-        <CTACard item={content.secondary} isPrimary={false} studioUrl={studioUrl} />
+        <CTACard item={content.primary} isPrimary={true} studioUrl={studioUrl} wizardUrl={wizardUrl} />
+        <CTACard item={content.secondary} isPrimary={false} studioUrl={studioUrl} wizardUrl={wizardUrl} />
       </div>
     </div>
   );

@@ -125,3 +125,79 @@ export function buildDesignStudioUrl(system, baseUrl = '/') {
   });
   return `${baseUrl}?${params.toString()}`;
 }
+
+// ── buildWizardUrl ──────────────────────────────────────────────────
+/**
+ * Build a URL that takes the user to the wizard on the Design Studio origin,
+ * pre-filled with quiz results. Uses a compact base64url token so the params
+ * survive copy/paste and email-sharing.
+ *
+ * Token payload shape:
+ *   { s: styleId, h: height, c: color, p: poolBarrier(bool), k: puppy(bool),
+ *     z: selectedZones([...]), v: version }
+ *
+ * @param {Object} system — matched product from matchSystem
+ * @param {Object} answers — quiz answers keyed by question id
+ * @param {string} origin — destination origin (defaults to studio production)
+ * @returns {string} Full URL to /wizard?q=<token>
+ */
+export function buildWizardUrl(system, answers, origin) {
+  const studioOrigin = origin || (typeof process !== 'undefined' && process.env && process.env.QUIZ_STUDIO_ORIGIN)
+    || 'https://studio.grandviewfence.com';
+
+  const poolBarrier = answerIndicatesPool(answers);
+  const puppy = answerIndicatesPets(answers);
+  const zones = deriveZonesFromAnswers(answers);
+
+  const payload = {
+    s: system && system.id ? system.id : '',
+    h: poolBarrier ? 54 : 48,
+    c: 'black',
+    p: poolBarrier,
+    k: puppy,
+    z: zones,
+    v: 1,
+  };
+
+  const json = JSON.stringify(payload);
+  // base64url — no +/= so it's URL-safe without escaping
+  const b64 = typeof btoa === 'function'
+    ? btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    : Buffer.from(json).toString('base64url');
+
+  return `${studioOrigin}/wizard?q=${b64}`;
+}
+
+function answerIndicatesPool(answers) {
+  if (!answers) return false;
+  // Quiz question ids vary by version — check several heuristics
+  const candidates = [
+    answers.hasPool, answers.pool, answers.poolCode, answers.backyardPurpose,
+    answers.primaryUse,
+  ].filter(function(v) { return v != null; });
+  return candidates.some(function(v) {
+    var s = String(v).toLowerCase();
+    return s === 'yes' || s === 'true' || s.indexOf('pool') >= 0;
+  });
+}
+
+function answerIndicatesPets(answers) {
+  if (!answers) return false;
+  const candidates = [
+    answers.hasPets, answers.pets, answers.petSize, answers.backyardPurpose,
+  ].filter(function(v) { return v != null; });
+  return candidates.some(function(v) {
+    var s = String(v).toLowerCase();
+    return s === 'yes' || s === 'true' || s.indexOf('dog') >= 0 || s.indexOf('pet') >= 0;
+  });
+}
+
+function deriveZonesFromAnswers(answers) {
+  if (!answers) return ['back'];
+  const zones = [];
+  const scope = String(answers.scope || answers.where || '').toLowerCase();
+  if (scope.indexOf('front') >= 0 || scope === 'whole' || scope === 'all') zones.push('front');
+  if (scope.indexOf('back') >= 0 || scope === 'whole' || scope === 'all' || zones.length === 0) zones.push('back');
+  if (scope.indexOf('gate') >= 0 || scope.indexOf('drive') >= 0) zones.push('gate');
+  return zones.length ? zones : ['back'];
+}
