@@ -1061,12 +1061,16 @@ var WizardShell = function() {
             )}
 
             {/* ---- Escape Hatch Modal (Task 5) ---- */}
-            <EscapeHatchModal
-                isOpen={showEscapeHatch}
-                trigger={escapeTrigger}
-                onClose={handleEscapeHatchClose}
-                onSubmit={handleEscapeHatchSubmit}
-            />
+            {/* Conditional render so the modal unmounts on close — resets internal
+                success/error/upload state so a reopen never shows stale content. */}
+            {showEscapeHatch && (
+                <EscapeHatchModal
+                    isOpen={showEscapeHatch}
+                    trigger={escapeTrigger}
+                    onClose={handleEscapeHatchClose}
+                    onSubmit={handleEscapeHatchSubmit}
+                />
+            )}
         </div>
     );
 };

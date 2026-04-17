@@ -18,7 +18,10 @@ export default function useEscapeHatchTriggers(step, onTrigger) {
     } catch (e) {}
 
     function fireOnce(source) {
-      try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) {}
+      try {
+        if (sessionStorage.getItem(SESSION_KEY) === '1') return;
+        sessionStorage.setItem(SESSION_KEY, '1');
+      } catch (e) {}
       onTrigger(source);
     }
 
