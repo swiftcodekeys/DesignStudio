@@ -129,7 +129,7 @@ function getDefaultConfig(zoneId) {
     if (zoneId === 'back') {
         return {
             styleId: 'uab_200',
-            height: '54',
+            height: '60',
             color: FENCE_COLORS[0],
             finialType: null,
             postCap: 'pcf',
@@ -189,6 +189,18 @@ var WizardShell = function() {
     var poolAnsweredState = useState(false);
     var poolAnswered = poolAnsweredState[0];
     var setPoolAnswered = poolAnsweredState[1];
+
+    var poolHintState = useState(false);
+    var showPoolHint = poolHintState[0];
+    var setShowPoolHint = poolHintState[1];
+
+    // ---- Step 2 sidebar accordion (which section is expanded) ----
+    var expandedSectionState = useState('style');
+    var expandedSection = expandedSectionState[0];
+    var setExpandedSection = expandedSectionState[1];
+    var toggleSection = function(name) {
+        setExpandedSection(function(prev) { return prev === name ? '' : name; });
+    };
 
     var poolStyleState = useState('haven');
     var poolSelectedStyle = poolStyleState[0];
@@ -790,7 +802,10 @@ var WizardShell = function() {
                     </div>
                     {/* Pool question inline when backyard selected */}
                     {selectedZones.indexOf('back') >= 0 && !poolAnswered && (
-                        <div className="wizard-pool-inline">
+                        <div className={'wizard-pool-inline' + (showPoolHint ? ' wizard-pool-inline-nudge' : '')}>
+                            {showPoolHint && (
+                                <div className="wizard-pool-hint">Answer below to continue →</div>
+                            )}
                             <div className="wizard-pool-question">
                                 <strong>Pool Safety:</strong> Is any part of your backyard fence around a pool?
                             </div>
@@ -839,7 +854,7 @@ var WizardShell = function() {
                                     setCurrentZone(orderedZones[0]);
                                     setStep(2);
                                 }}>
-                                    No
+                                    No — standard spec
                                 </button>
                             </div>
                         </div>
@@ -852,9 +867,9 @@ var WizardShell = function() {
                             onClick={function() {
                                 // If backyard selected and pool not answered, nudge them
                                 if (selectedZones.indexOf('back') >= 0 && !poolAnswered) {
-                                    // Scroll to pool question
+                                    setShowPoolHint(true);
                                     var poolEl = document.querySelector('.wizard-pool-inline');
-                                    if (poolEl) poolEl.scrollIntoView({ behavior: 'smooth' });
+                                    if (poolEl) poolEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     return;
                                 }
                                 trackZoneSelection(selectedZones);
@@ -915,28 +930,75 @@ var WizardShell = function() {
                             <div className="wizard-config-title">Choose Your Style</div>
                         </div>
 
-                        {/* Tab content: Style, Color, Size */}
-                        <div className="wizard-config-panel">
-                            <StyleTab
-                                config={activeConfig}
-                                onConfigChange={handleConfigChange}
-                                isFence={!isGateConfig}
-                            />
-                            <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                <ColorTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                        {/* Tab content: accordion-style, one section open at a time
+                            to keep the sidebar focused instead of a long scroll. */}
+                        <div className="wizard-config-panel wizard-config-accordion">
+                            <div className={'wizard-acc-section' + (expandedSection === 'style' ? ' open' : '')}>
+                                <button type="button" className="wizard-acc-head" onClick={function() { toggleSection('style'); }}>
+                                    <span>Style</span>
+                                    <span className="wizard-acc-chev">{expandedSection === 'style' ? '\u2212' : '+'}</span>
+                                </button>
+                                {expandedSection === 'style' && (
+                                    <div className="wizard-acc-body">
+                                        <StyleTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                                    </div>
+                                )}
                             </div>
-                            <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                <SizeTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                            <div className={'wizard-acc-section' + (expandedSection === 'color' ? ' open' : '')}>
+                                <button type="button" className="wizard-acc-head" onClick={function() { toggleSection('color'); }}>
+                                    <span>Color</span>
+                                    <span className="wizard-acc-chev">{expandedSection === 'color' ? '\u2212' : '+'}</span>
+                                </button>
+                                {expandedSection === 'color' && (
+                                    <div className="wizard-acc-body">
+                                        <ColorTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                                    </div>
+                                )}
                             </div>
-                            <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                <DetailsTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                            <div className={'wizard-acc-section' + (expandedSection === 'size' ? ' open' : '')}>
+                                <button type="button" className="wizard-acc-head" onClick={function() { toggleSection('size'); }}>
+                                    <span>Size</span>
+                                    <span className="wizard-acc-chev">{expandedSection === 'size' ? '\u2212' : '+'}</span>
+                                </button>
+                                {expandedSection === 'size' && (
+                                    <div className="wizard-acc-body">
+                                        <SizeTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                                    </div>
+                                )}
                             </div>
-                            <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                <PuppyPicketsTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                            <div className={'wizard-acc-section' + (expandedSection === 'details' ? ' open' : '')}>
+                                <button type="button" className="wizard-acc-head" onClick={function() { toggleSection('details'); }}>
+                                    <span>Details</span>
+                                    <span className="wizard-acc-chev">{expandedSection === 'details' ? '\u2212' : '+'}</span>
+                                </button>
+                                {expandedSection === 'details' && (
+                                    <div className="wizard-acc-body">
+                                        <DetailsTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                                    </div>
+                                )}
                             </div>
-                            {!isGateConfig ? null : (
-                                <div style={{ marginTop: 24, borderTop: '1px solid #E8E8E8', paddingTop: 20 }}>
-                                    <OptionsTab config={activeConfig} onConfigChange={handleConfigChange} />
+                            <div className={'wizard-acc-section' + (expandedSection === 'puppy' ? ' open' : '')}>
+                                <button type="button" className="wizard-acc-head" onClick={function() { toggleSection('puppy'); }}>
+                                    <span>Puppy Pickets</span>
+                                    <span className="wizard-acc-chev">{expandedSection === 'puppy' ? '\u2212' : '+'}</span>
+                                </button>
+                                {expandedSection === 'puppy' && (
+                                    <div className="wizard-acc-body">
+                                        <PuppyPicketsTab config={activeConfig} onConfigChange={handleConfigChange} isFence={!isGateConfig} />
+                                    </div>
+                                )}
+                            </div>
+                            {isGateConfig && (
+                                <div className={'wizard-acc-section' + (expandedSection === 'options' ? ' open' : '')}>
+                                    <button type="button" className="wizard-acc-head" onClick={function() { toggleSection('options'); }}>
+                                        <span>Options</span>
+                                        <span className="wizard-acc-chev">{expandedSection === 'options' ? '\u2212' : '+'}</span>
+                                    </button>
+                                    {expandedSection === 'options' && (
+                                        <div className="wizard-acc-body">
+                                            <OptionsTab config={activeConfig} onConfigChange={handleConfigChange} />
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

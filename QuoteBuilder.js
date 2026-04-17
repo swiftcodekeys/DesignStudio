@@ -159,18 +159,23 @@ function QuoteBuilder(props) {
       )
     ) : null,
 
-    // ---- Step dots ----
-    React.createElement('div', { className: 'qb-step-dots' },
-      STEP_LABELS.map(function(label, i) {
-        return React.createElement('div', {
-          key: i,
-          className: 'qb-dot' + (i === step ? ' active' : '') + (i < step ? ' done' : ''),
-          onClick: function() { if (i < step) setStep(i); },
-        },
-          React.createElement('span', { className: 'qb-dot-num' }, i + 1),
-          React.createElement('span', { className: 'qb-dot-label' }, label)
-        );
-      })
+    // ---- Phase label + step dots ----
+    // Wrapped in a "quote-phase" band so the buyer reads these as
+    // sub-steps of the Quote phase — NOT six more top-level wizard steps.
+    React.createElement('div', { className: 'qb-phase-band' },
+      React.createElement('div', { className: 'qb-phase-eyebrow' }, 'QUOTE DETAILS'),
+      React.createElement('div', { className: 'qb-step-dots' },
+        STEP_LABELS.map(function(label, i) {
+          return React.createElement('div', {
+            key: i,
+            className: 'qb-dot' + (i === step ? ' active' : '') + (i < step ? ' done' : ''),
+            onClick: function() { if (i < step) setStep(i); },
+          },
+            React.createElement('span', { className: 'qb-dot-num' }, i + 1),
+            React.createElement('span', { className: 'qb-dot-label' }, label)
+          );
+        })
+      )
     ),
 
     // ---- Step content ----

@@ -113,8 +113,9 @@ function sectionHeader(title, infoProps) {
   );
 }
 
-function selCard(selected, onClick, children, className) {
+function selCard(selected, onClick, children, className, key) {
   return el('button', {
+    key: key,
     className: 'qs1-card' + (selected ? ' selected' : '') + (className ? ' ' + className : ''),
     onClick: onClick,
   }, children);
@@ -180,11 +181,12 @@ function QuoteStep1_Style(props) {
     el('div', { className: 'qs1-card-row' },
       GRADES.map(function(g) {
         return selCard(grade === g.id, function() { update({ grade: g.id }); },
-          el('div', { key: g.id },
+          el('div', null,
             el('div', { className: 'qs1-card-title' }, g.name),
             el('div', { className: 'qs1-card-desc' }, g.desc)
           ),
-          null
+          null,
+          g.id
         );
       })
     ),
@@ -424,10 +426,12 @@ function QuoteStep1_Style(props) {
     el('div', { className: 'qs1-card-row' },
       [2, 3, 4].map(function(r) {
         return selCard(data.rails === r, function() { update({ rails: r }); },
-          el('div', { key: r },
+          el('div', null,
             el('div', { className: 'qs1-card-title' }, r + '-Rail'),
             r === 3 ? el('div', { className: 'qs1-card-desc' }, 'Standard') : null
-          )
+          ),
+          null,
+          'rail-' + r
         );
       })
     ),

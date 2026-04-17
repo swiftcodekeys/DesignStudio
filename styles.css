@@ -4524,6 +4524,27 @@ html, body {
 .wizard-pool-btn:hover { border-color: #6BA3C2; }
 .wizard-pool-btn.active { background: #6BA3C2; color: #fff; border-color: #6BA3C2; }
 
+.wizard-pool-inline { flex-direction: column; align-items: stretch; }
+.wizard-pool-inline-nudge {
+  border-color: #d4753a;
+  background: #fef7ed;
+  animation: wizard-pool-shake 0.35s ease-in-out;
+}
+@keyframes wizard-pool-shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.wizard-pool-hint {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d4753a;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
 .wizard-step-title {
   font-size: 20px;
   font-weight: 800;
@@ -4798,13 +4819,32 @@ html, body {
 }
 
 /* Step dots */
+/* ---- Quote-phase band: visually separates the inner 6 steps from the
+       outer wizard's 6 steps so buyers read it as a sub-phase, not as
+       "11 total steps". Sky-blue theme, contained in a soft card. ---- */
+.qb-phase-band {
+  background: linear-gradient(180deg, #f4fafe 0%, #ebf5fb 100%);
+  border: 1px solid #cfe3f0;
+  border-radius: 12px;
+  padding: 14px 20px 18px;
+  margin: 0 0 24px;
+}
+.qb-phase-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #6BA3C2;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
 .qb-step-dots {
   display: flex; justify-content: center; gap: 4px;
-  margin-bottom: 28px; padding: 0 8px;
+  margin-bottom: 0; padding: 0 4px;
 }
 .qb-dot {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  flex: 1; max-width: 110px; cursor: default; opacity: 0.4;
+  flex: 1; max-width: 110px; cursor: default; opacity: 0.55;
   transition: opacity 0.2s;
 }
 .qb-dot.active { opacity: 1; }

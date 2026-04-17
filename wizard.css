@@ -123,11 +123,65 @@
   padding: 6px 12px;
   border-radius: 6px;
   margin-right: 12px;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+  will-change: transform;
 }
 .wizard-escape-help:hover {
   background: var(--brand);
   color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 163, 194, 0.35);
+}
+.wizard-escape-help:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(107, 163, 194, 0.2);
+}
+
+/* ============================================================
+   Sidebar accordion (Step 2 configurator) — collapses the flat
+   5-section scroll into one-open-at-a-time sections.
+   ============================================================ */
+.wizard-config-accordion .wizard-acc-section {
+  border-top: 1px solid var(--light-gray);
+}
+.wizard-config-accordion .wizard-acc-section:first-child { border-top: none; }
+
+.wizard-acc-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 14px 4px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--navy);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+.wizard-acc-head:hover { color: var(--brand); }
+.wizard-acc-section.open .wizard-acc-head { color: var(--brand); }
+.wizard-acc-chev {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 400;
+  color: #8e95a0;
+  min-width: 16px;
+  text-align: center;
+}
+.wizard-acc-section.open .wizard-acc-chev { color: var(--brand); }
+.wizard-acc-body {
+  padding: 4px 0 14px;
+  animation: wizard-acc-open 0.2s ease-out;
+}
+@keyframes wizard-acc-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================================
@@ -285,15 +339,21 @@
   font-size: 14px;
   font-weight: 700;
   color: #fff;
-  background: var(--cta);
+  /* Hardcoded brand orange — wizard scope shadows var(--cta) to navy,
+     and the primary escape-hatch CTA must match the rest of the funnel. */
+  background: #d4753a;
   border: none;
   border-radius: 8px;
   padding: 12px 16px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
 }
-.escape-hatch-send:hover { opacity: 0.9; }
-.escape-hatch-send:disabled { opacity: 0.6; cursor: wait; }
+.escape-hatch-send:hover {
+  background: #c36729;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 117, 58, 0.35);
+}
+.escape-hatch-send:disabled { opacity: 0.6; cursor: wait; transform: none; box-shadow: none; }
 .escape-hatch-later {
   font-family: var(--font-sans);
   font-size: 14px;

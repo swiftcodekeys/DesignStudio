@@ -320,12 +320,8 @@
 .step-card {
   position: relative;
   text-align: center;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.step-card.visible {
+  /* Visible by default — observer-gated entrance was making content
+     disappear entirely when IntersectionObserver failed to fire. */
   opacity: 1;
   transform: translateY(0);
 }
@@ -462,12 +458,6 @@
 .final-cta-inner {
   max-width: 640px;
   margin: 0 auto;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.final-cta-inner.visible {
   opacity: 1;
   transform: translateY(0);
 }

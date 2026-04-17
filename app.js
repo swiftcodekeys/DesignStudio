@@ -502,6 +502,16 @@ var DesignStudio = function() {
 var App = function() {
     var navigate = useNavigate();
     useEffect(function() {
+        // Handle legacy hash-style routes: /#/wizard, /#/studio, etc.
+        // Anyone bookmarking or sharing a hash URL gets redirected to the
+        // correct path route instead of falling through to the landing page.
+        var hash = window.location.hash || '';
+        if (hash.indexOf('#/') === 0) {
+            var hashPath = hash.slice(1); // '#/wizard' -> '/wizard'
+            window.history.replaceState(null, '', hashPath);
+            navigate(hashPath, { replace: true });
+            return;
+        }
         if (checkForResume()) {
             navigate('/wizard');
         }
