@@ -20,10 +20,15 @@
 }
 
 /* ---- Reset within landing page ---- */
+/* html/body have overflow:hidden + height:100% (app-shell pattern), so the
+   landing page must be its own scroll container — cap height at viewport
+   and enable vertical scroll so the sections below the hero are reachable. */
 .landing-page {
   margin: 0;
   padding: 0;
+  height: 100vh;
   overflow-x: hidden;
+  overflow-y: auto;
   font-family: var(--font-sans);
   color: var(--navy);
   -webkit-font-smoothing: antialiased;
