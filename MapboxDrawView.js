@@ -31,6 +31,58 @@ function AddressEntry(props) {
   );
 }
 
+function MapScreen(props) {
+  var mapContainerRef = useRef(null);
+  var mapRef = useRef(null);
+
+  useEffect(function() {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    var map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      projection: 'globe',
+      center: [props.location.lng || 0, props.location.lat || 20],
+      zoom: props.location.lat ? 18 : 1,
+      maxZoom: 22,
+      pitch: 0,
+      attributionControl: true,
+    });
+
+    mapRef.current = map;
+
+    map.on('load', function() {
+      map.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14,
+      });
+      if (props.location.lat) {
+        var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var duration = prefersReduced ? 0 : 4000;
+        map.flyTo({
+          center: [props.location.lng, props.location.lat],
+          zoom: 20,
+          pitch: 0,
+          duration: duration,
+          essential: true,
+        });
+      }
+    });
+
+    return function() {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
+  }, [props.location.lat, props.location.lng]);
+
+  return React.createElement('div', {
+    ref: mapContainerRef,
+    className: 'mbx-map',
+    style: { width: '100%', height: '100%' },
+  });
+}
+
 function MapboxDrawView(props) {
   var locationState = useState(props.initialLocation || null);
   var location = locationState[0];
@@ -39,7 +91,7 @@ function MapboxDrawView(props) {
   return React.createElement('div', { className: 'mbx-container' },
     !location
       ? React.createElement(AddressEntry, { onAddressEntered: function(addr) { setLocation({ address: addr }); } })
-      : React.createElement('div', { className: 'mbx-map-placeholder' }, 'Map will render here (Task 1.1.2)')
+      : React.createElement(MapScreen, { location: location })
   );
 }
 
