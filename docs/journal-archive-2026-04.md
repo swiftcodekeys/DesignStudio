@@ -846,3 +846,88 @@ NOT TOUCHED (per scope directive)
   a follow-up item — current Task 2 acceptance criteria all reference
   QuoteStep1_Style behavior.
 
+2026-04-17 — TASK 5: Escape hatch modal on every wizard step
+═══════════════════════════════════════════════════════════════════════
+
+PROBLEM
+  Users with tricky yards, slope concerns, or who simply ran out of time
+  had no low-friction way to reach Grandview from mid-wizard. trackDropoff
+  fired silently on beforeunload but captured nothing. Research doc flagged
+  sketch/photo upload as a universal competitor pattern.
+
+FIX APPLIED
+  EscapeHatchModal.js (new)
+    - Unified form: Email (required), Phone, Name, note, optional upload.
+    - Client-side JPEG compression to <=900KB (canvas, quality 0.75, max
+      1600px long edge). PDFs passed through up to 2MB.
+    - Success state with auto-close after 4s.
+
+  useEscapeHatchTriggers.js (new)
+    - Desktop mouseleave (clientY <= 0) + mobile visibilitychange.
+    - One-shot per session via sessionStorage['gv_escape_fired'].
+    - Only active when step >= 2.
+
+  WizardShell.js
+    - Two new state hooks, one useEscapeHatchTriggers call.
+    - "Need help?" pill added before existing Switch-to-full-configurator.
+    - handleEscapeHatchSubmit reuses submitQuoteToCRM payload shape with
+      new submitAction='help' + helpNote + helpUploadDataUrl fields.
+
+  analytics.js
+    - trackEscapeHatchOpen/Submit/Dismiss.
+
+  wizard.css
+    - .wizard-escape-help pill + .escape-hatch-* modal block (~270 lines).
+
+FOLLOW-UP FIXES (same day, surfaced by Playwright smoke tests)
+  - useEscapeHatchTriggers.fireOnce() only had a mount-time guard; once
+    listeners were attached, every subsequent mouseleave still fired
+    onTrigger. Now guards inside fireOnce before setItem.
+  - EscapeHatchModal internal state (success, error, upload) never reset
+    between opens. Closing via × before the 4s auto-close left the next
+    reopen stuck on the "Thanks" success view. WizardShell now
+    conditionally renders the modal so it unmounts on close.
+
+VERIFICATION (Playwright, against live dev server + stubbed /leads)
+  Pill visible on step 1 and step 2 (same component, no per-step render
+    conditions — verified in JSX): PASS.
+  Modal opens from pill, title "Stuck? We'll help.", pill subhead
+    "Our Michigan team responds within one business day.": PASS.
+  Modal closes via × button: PASS.
+  Exit-intent on step 2: first mouseleave opens with subhead
+    "Before you go — we can pick up where you left off...": PASS.
+  Exit-intent second trigger suppressed by session guard: PASS.
+  Submit happy path: payload sent with submitAction='help', source=
+    'escape-hatch-modal', trigger='pill', wizardStep=1, quoteId=
+    'GVH-XXXXXX', Email/Name/Phone, auto-attached zones + snapshot +
+    grandTotal from buildQuotePayload. Success state renders
+    "Thanks — we'll be in touch." with the reference ID. Auto-close
+    after 4s: PASS.
+  Submit error path: /leads 500 → red inline banner "Couldn't send —
+    please try again or email sales@grandviewfence.com." Send button
+    re-enables. Form values preserved: PASS.
+  Production build `npm run build`: compiled successfully, zero errors
+    (3 pre-existing warnings about bundle + asset size).
+
+FILES CHANGED (Tasks 1-5 + follow-up fix)
+  EscapeHatchModal.js         (+~340 new)
+  useEscapeHatchTriggers.js   (+~50 new, +4 guard check)
+  WizardShell.js              (+~85 edited, including conditional render)
+  analytics.js                (+9 new)
+  wizard.css                  (+272 new: pill + modal + mobile)
+
+ENDPOINT
+  POST /leads at grandview-crm.sarah-13a.workers.dev with
+  submitAction='help'. No worker changes, no D1 migrations.
+
+FOLLOW-UP (not in this commit)
+  - Admin CRM (grandview-admin.pages.dev) needs a visual badge/filter for
+    submitAction='help' leads. Captured via spec line: "Admin CRM follow-up
+    (not in this spec's scope)".
+  - Modal Send button renders navy in wizard scope (wizard redefines
+    --cta locally). Not a bug — spec used var(--cta) faithfully — but
+    visually mismatches the orange "Looks good, next →" CTA on the
+    wizard's left panel. If the design-system owner wants the modal CTA
+    to match the orange wizard CTA, either hoist a dedicated
+    --escape-cta token or hardcode the orange.
+
