@@ -105,6 +105,90 @@ var ZONES = [
 /* ---- Zone label lookup ---- */
 var ZONE_LABELS = { front: 'Front Yard', back: 'Backyard', gate: 'Driveway Gate' };
 
+/* ---- CRM payload builder (pure, testable) ----
+ * Pulled out of the QuoteBuilder shell so Bug 0.5.1 regression tests can
+ * exercise the payload shape without mounting React. Accepts a flat `state`
+ * object with the same shape as wizardState plus `selectedZones`:
+ *   { zoneQuotes, selectedZones?, contactInfo?, shippingAddress?, installPlan? }
+ * and returns the exact object shape POSTed to the CRM worker /leads endpoint.
+ *
+ * IMPORTANT: Every field previously constructed inline inside buildQuotePayload
+ * must be preserved here — admin CRM parsing depends on them.
+ */
+function buildCrmPayload(state, intent) {
+    var s = state || {};
+    var zoneQuotes = s.zoneQuotes || {};
+    // Prefer explicit selectedZones when provided; otherwise fall back to the
+    // keys of zoneQuotes so unit tests don't have to wire the full wizard state.
+    var selected = Array.isArray(s.selectedZones) && s.selectedZones.length
+        ? s.selectedZones
+        : Object.keys(zoneQuotes);
+
+    var quoteId = 'GV-' + Math.floor(100000 + Math.random() * 900000);
+    var primarySnapshot = null;
+
+    var zones = selected.map(function(zoneId) {
+        var zq = zoneQuotes[zoneId] || {};
+        var cfg = zq.config || {};
+        var qd = zq.quoteData || {};
+        var qr = zq.quoteResult || { items: [], subtotal: 0 };
+
+        if (!primarySnapshot && zq.snapshotDataUrl) primarySnapshot = zq.snapshotDataUrl;
+
+        var colorId = '';
+        if (cfg.color) {
+            colorId = typeof cfg.color === 'string'
+                ? cfg.color
+                : (cfg.color.id || cfg.color.displayName || '');
+        }
+
+        return {
+            zoneId: zoneId,
+            zoneName: ZONE_LABELS[zoneId] || zoneId,
+            style: cfg.styleId || '',
+            grade: cfg.grade || '',
+            height: cfg.height || '',
+            color: colorId,
+            linearFootage: qd.linearFeet || qd.runs || 0,
+            corners: qd.corners || 0,
+            gateCount: (qd.gates && qd.gates.length) || 0,
+            items: qr.items || [],
+            subtotal: qr.subtotal || 0,
+        };
+    });
+
+    var grandTotal = 0;
+    Object.keys(zoneQuotes).forEach(function(zoneId) {
+        var zone = zoneQuotes[zoneId];
+        if (zone && zone.quoteResult && zone.status === 'complete') {
+            grandTotal += zone.quoteResult.subtotal || 0;
+        }
+    });
+
+    var contactInfo = s.contactInfo || {};
+    var shippingAddress = s.shippingAddress || null;
+
+    var payload = {
+        quoteId: quoteId,
+        Name: contactInfo.name || '',
+        Email: contactInfo.email || '',
+        Phone: contactInfo.phone || '',
+        ZIP: (shippingAddress && shippingAddress.zip) || '',
+        followUpPref: 'email',
+        installPlan: s.installPlan || '',
+        shippingAddress: shippingAddress,
+        zones: zones,
+        grandTotal: grandTotal,
+        snapshotDataUrl: primarySnapshot,
+        source: 'quote-builder-wizard',
+    };
+
+    if (intent) payload.submitAction = intent;
+    return payload;
+}
+
+export { buildCrmPayload };
+
 /* ---- Step names for progress bar ---- */
 var STEP_NAMES = ['Select zones', 'Configure', 'Review Design', 'Quote Details', 'Zone Transition', 'Quote Summary'];
 var TOTAL_STEPS = 6;
@@ -603,62 +687,17 @@ var WizardShell = function() {
     // Posts to D1 via /leads; admin can then process in the CRM.
     var CRM_ENDPOINT = 'https://grandview-crm.sarah-13a.workers.dev/leads';
 
-    var buildQuotePayload = function() {
-        var quoteId = 'GV-' + Math.floor(100000 + Math.random() * 900000);
-        var primarySnapshot = null;
-
-        var zones = (selectedZones || []).map(function(zoneId) {
-            var zq = (wizardState.zoneQuotes && wizardState.zoneQuotes[zoneId]) || {};
-            var cfg = zq.config || {};
-            var qd = zq.quoteData || {};
-            var qr = zq.quoteResult || { items: [], subtotal: 0 };
-
-            if (!primarySnapshot && zq.snapshotDataUrl) primarySnapshot = zq.snapshotDataUrl;
-
-            var colorId = '';
-            if (cfg.color) {
-                colorId = typeof cfg.color === 'string'
-                    ? cfg.color
-                    : (cfg.color.id || cfg.color.displayName || '');
-            }
-
-            return {
-                zoneId: zoneId,
-                zoneName: ZONE_LABELS[zoneId] || zoneId,
-                style: cfg.styleId || '',
-                grade: cfg.grade || '',
-                height: cfg.height || '',
-                color: colorId,
-                linearFootage: qd.linearFeet || qd.runs || 0,
-                corners: qd.corners || 0,
-                gateCount: (qd.gates && qd.gates.length) || 0,
-                items: qr.items || [],
-                subtotal: qr.subtotal || 0,
-            };
-        });
-
-        var grandTotal = getGrandTotal(
-            Object.assign({}, wizardState, { selectedZones: selectedZones })
+    var buildQuotePayload = function(intent) {
+        // Delegate to the module-scope pure builder so the payload shape stays
+        // consistent with unit tests (see tests/wizardShell.payload.test.js).
+        return buildCrmPayload(
+            Object.assign({}, wizardState, { selectedZones: selectedZones }),
+            intent
         );
-
-        return {
-            quoteId: quoteId,
-            Name: (wizardState.contactInfo && wizardState.contactInfo.name) || '',
-            Email: (wizardState.contactInfo && wizardState.contactInfo.email) || '',
-            Phone: (wizardState.contactInfo && wizardState.contactInfo.phone) || '',
-            ZIP: (wizardState.shippingAddress && wizardState.shippingAddress.zip) || '',
-            followUpPref: 'email',
-            installPlan: wizardState.installPlan || '',
-            shippingAddress: wizardState.shippingAddress || null,
-            zones: zones,
-            grandTotal: grandTotal,
-            snapshotDataUrl: primarySnapshot,
-            source: 'quote-builder-wizard',
-        };
     };
 
     var submitQuoteToCRM = function(orderingIntent) {
-        var payload = buildQuotePayload();
+        var payload = buildQuotePayload(orderingIntent);
         payload.submitAction = orderingIntent; // 'quote' | 'order'
 
         return fetch(CRM_ENDPOINT, {
