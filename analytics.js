@@ -43,3 +43,12 @@ export function trackSubmit(quoteId, grandTotal) { trackEvent('quote_submit', { 
 export function trackDropoff(step, zone) { trackEvent('dropoff', { step: step, zone: zone }); }
 export function trackPdfDownload(quoteId) { trackEvent('pdf_download', { quoteId: quoteId }); }
 export function trackSaveForLater(email) { trackEvent('save_for_later', { hasEmail: !!email }); }
+export function trackEscapeHatchOpen(trigger, step) {
+  trackEvent('escape_hatch_open', { trigger: trigger, step: step });
+}
+export function trackEscapeHatchSubmit(hadUpload, hadNote, step) {
+  trackEvent('escape_hatch_submit', { hadUpload: !!hadUpload, hadNote: !!hadNote, step: step });
+}
+export function trackEscapeHatchDismiss(trigger, step) {
+  trackEvent('escape_hatch_dismiss', { trigger: trigger, step: step });
+}
