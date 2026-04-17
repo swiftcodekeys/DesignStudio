@@ -482,25 +482,52 @@ var WizardShell = function() {
     };
 
     // ---- QuoteBuilder completion handler ----
-    var handleQuoteComplete = function(quoteData) {
+    var handleQuoteComplete = function(quoteData, quoteResult) {
         var zoneId = currentZone;
         var zoneLabel = ZONE_LABELS[zoneId] || zoneId;
         var cfg = zoneConfigs[zoneId] || {};
 
-        // Track quote completion for this zone
-        var subtotal = quoteData && quoteData.quoteResult ? quoteData.quoteResult.subtotal : 0;
-        trackQuoteComplete(zoneId, subtotal);
+        // QuoteStep6_Review passes (data, result); legacy callers from
+        // intermediate steps pass (data) only. Fall back to the embedded
+        // quoteResult if the caller didn't hand us one.
+        var result = quoteResult || (quoteData && quoteData.quoteResult) || { items: [], subtotal: 0, warnings: [] };
 
-        // Save to wizardState
+        // Track quote completion for this zone
+        trackQuoteComplete(zoneId, result.subtotal || 0);
+
+        // Save to wizardState — and also hoist contact/shipping/installPlan
+        // from the QuoteBuilder data so the final CRM payload includes the
+        // Ultra Easy Form fields (Name/Email/Phone/ZIP + shippingAddress).
         setWizardState(function(prev) {
             var next = Object.assign({}, prev, { selectedZones: selectedZones });
             next = updateZoneQuote(next, zoneId, {
                 config: cfg,
                 quoteData: quoteData,
-                quoteResult: quoteData.quoteResult || { items: [], subtotal: 0, warnings: [] },
+                quoteResult: result,
                 snapshotDataUrl: snapshotDataUrl || '',
                 status: 'complete',
             });
+
+            // Hoist contact info (only set if QuoteBuilder actually captured it)
+            if (quoteData && (quoteData.contactName || quoteData.contactEmail || quoteData.contactPhone)) {
+                next.contactInfo = {
+                    name: quoteData.contactName || (prev.contactInfo && prev.contactInfo.name) || '',
+                    email: quoteData.contactEmail || (prev.contactInfo && prev.contactInfo.email) || '',
+                    phone: quoteData.contactPhone || (prev.contactInfo && prev.contactInfo.phone) || '',
+                };
+            }
+            // Hoist shipping address
+            if (quoteData && (quoteData.shippingStreet || quoteData.shippingCity || quoteData.shippingZip)) {
+                next.shippingAddress = {
+                    street: quoteData.shippingStreet || '',
+                    city: quoteData.shippingCity || '',
+                    state: quoteData.shippingState || '',
+                    zip: quoteData.shippingZip || '',
+                };
+            }
+            if (quoteData && quoteData.installPlan) {
+                next.installPlan = quoteData.installPlan;
+            }
             return next;
         });
 
