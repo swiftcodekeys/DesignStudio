@@ -8,6 +8,7 @@ import BacklinksFooter from './BacklinksFooter';
 import SocialProof from './SocialProof';
 import ContactPopup from './ContactPopup';
 import DrawYardView from './DrawYardView';
+import MapboxDrawView from './MapboxDrawView';
 import QuoteBuilder from './QuoteBuilder';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
@@ -18,6 +19,7 @@ import DesignReviewPage from './DesignReviewPage';
 import AreaReturnPage from './AreaReturnPage';
 
 var STORAGE_KEY = 'gv_config';
+var USE_MAPBOX = process.env.USE_MAPBOX_DRAW;
 
 function buildHashString(config) {
     var parts = [
@@ -470,7 +472,9 @@ var DesignStudio = function() {
             }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
-                    <DrawYardView onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
+                    {USE_MAPBOX
+                        ? <MapboxDrawView onComplete={handleGetQuote} initialLocation={null} onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
+                        : <DrawYardView onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />}
                     <BacklinksFooter config={config} />
                 </div>
             ) : (

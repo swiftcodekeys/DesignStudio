@@ -1,0 +1,39 @@
+/* mapbox.css */
+.mbx-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.mbx-address-entry {
+  max-width: 500px;
+  margin: 10vh auto;
+  padding: 2rem;
+  text-align: center;
+}
+.mbx-address-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+.mbx-address-submit {
+  padding: 0.75rem 2rem;
+  font-size: 16px;
+  background: #6BA3C2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.mbx-address-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.mbx-map-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+}
