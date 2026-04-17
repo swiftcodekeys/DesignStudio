@@ -49,7 +49,7 @@ Add a single "escape hatch" modal available from every wizard step that:
 | `EscapeHatchModal.js` | **new** | Presentational modal. Matches `PoolPopup.js` conventions. |
 | `useEscapeHatchTriggers.js` | **new** | Custom hook — wires `mouseleave` + `visibilitychange` listeners, enforces one-shot-per-session. |
 | `WizardShell.js` | edited | Adds 3 state hooks, 1 hook call, renders `<EscapeHatchModal>`, adds "Need help?" pill to progress bar. |
-| `styles.css` | edited | New `.escape-hatch-*` block following `.wizard-*` / `.pool-popup-*` conventions. |
+| `wizard.css` | edited | New `.escape-hatch-*` block and `.wizard-escape-help` pill rule. Follows existing `.wizard-*` conventions (wizard-scoped styles live in `wizard.css`, not `styles.css`). |
 | `analytics.js` | edited | Adds `trackEscapeHatchOpen`, `trackEscapeHatchSubmit`, `trackEscapeHatchDismiss`. |
 
 ### State flow
@@ -67,7 +67,7 @@ user submits      → POST → success state in modal → auto-close after 4s
 
 ### Trigger behavior
 
-- **Pill** (`<button class="wizard-escape-help">Need help?</button>`) — always visible, all six steps, inserted between the Grandview logo and the existing "Switch to full configurator" button in the progress bar (WizardShell.js:670-690). Visual weight matches the existing pill; color uses `--text-secondary` / neutral gray border rather than the `--brand` blue the existing pill uses, so the two don't compete for attention.
+- **Pill** (`<button class="wizard-escape-help">Need help?</button>`) — always visible, all six steps, inserted *before* the existing `.wizard-escape` ("Switch to full configurator") button on the right side of the progress bar (WizardShell.js:687-689). The existing pill is neutral gray (`#5a6270`, text-only, no border — see `wizard.css:97-112`); the new pill uses `var(--brand)` sky blue with a matching subtle border so it signals "support available" and doesn't visually duplicate the existing escape.
 - **Exit-intent** — fires at most once per session via `sessionStorage['gv_escape_fired']`; only active when `step >= 2`.
   - Desktop: `mouseleave` on `document.documentElement` where `e.clientY <= 0`.
   - Mobile: `visibilitychange` where `document.hidden === true` AND the previous visibility was visible (guards against mount false-positives).
@@ -217,7 +217,7 @@ These sit alongside the existing `trackZoneSelection`, `trackQuoteComplete`, `tr
 | `useEscapeHatchTriggers.js` | ~50 new | Desktop + mobile exit-intent hook, one-shot session guard. |
 | `WizardShell.js` | ~30 edited | 3 useState hooks, useEscapeHatchTriggers call, pill button in progress bar, modal render, submit handler (calls submitQuoteToCRM with submitAction='help'). |
 | `analytics.js` | ~15 new | Three new track functions. |
-| `styles.css` | ~120 new | `.escape-hatch-*` overlay, panel, form, drop zone, success state, mobile breakpoint. |
+| `wizard.css` | ~120 new | `.escape-hatch-*` overlay, panel, form, drop zone, success state, mobile breakpoint + `.wizard-escape-help` pill rule. |
 
 Total: ~475 lines, one PR.
 
