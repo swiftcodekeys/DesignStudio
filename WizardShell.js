@@ -13,13 +13,18 @@ import PoolCompliancePopup from './PoolCompliancePopup';
 import PoolPopup from './PoolPopup';
 import DesignReviewPage from './DesignReviewPage';
 import QuoteBuilder from './QuoteBuilder';
+import EscapeHatchModal from './EscapeHatchModal';
+import useEscapeHatchTriggers from './useEscapeHatchTriggers';
 import ZoneTransitionPage from './ZoneTransitionPage';
 import ZoneQuoteSummary from './ZoneQuoteSummary';
 import {
     loadWizardState, saveWizardState, getZoneOrder, getZoneQuote,
     updateZoneQuote, getCurrentZoneId, getGrandTotal,
 } from './wizardState';
-import { trackZoneSelection, trackQuoteComplete, trackSummaryView, trackDropoff } from './analytics';
+import {
+    trackZoneSelection, trackQuoteComplete, trackSummaryView, trackDropoff,
+    trackEscapeHatchOpen, trackEscapeHatchSubmit, trackEscapeHatchDismiss,
+} from './analytics';
 
 /* ---- SVG Icons ---- */
 var CheckSvg = function() {
@@ -218,6 +223,23 @@ var WizardShell = function() {
     var editingZoneState = useState(null);
     var editingZone = editingZoneState[0];
     var setEditingZone = editingZoneState[1];
+
+    // ---- Escape Hatch Modal state (Task 5) ----
+    var escapeOpenState = useState(false);
+    var showEscapeHatch = escapeOpenState[0];
+    var setShowEscapeHatch = escapeOpenState[1];
+
+    var escapeTriggerState = useState('pill');
+    var escapeTrigger = escapeTriggerState[0];
+    var setEscapeTrigger = escapeTriggerState[1];
+
+    // ---- Exit-intent trigger (fires once per session, only on step >= 2) ----
+    var handleExitIntent = React.useCallback(function() {
+        setEscapeTrigger('exit-intent');
+        setShowEscapeHatch(true);
+        trackEscapeHatchOpen('exit-intent', step);
+    }, [step]);
+    useEscapeHatchTriggers(step, handleExitIntent);
 
     // Initialize configs when zones are selected
     useEffect(function() {
@@ -654,6 +676,49 @@ var WizardShell = function() {
         navigate('/studio?view=contact');
     };
 
+    // ---- Escape Hatch submit (Task 5) ----
+    // Reuses the existing CRM endpoint with submitAction='help'. Auto-attaches
+    // wizard state, current snapshot, and zones payload.
+    var handleEscapeHatchSubmit = function(formPayload) {
+        var base = buildQuotePayload();
+        var payload = Object.assign({}, base, {
+            quoteId: formPayload.quoteId,
+            submitAction: 'help',
+            source: 'escape-hatch-modal',
+            trigger: formPayload.trigger,
+            wizardStep: step,
+            currentZone: currentZone || null,
+            Name: formPayload.name || base.Name || '',
+            Email: formPayload.email || base.Email || '',
+            Phone: formPayload.phone || base.Phone || '',
+            helpNote: formPayload.helpNote || '',
+            helpUploadDataUrl: formPayload.helpUploadDataUrl || null,
+            helpUploadKind: formPayload.helpUploadKind || null,
+        });
+
+        return fetch(CRM_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }).then(function() {
+            trackEscapeHatchSubmit(!!formPayload.helpUploadDataUrl, !!formPayload.helpNote, step);
+            return { ok: true };
+        }).catch(function(err) {
+            return { ok: false, error: err.message || String(err) };
+        });
+    };
+
+    var handleEscapeHatchClose = function() {
+        // If modal was open but user didn't submit, count as dismiss.
+        if (showEscapeHatch) {
+            trackEscapeHatchDismiss(escapeTrigger, step);
+        }
+        setShowEscapeHatch(false);
+    };
+
     // Current active config for renderer
     var activeConfig = currentZone && zoneConfigs[currentZone]
         ? zoneConfigs[currentZone]
@@ -684,6 +749,16 @@ var WizardShell = function() {
                 <div className="wizard-progress-bar">
                     <div className="wizard-progress-fill" style={{ width: progressPercent + '%' }} />
                 </div>
+                <button
+                    className="wizard-escape-help"
+                    onClick={function() {
+                        setEscapeTrigger('pill');
+                        setShowEscapeHatch(true);
+                        trackEscapeHatchOpen('pill', step);
+                    }}
+                >
+                    Need help?
+                </button>
                 <button className="wizard-escape" onClick={handleEscape}>
                     Switch to full configurator &rarr;
                 </button>
@@ -984,6 +1059,14 @@ var WizardShell = function() {
                     onTalkToExpert={handleTalkToExpert}
                 />
             )}
+
+            {/* ---- Escape Hatch Modal (Task 5) ---- */}
+            <EscapeHatchModal
+                isOpen={showEscapeHatch}
+                trigger={escapeTrigger}
+                onClose={handleEscapeHatchClose}
+                onSubmit={handleEscapeHatchSubmit}
+            />
         </div>
     );
 };
