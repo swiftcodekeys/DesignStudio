@@ -153,7 +153,7 @@ function QuoteStep6_Review(props) {
         ),
         el('div', { className: 'qb-review-row' },
           el('span', { className: 'qb-review-label' }, 'End Posts'),
-          el('span', { className: 'qb-review-value' }, data.endPosts || 0)
+          el('span', { className: 'qb-review-value' }, data.ends != null ? data.ends : 2)
         ),
         data.racking
           ? el('div', { className: 'qb-review-row' },
