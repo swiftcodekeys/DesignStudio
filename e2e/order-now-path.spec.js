@@ -11,7 +11,7 @@ test('Order Now submits with intent=order', async ({ page }) => {
     await orderButton.click();
     const req = await requestPromise;
     const body = JSON.parse(req.postData() || '{}');
-    expect(body.intent).toBe('order');
+    expect(body.submitAction).toBe('order');
   } else {
     test.skip(true, 'Order Now button not rendered in demo state — manual test only');
   }
