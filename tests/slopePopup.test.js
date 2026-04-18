@@ -29,4 +29,15 @@ describe('SlopePopup', () => {
     );
     expect(container.querySelector('img[src*="measure-slope"]')).toBeTruthy();
   });
+
+  it('handles open=false then open=true without hook errors', () => {
+    const { rerender, queryByText, getByText } = render(
+      <SlopePopup open={false} onAnswer={()=>{}} onClose={()=>{}} />
+    );
+    // When closed, the modal content should not be in the DOM
+    expect(queryByText(/mostly flat/i)).toBeNull();
+    // Reopen — must NOT throw "Rendered more hooks than during the previous render"
+    rerender(<SlopePopup open={true} onAnswer={()=>{}} onClose={()=>{}} />);
+    expect(getByText(/mostly flat/i)).toBeTruthy();
+  });
 });

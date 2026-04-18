@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 
 function SlopePopup(props) {
-  if (!props.open) return null;
   var choiceState = useState(null);
   var choice = choiceState[0];
   var setChoice = choiceState[1];
+  if (!props.open) return null;
 
   return React.createElement('div', { className: 'mbx-slope-popup-overlay' },
     React.createElement('div', { className: 'mbx-slope-popup' },
