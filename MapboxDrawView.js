@@ -224,6 +224,32 @@ function MapScreen(props) {
     }
   }, [props.manualPoints]);
 
+  useEffect(function() {
+    if (!mapRef.current) return;
+    if (!props.manualPoints) return;
+    if (!mapboxgl || !mapboxgl.Marker) return;
+    var markers = [];
+    props.manualPoints.forEach(function(pt, i) {
+      var el = document.createElement('div');
+      el.className = 'mbx-vertex-handle';
+      el.style.cssText = 'width:20px;height:20px;border-radius:50%;background:white;border:3px solid #00d4d4;cursor:grab;position:relative;';
+      // Invisible wider hit target for touch (44x44px)
+      var hit = document.createElement('div');
+      hit.style.cssText = 'position:absolute;inset:-22px;';
+      el.appendChild(hit);
+
+      var marker = new mapboxgl.Marker({ element: el, draggable: true })
+        .setLngLat(pt)
+        .addTo(mapRef.current);
+      marker.on('dragend', function() {
+        var ll = marker.getLngLat();
+        if (props.onVertexMoved) props.onVertexMoved(i, [ll.lng, ll.lat]);
+      });
+      markers.push(marker);
+    });
+    return function() { markers.forEach(function(m) { m.remove(); }); };
+  }, [props.manualPoints]);
+
   return React.createElement('div', {
     ref: mapContainerRef,
     className: 'mbx-map',
@@ -281,6 +307,19 @@ function MapboxDrawView(props) {
   function handleManualVertex(lngLat) {
     setManualPoints(function(prev) { return prev.concat([lngLat]); });
   }
+  function handleVertexMoved(idx, newPt) {
+    var snapped = newPt;
+    for (var i = 0; i < manualPoints.length; i++) {
+      if (i === idx) continue;
+      var dist = Math.sqrt(Math.pow(manualPoints[i][0] - newPt[0], 2) + Math.pow(manualPoints[i][1] - newPt[1], 2));
+      if (dist < 0.00003) { snapped = manualPoints[i].slice(); break; }
+    }
+    setManualPoints(function(prev) {
+      var next = prev.slice();
+      next[idx] = snapped;
+      return next;
+    });
+  }
 
   return React.createElement('div', { className: 'mbx-container' },
     !location
@@ -300,6 +339,7 @@ function MapboxDrawView(props) {
             manualMode: manualMode,
             manualPoints: manualPoints,
             onManualVertex: handleManualVertex,
+            onVertexMoved: handleVertexMoved,
           })
         )
   );
