@@ -294,7 +294,11 @@ function MapScreen(props) {
     props.manualPoints.forEach(function(pt, i) {
       var el = document.createElement('div');
       el.className = 'mbx-vertex-handle';
-      el.style.cssText = 'width:20px;height:20px;border-radius:50%;background:white;border:3px solid #00d4d4;cursor:grab;position:relative;';
+      // Do NOT set position here — Mapbox adds .mapboxgl-marker { position: absolute }
+      // directly to this element. Inline position:relative would override that class rule
+      // (inline > class specificity), keeping the dot in normal document flow and causing
+      // the visible marker to appear offset from the click coordinate.
+      el.style.cssText = 'width:20px;height:20px;border-radius:50%;background:white;border:3px solid #00d4d4;cursor:grab;';
       // Invisible wider hit target for touch (44x44px)
       var hit = document.createElement('div');
       hit.style.cssText = 'position:absolute;inset:-22px;';
