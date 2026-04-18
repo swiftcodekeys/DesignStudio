@@ -292,7 +292,9 @@ function MapScreen(props) {
       var signedDelta = 0; // keep sign of the worst-magnitude sample for the arrow
       for (var k = rangeStart; k < rangeEnd && k < props.epqs.segmentClassifications.length; k++) {
         var sc = props.epqs.segmentClassifications[k];
-        if ((severity[sc.classification] || 0) > (severity[worstClass] || 0)) worstClass = sc.classification;
+        var newSev = severity[sc.classification];
+        var curSev = severity[worstClass];
+        if (newSev !== undefined && curSev !== undefined && newSev > curSev) worstClass = sc.classification;
         var abs = Math.abs(sc.deltaInches);
         if (abs > maxAbsDelta) {
           maxAbsDelta = abs;
