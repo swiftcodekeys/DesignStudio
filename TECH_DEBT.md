@@ -36,3 +36,21 @@ Documented debt to tackle after the Mapbox upgrade ships. Not blocking.
 4. Add a real provenance check (separate USGS coverage API or hardcoded CONUS bbox).
 
 **Files:** `epqsClient.js` lines 18, 36; `tests/epqsClient.test.js` (current tests assume optimistic semantics).
+
+## Live pricing engine — Task 1.9.1
+
+**Audited:** 2026-04-17 via static import-graph analysis.
+
+**Finding:** The live pricing engine called from the production quote flow is `priceCalculator.js`.
+
+**Method:** Traced imports from `QuoteStep6_Review.js` (the review/total step of the wizard). `QuoteStep6_Review.js:6` contains the only inbound import of either engine: `import { calculateZoneQuote } from './priceCalculator'`, and calls it at line 60. No wizard or quote step file imports `pricingEngine.js`.
+
+**Status of the OTHER engine:** DEAD CODE — `pricingEngine.js` exports `calculateQuote` (different function name from `calculateZoneQuote`) and has zero inbound imports from any user-facing file. It contains a self-test harness (`runTests()` at line 384) and was the original pre-redesign engine. Should be removed in a follow-up cleanup task.
+
+**Files that import the live engine (`priceCalculator.js`):**
+- `QuoteStep6_Review.js` (sole consumer — imports `calculateZoneQuote`, calls it to render the displayed quote total)
+
+**Files that import the dead/dormant engine (`pricingEngine.js`):**
+- None — zero inbound imports from any source file or test file
+
+**Why this matters:** Tasks 1.9.2 (delete dead `slopedPostCount`) and 1.9.3 (5% footage pad) target the LIVE engine. This audit confirms both tasks must edit `priceCalculator.js`, not `pricingEngine.js`. Editing the dead engine would ship no-op changes.
