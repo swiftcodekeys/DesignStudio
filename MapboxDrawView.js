@@ -519,8 +519,12 @@ function MapboxDrawView(props) {
             React.createElement('button', {
               className: 'mbx-done-btn',
               onClick: function() { setSlopePopupOpen(true); },
-              disabled: selectedSides.length === 0 && manualPoints.length < 2,
+              disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
             }, 'Done \u2014 review slope \u2192'),
+            epqsLoading ? React.createElement('span', {
+              className: 'mbx-epqs-loading',
+              style: { marginLeft: '0.5rem', fontSize: '13px', color: '#5a6270' },
+            }, 'Analyzing slope...') : null,
             React.createElement(MapScreen, {
               location: location,
               onParcelLoaded: handleParcelLoaded,
