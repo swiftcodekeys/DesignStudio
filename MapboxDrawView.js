@@ -129,6 +129,7 @@ function MapScreen(props) {
     });
 
     mapRef.current = map;
+    if (props.mapInstanceRef) props.mapInstanceRef.current = map;
 
     map.on('load', function() {
       map.addSource('mapbox-dem', {
@@ -218,7 +219,11 @@ function MapScreen(props) {
     });
 
     return function() {
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        if (props.mapInstanceRef) props.mapInstanceRef.current = null;
+      }
     };
   }, [props.location.lat, props.location.lng]);
 
@@ -411,6 +416,8 @@ function MapboxDrawView(props) {
   var highlightedIdx = highlightedIdxState[0];
   var setHighlightedIdx = highlightedIdxState[1];
 
+  var mapInstanceRef = useRef(null);
+
   useEffect(function() {
     var cancelled = false;
 
@@ -474,6 +481,40 @@ function MapboxDrawView(props) {
     });
   }
 
+  function buildDrawToolData() {
+    var totalFeet = segments.reduce(function(a, s) { return a + s.lengthFeet; }, 0);
+    var paddedFeet = Math.ceil(totalFeet * 1.05);
+    return {
+      totalFeet: paddedFeet,
+      rawFeet: totalFeet,
+      corners: segments.length - 1 + (manualMode ? 0 : 0),
+      ends: 2,
+      lines: [{
+        id: 'line-0',
+        color: '#00d4d4',
+        points: manualMode ? manualPoints.slice() : segments.flatMap(function(s) { return [s.start, s.end]; }),
+        segments: segments.slice(),
+      }],
+      slopeAnswer: slopeAnswer,
+      epqsOverall: epqs ? epqs.overallClassification : 'unknown',
+      epqsConfidence: epqs ? epqs.confidence : 'low',
+      epqsMaxDeltaInches: epqs ? epqs.maxDeltaInches : 0,
+      mapboxSnapshotUrl: null, // filled by snapshot step
+      source: 'auto',
+      parcel: parcel,
+    };
+  }
+
+  function captureSnapshot() {
+    return new Promise(function(resolve) {
+      if (!mapInstanceRef.current) { resolve(null); return; }
+      mapInstanceRef.current.once('render', function() {
+        resolve(mapInstanceRef.current.getCanvas().toDataURL('image/png'));
+      });
+      mapInstanceRef.current.triggerRepaint();
+    });
+  }
+
   function handleSlopeAnswer(answer) {
     setSlopeAnswer(answer);
     setSlopePopupOpen(false);
@@ -521,6 +562,17 @@ function MapboxDrawView(props) {
               onClick: function() { setSlopePopupOpen(true); },
               disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
             }, 'Done \u2014 review slope \u2192'),
+            React.createElement('button', {
+              className: 'mbx-continue-btn primary',
+              onClick: function() {
+                var data = buildDrawToolData();
+                captureSnapshot().then(function(url) {
+                  data.mapboxSnapshotUrl = url;
+                  props.onComplete(data);
+                });
+              },
+              disabled: segments.length === 0 || slopeAnswer == null,
+            }, 'Continue to Quote \u2192'),
             epqsLoading ? React.createElement('span', {
               className: 'mbx-epqs-loading',
               style: { marginLeft: '0.5rem', fontSize: '13px', color: '#5a6270' },
@@ -539,6 +591,7 @@ function MapboxDrawView(props) {
               epqs: epqs,
               segments: segments,
               highlightedIdx: highlightedIdx,
+              mapInstanceRef: mapInstanceRef,
             })
           ),
           slopeAnswer !== null && slopeAnswer !== 'flat' ?
