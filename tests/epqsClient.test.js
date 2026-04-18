@@ -20,7 +20,7 @@ describe('queryElevation', () => {
     expect(r).toBeNull();
   });
 
-  it('applies 5s timeout', async () => {
+  it('aborts when the timeout elapses', async () => {
     global.fetch.mockImplementation((_url, opts) => new Promise((_res, rej) => {
       if (opts && opts.signal) {
         opts.signal.addEventListener('abort', () => rej(new DOMException('AbortError', 'AbortError')));
