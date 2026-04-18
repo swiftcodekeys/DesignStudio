@@ -6,6 +6,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
+import { fetchParcel } from './parcelClient';
+import { simplifyRDP, splitPolygonIntoSides } from './geometryUtils';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -94,6 +96,42 @@ function MapScreen(props) {
       }
     });
 
+    map.on('idle', async function onceLoaded() {
+      map.off('idle', onceLoaded);  // one-shot
+      if (props.location.lat == null) return;
+      var result = await fetchParcel(
+        props.location.lat,
+        props.location.lng,
+        process.env.PARCEL_PROXY_URL
+      );
+      if (result.ok && result.data && result.data.boundary) {
+        var coords = result.data.boundary.coordinates[0];
+        var simplified = coords.length > 60 ? simplifyRDP(coords, 0.00001) : coords;
+        var sides = splitPolygonIntoSides(simplified);
+
+        map.addSource('parcel', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [simplified] } },
+        });
+        map.addLayer({
+          id: 'parcel-fill',
+          type: 'fill',
+          source: 'parcel',
+          paint: { 'fill-color': '#00d4d4', 'fill-opacity': 0.15 },
+        });
+        map.addLayer({
+          id: 'parcel-outline',
+          type: 'line',
+          source: 'parcel',
+          paint: { 'line-color': '#00d4d4', 'line-width': 2 },
+        });
+
+        if (props.onParcelLoaded) props.onParcelLoaded(sides, result.data);
+      } else {
+        if (props.onParcelFallback) props.onParcelFallback();
+      }
+    });
+
     return function() {
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
     };
@@ -118,15 +156,37 @@ function MapboxDrawView(props) {
   var location = locationState[0];
   var setLocation = locationState[1];
 
+  var parcelState = useState(null);
+  var parcel = parcelState[0];
+  var setParcel = parcelState[1];
+  var sidesState = useState([]);
+  var sides = sidesState[0];
+  var setSides = sidesState[1];
+  var fallbackState = useState(false);
+  var manualMode = fallbackState[0];
+  var setManualMode = fallbackState[1];
+
   function handleAddress(loc) {
     try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
     setLocation(loc);
   }
 
+  function handleParcelLoaded(newSides, data) {
+    setSides(newSides);
+    setParcel(data);
+  }
+  function handleParcelFallback() {
+    setManualMode(true);
+  }
+
   return React.createElement('div', { className: 'mbx-container' },
     !location
       ? React.createElement(AddressEntry, { onAddressEntered: handleAddress })
-      : React.createElement(MapScreen, { location: location })
+      : React.createElement(MapScreen, {
+          location: location,
+          onParcelLoaded: handleParcelLoaded,
+          onParcelFallback: handleParcelFallback,
+        })
   );
 }
 
