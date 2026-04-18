@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath } from '../geometryUtils.js';
+import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount } from '../geometryUtils.js';
 
 describe('simplifyRDP', () => {
   it('passes through points below threshold', () => {
@@ -46,5 +46,17 @@ describe('densifyPath', () => {
   it('inserts intermediate points', () => {
     const r = densifyPath([[0,0],[0.001,0]], 6);
     expect(r.length).toBeGreaterThan(2);
+  });
+});
+
+describe('computeSampleStepCount', () => {
+  it('returns at least 1 step for any segment', () => {
+    expect(computeSampleStepCount([0,0], [0,0], 6)).toBe(1);
+    expect(computeSampleStepCount([0,0], [0.0000001,0], 6)).toBe(1);
+  });
+  it('returns proportionally more steps for longer segments', () => {
+    var short = computeSampleStepCount([0,42.5], [0.0001,42.5], 6);
+    var long = computeSampleStepCount([0,42.5], [0.001,42.5], 6);
+    expect(long).toBeGreaterThan(short);
   });
 });

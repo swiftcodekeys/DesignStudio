@@ -7,7 +7,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { simplifyRDP, splitPolygonIntoSides, densifyPath } from './geometryUtils';
+import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount } from './geometryUtils';
 import { classifyDrawnLine } from './epqsClient';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
@@ -269,16 +269,11 @@ function MapScreen(props) {
 
     // Recompute densified-sample step counts (must match densifyPath in geometryUtils.js).
     // densifyPath(pts, 6) sampled every ~6ft. Recreate the per-segment step counts.
-    var FEET_PER_DEG_LAT = 364567.2;
     var sampleSegStartIdx = 0;
     var badges = [];
 
     userSegments.forEach(function(seg, segIdx) {
-      var dLng = seg.end[0] - seg.start[0];
-      var dLat = seg.end[1] - seg.start[1];
-      var cosLat = Math.cos(seg.start[1] * Math.PI / 180);
-      var feetDist = FEET_PER_DEG_LAT * Math.sqrt(dLat*dLat + dLng*dLng*cosLat*cosLat);
-      var steps = Math.max(1, Math.ceil(feetDist / 6));
+      var steps = computeSampleStepCount(seg.start, seg.end, 6);
 
       // sample-segment indices [sampleSegStartIdx .. sampleSegStartIdx + steps - 1] belong to this user-segment.
       var rangeStart = sampleSegStartIdx;
