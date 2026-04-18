@@ -45,3 +45,28 @@
   justify-content: center;
   background: #f5f5f5;
 }
+
+.mbx-slope-popup-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.mbx-slope-popup {
+  background: white; border-radius: 12px; padding: 2rem;
+  max-width: 700px; width: 90vw; max-height: 90vh; overflow-y: auto;
+}
+.mbx-slope-infographic { width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; }
+.mbx-slope-options { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
+.mbx-slope-option {
+  padding: 0.75rem; border: 2px solid #e8eaed; border-radius: 8px; cursor: pointer;
+  display: flex; gap: 0.5rem; align-items: center;
+}
+.mbx-slope-option.selected { border-color: #6BA3C2; background: #f0f7fb; }
+.mbx-slope-help { margin: 1rem 0; padding: 1rem; background: #f9fafb; border-radius: 8px; }
+.mbx-slope-help a { display: block; color: #6BA3C2; text-decoration: none; margin: 0.25rem 0; }
+.mbx-slope-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
+.mbx-slope-footer .primary { background: #d4753a; color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; cursor: pointer; }
+.mbx-slope-footer .primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .mbx-slope-popup { padding: 1rem; width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
+}
