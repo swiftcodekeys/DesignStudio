@@ -7,7 +7,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { simplifyRDP, splitPolygonIntoSides } from './geometryUtils';
+import { simplifyRDP, splitPolygonIntoSides, densifyPath } from './geometryUtils';
+import { classifyDrawnLine } from './epqsClient';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -284,6 +285,31 @@ function MapboxDrawView(props) {
   var manualPointsState = useState([]);
   var manualPoints = manualPointsState[0];
   var setManualPoints = manualPointsState[1];
+  var epqsState = useState(null);
+  var epqs = epqsState[0];
+  var setEpqs = epqsState[1];
+  var epqsLoadingState = useState(false);
+  var epqsLoading = epqsLoadingState[0];
+  var setEpqsLoading = epqsLoadingState[1];
+
+  useEffect(function() {
+    // Build flat array of all points on the drawn line
+    var pts = [];
+    if (manualMode) pts = manualPoints.slice();
+    else selectedSides.forEach(function(ss) {
+      pts.push(ss.side.start);
+      pts.push(ss.side.end);
+    });
+    if (pts.length < 2) { setEpqs(null); return; }
+
+    // Sample every ~6 ft along the line
+    var samplePts = densifyPath(pts, 6);
+    setEpqsLoading(true);
+    classifyDrawnLine(samplePts, 6).then(function(result) {
+      setEpqs(result);
+      setEpqsLoading(false);
+    });
+  }, [selectedSides, manualPoints, manualMode]);
 
   function handleAddress(loc) {
     try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}

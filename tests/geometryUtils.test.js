@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing } from '../geometryUtils.js';
+import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath } from '../geometryUtils.js';
 
 describe('simplifyRDP', () => {
   it('passes through points below threshold', () => {
@@ -39,5 +39,12 @@ describe('compassBearing', () => {
   });
   it('returns East for due east', () => {
     expect(compassBearing([0,0],[1,0])).toBe('East');
+  });
+});
+
+describe('densifyPath', () => {
+  it('inserts intermediate points', () => {
+    const r = densifyPath([[0,0],[0.001,0]], 6);
+    expect(r.length).toBeGreaterThan(2);
   });
 });

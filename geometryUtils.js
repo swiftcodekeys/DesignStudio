@@ -62,3 +62,25 @@ export function splitPolygonIntoSides(polygon) {
   }
   return sides;
 }
+
+// --- Densify ---
+// Insert interpolated points every approxFeetPerSample feet along the path.
+export function densifyPath(points, approxFeetPerSample) {
+  if (!points || points.length < 2) return points || [];
+  var FEET_PER_DEG_LAT = 364567.2; // approx for mid-latitudes
+  var out = [points[0]];
+  for (var i = 0; i < points.length - 1; i++) {
+    var a = points[i], b = points[i+1];
+    var dLng = b[0] - a[0];
+    var dLat = b[1] - a[1];
+    // Rough feet-distance estimate (good enough for densifying EPQS samples)
+    var cosLat = Math.cos(a[1] * Math.PI / 180);
+    var feetDist = FEET_PER_DEG_LAT * Math.sqrt(dLat*dLat + dLng*dLng*cosLat*cosLat);
+    var steps = Math.max(1, Math.ceil(feetDist / approxFeetPerSample));
+    for (var s = 1; s <= steps; s++) {
+      var t = s / steps;
+      out.push([a[0] + dLng*t, a[1] + dLat*t]);
+    }
+  }
+  return out;
+}
