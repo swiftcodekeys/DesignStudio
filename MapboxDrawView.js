@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
+import { geocodeAddress } from './mapboxGeocoder';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -13,6 +14,26 @@ function AddressEntry(props) {
   var addressState = useState('');
   var address = addressState[0];
   var setAddress = addressState[1];
+  var errorState = useState('');
+  var error = errorState[0];
+  var setError = errorState[1];
+  var loadingState = useState(false);
+  var loading = loadingState[0];
+  var setLoading = loadingState[1];
+
+  async function submit() {
+    if (!address) return;
+    setError('');
+    setLoading(true);
+    try {
+      var result = await geocodeAddress(address, MAPBOX_TOKEN);
+      if (props.onAddressEntered) props.onAddressEntered(result);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return React.createElement('div', { className: 'mbx-address-entry' },
     React.createElement('h2', null, 'Enter your address'),
@@ -22,12 +43,14 @@ function AddressEntry(props) {
       value: address,
       onChange: function(e) { setAddress(e.target.value); },
       className: 'mbx-address-input',
+      disabled: loading,
     }),
+    error ? React.createElement('div', { className: 'mbx-address-error' }, error) : null,
     React.createElement('button', {
-      onClick: function() { if (address && props.onAddressEntered) props.onAddressEntered(address); },
+      onClick: submit,
       className: 'mbx-address-submit',
-      disabled: !address,
-    }, 'Find my yard \u2192')
+      disabled: !address || loading,
+    }, loading ? 'Finding...' : 'Find my yard \u2192')
   );
 }
 
@@ -90,7 +113,7 @@ function MapboxDrawView(props) {
 
   return React.createElement('div', { className: 'mbx-container' },
     !location
-      ? React.createElement(AddressEntry, { onAddressEntered: function(addr) { setLocation({ address: addr }); } })
+      ? React.createElement(AddressEntry, { onAddressEntered: function(result) { setLocation(result); } })
       : React.createElement(MapScreen, { location: location })
   );
 }
