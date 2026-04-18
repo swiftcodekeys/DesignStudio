@@ -12,6 +12,15 @@ import { simplifyRDP, splitPolygonIntoSides } from './geometryUtils';
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
 
+var SEGMENT_COLORS = [
+  '#22C55E', // green
+  '#3B82F6', // blue
+  '#F59E0B', // orange
+  '#EC4899', // pink
+  '#14B8A6', // teal
+  '#A855F7', // purple
+];
+
 function AddressEntry(props) {
   var addressState = useState('');
   var address = addressState[0];
@@ -127,6 +136,37 @@ function MapScreen(props) {
         });
 
         if (props.onParcelLoaded) props.onParcelLoaded(sides, result.data);
+
+        sides.forEach(function(side, i) {
+          var color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+          var sourceId = 'side-' + i;
+          map.addSource(sourceId, {
+            type: 'geojson',
+            data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [side.start, side.end] } },
+          });
+          map.addLayer({
+            id: sourceId + '-line',
+            type: 'line',
+            source: sourceId,
+            paint: { 'line-color': color, 'line-width': 6, 'line-opacity': 0.7 },
+          });
+          map.addLayer({
+            id: sourceId + '-hit',
+            type: 'line',
+            source: sourceId,
+            paint: { 'line-color': color, 'line-width': 20, 'line-opacity': 0 },  // invisible hit area
+          });
+
+          map.on('click', sourceId + '-hit', function() {
+            if (props.onSideClicked) props.onSideClicked(side, color);
+          });
+          map.on('mouseenter', sourceId + '-hit', function() {
+            map.getCanvas().style.cursor = 'pointer';
+          });
+          map.on('mouseleave', sourceId + '-hit', function() {
+            map.getCanvas().style.cursor = '';
+          });
+        });
       } else {
         if (props.onParcelFallback) props.onParcelFallback();
       }
@@ -136,6 +176,19 @@ function MapScreen(props) {
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
     };
   }, [props.location.lat, props.location.lng]);
+
+  useEffect(function() {
+    if (!mapRef.current) return;
+    if (!props.sides || props.sides.length === 0) return;
+    props.sides.forEach(function(side, i) {
+      var selected = props.selectedSides.find(function(s) { return s.side.index === i; });
+      var sourceId = 'side-' + i;
+      if (mapRef.current.getLayer && mapRef.current.getLayer(sourceId + '-line')) {
+        mapRef.current.setPaintProperty(sourceId + '-line', 'line-width', selected ? 10 : 6);
+        mapRef.current.setPaintProperty(sourceId + '-line', 'line-opacity', selected ? 1 : 0.7);
+      }
+    });
+  }, [props.selectedSides, props.sides]);
 
   return React.createElement('div', {
     ref: mapContainerRef,
@@ -165,6 +218,9 @@ function MapboxDrawView(props) {
   var fallbackState = useState(false);
   var manualMode = fallbackState[0];
   var setManualMode = fallbackState[1];
+  var selectedState = useState([]); // [{ side, color }]
+  var selectedSides = selectedState[0];
+  var setSelectedSides = selectedState[1];
 
   function handleAddress(loc) {
     try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
@@ -178,6 +234,13 @@ function MapboxDrawView(props) {
   function handleParcelFallback() {
     setManualMode(true);
   }
+  function handleSideClicked(side, color) {
+    setSelectedSides(function(prev) {
+      var exists = prev.find(function(s) { return s.side.index === side.index; });
+      if (exists) return prev.filter(function(s) { return s.side.index !== side.index; });
+      return prev.concat([{ side: side, color: color }]);
+    });
+  }
 
   return React.createElement('div', { className: 'mbx-container' },
     !location
@@ -186,6 +249,9 @@ function MapboxDrawView(props) {
           location: location,
           onParcelLoaded: handleParcelLoaded,
           onParcelFallback: handleParcelFallback,
+          onSideClicked: handleSideClicked,
+          sides: sides,
+          selectedSides: selectedSides,
         })
   );
 }
