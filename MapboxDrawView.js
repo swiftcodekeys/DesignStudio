@@ -113,6 +113,8 @@ function AddressEntry(props) {
 function MapScreen(props) {
   var mapContainerRef = useRef(null);
   var mapRef = useRef(null);
+  var drawModeRef = useRef(props.drawMode);
+  drawModeRef.current = props.drawMode;
 
   useEffect(function() {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -204,6 +206,7 @@ function MapScreen(props) {
           });
 
           map.on('click', sourceId + '-hit', function() {
+            if (drawModeRef.current !== 'draw') return;
             if (props.onSideClicked) props.onSideClicked(side, color);
           });
           map.on('mouseenter', sourceId + '-hit', function() {
@@ -245,13 +248,14 @@ function MapScreen(props) {
     if (!props.manualMode) return;
     var map = mapRef.current;
     function handleClick(e) {
+      if (props.drawMode !== 'draw') return;
       if (props.onManualVertex) props.onManualVertex([e.lngLat.lng, e.lngLat.lat]);
     }
     map.on('click', handleClick);
     return function() {
       if (map && map.off) map.off('click', handleClick);
     };
-  }, [props.manualMode]);
+  }, [props.manualMode, props.drawMode]);
 
   useEffect(function() {
     if (!mapRef.current || !props.manualPoints) return;
@@ -416,7 +420,18 @@ function MapboxDrawView(props) {
   var highlightedIdx = highlightedIdxState[0];
   var setHighlightedIdx = highlightedIdxState[1];
 
+  var drawModeState = useState('navigate'); // 'navigate' | 'draw'
+  var drawMode = drawModeState[0];
+  var setDrawMode = drawModeState[1];
+
   var mapInstanceRef = useRef(null);
+
+  // Auto-exit draw mode after 3s idle (resets when user adds a vertex or clicks a side)
+  useEffect(function() {
+    if (drawMode !== 'draw') return;
+    var timer = setTimeout(function() { setDrawMode('navigate'); }, 3000);
+    return function() { clearTimeout(timer); };
+  }, [drawMode, selectedSides, manualPoints]);
 
   useEffect(function() {
     var cancelled = false;
@@ -579,6 +594,10 @@ function MapboxDrawView(props) {
               },
               disabled: segments.length === 0 || slopeAnswer == null,
             }, 'Continue to Quote \u2192'),
+            React.createElement('button', {
+              className: 'mbx-mode-toggle ' + drawMode,
+              onClick: function() { setDrawMode(drawMode === 'navigate' ? 'draw' : 'navigate'); },
+            }, drawMode === 'navigate' ? '\u270B Navigate \u2192 tap to Draw' : '\u270F\uFE0F Draw \u2192 tap to Navigate'),
             epqsLoading ? React.createElement('span', {
               className: 'mbx-epqs-loading',
               style: { marginLeft: '0.5rem', fontSize: '13px', color: '#5a6270' },
@@ -598,6 +617,7 @@ function MapboxDrawView(props) {
               segments: segments,
               highlightedIdx: highlightedIdx,
               mapInstanceRef: mapInstanceRef,
+              drawMode: drawMode,
             })
           ),
           slopeAnswer !== null && slopeAnswer !== 'flat' ?
