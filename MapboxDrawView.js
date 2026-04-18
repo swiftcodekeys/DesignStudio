@@ -251,6 +251,80 @@ function MapScreen(props) {
     return function() { markers.forEach(function(m) { m.remove(); }); };
   }, [props.manualPoints]);
 
+  useEffect(function() {
+    if (!mapRef.current || !props.epqs || !props.epqs.segmentClassifications) return;
+
+    // Build user-drawn segments: each entry is { start: [lng,lat], end: [lng,lat] }
+    var userSegments = [];
+    if (props.manualMode) {
+      for (var mi = 0; mi < props.manualPoints.length - 1; mi++) {
+        userSegments.push({ start: props.manualPoints[mi], end: props.manualPoints[mi+1] });
+      }
+    } else {
+      props.selectedSides.forEach(function(ss) {
+        userSegments.push({ start: ss.side.start, end: ss.side.end });
+      });
+    }
+    if (userSegments.length === 0) return;
+
+    // Recompute densified-sample step counts (must match densifyPath in geometryUtils.js).
+    // densifyPath(pts, 6) sampled every ~6ft. Recreate the per-segment step counts.
+    var FEET_PER_DEG_LAT = 364567.2;
+    var sampleSegStartIdx = 0;
+    var badges = [];
+
+    userSegments.forEach(function(seg, segIdx) {
+      var dLng = seg.end[0] - seg.start[0];
+      var dLat = seg.end[1] - seg.start[1];
+      var cosLat = Math.cos(seg.start[1] * Math.PI / 180);
+      var feetDist = FEET_PER_DEG_LAT * Math.sqrt(dLat*dLat + dLng*dLng*cosLat*cosLat);
+      var steps = Math.max(1, Math.ceil(feetDist / 6));
+
+      // sample-segment indices [sampleSegStartIdx .. sampleSegStartIdx + steps - 1] belong to this user-segment.
+      var rangeStart = sampleSegStartIdx;
+      var rangeEnd = sampleSegStartIdx + steps; // exclusive
+      sampleSegStartIdx = rangeEnd;
+
+      // Aggregate: pick the worst classification + max |delta| within range.
+      var severity = { flat: 0, sloped: 1, steep: 2, steps: 3, unknown: -1 };
+      var worstClass = 'flat';
+      var maxAbsDelta = 0;
+      var signedDelta = 0; // keep sign of the worst-magnitude sample for the arrow
+      for (var k = rangeStart; k < rangeEnd && k < props.epqs.segmentClassifications.length; k++) {
+        var sc = props.epqs.segmentClassifications[k];
+        if ((severity[sc.classification] || 0) > (severity[worstClass] || 0)) worstClass = sc.classification;
+        var abs = Math.abs(sc.deltaInches);
+        if (abs > maxAbsDelta) {
+          maxAbsDelta = abs;
+          signedDelta = sc.deltaInches;
+        }
+      }
+
+      var color = {
+        flat: '#22C55E', sloped: '#F59E0B', steep: '#EF4444',
+        steps: '#6366F1', unknown: '#9CA3AF',
+      }[worstClass] || '#9CA3AF';
+
+      var arrow = signedDelta >= 0 ? '\u2197' : '\u2198';
+      var label = arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
+
+      var midLng = (seg.start[0] + seg.end[0]) / 2;
+      var midLat = (seg.start[1] + seg.end[1]) / 2;
+
+      var el = document.createElement('div');
+      el.className = 'mbx-elev-badge';
+      el.style.cssText = 'background:'+color+';color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.3);pointer-events:none;';
+      el.textContent = label;
+
+      var marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([midLng, midLat])
+        .addTo(mapRef.current);
+      badges.push(marker);
+    });
+
+    return function() { badges.forEach(function(b) { b.remove(); }); };
+  }, [props.epqs, props.selectedSides, props.manualPoints, props.manualMode]);
+
   return React.createElement('div', {
     ref: mapContainerRef,
     className: 'mbx-map',
@@ -374,6 +448,7 @@ function MapboxDrawView(props) {
             manualPoints: manualPoints,
             onManualVertex: handleManualVertex,
             onVertexMoved: handleVertexMoved,
+            epqs: epqs,
           })
         )
   );
