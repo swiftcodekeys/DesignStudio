@@ -976,3 +976,11 @@
     border-right: none;
   }
 }
+
+/* ---- CYA #3: Quote summary measurement responsibility card ---- */
+.qs6-cya-card {
+  background: #f0f7fb; border-left: 4px solid #6BA3C2;
+  padding: 1rem; border-radius: 8px; margin-bottom: 1rem;
+}
+.qs6-cya-card h4 { margin: 0 0 0.5rem; color: #1a1a2e; }
+.qs6-cya-card p { margin: 0; color: #5a6270; font-size: 14px; }
