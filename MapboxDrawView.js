@@ -264,17 +264,25 @@ function MapScreen(props) {
       type: 'Feature',
       geometry: { type: 'LineString', coordinates: props.manualPoints },
     };
-    if (mapRef.current.getSource && mapRef.current.getSource(id)) {
-      var src = mapRef.current.getSource(id);
-      if (src && src.setData) src.setData(geoj);
-    } else if (mapRef.current.addSource) {
-      mapRef.current.addSource(id, { type: 'geojson', data: geoj });
-      mapRef.current.addLayer({
-        id: id,
-        type: 'line',
-        source: id,
-        paint: { 'line-color': '#00d4d4', 'line-width': 6 },
-      });
+    function applySource() {
+      if (!mapRef.current) return;
+      if (mapRef.current.getSource && mapRef.current.getSource(id)) {
+        var src = mapRef.current.getSource(id);
+        if (src && src.setData) src.setData(geoj);
+      } else if (mapRef.current.addSource) {
+        mapRef.current.addSource(id, { type: 'geojson', data: geoj });
+        mapRef.current.addLayer({
+          id: id,
+          type: 'line',
+          source: id,
+          paint: { 'line-color': '#00d4d4', 'line-width': 6 },
+        });
+      }
+    }
+    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) {
+      applySource();
+    } else {
+      mapRef.current.once('style.load', applySource);
     }
   }, [props.manualPoints]);
 
