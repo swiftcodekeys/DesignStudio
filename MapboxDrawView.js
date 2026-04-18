@@ -424,6 +424,10 @@ function MapboxDrawView(props) {
   var drawMode = drawModeState[0];
   var setDrawMode = drawModeState[1];
 
+  var sidebarOpenState = useState(true);
+  var sidebarOpen = sidebarOpenState[0];
+  var setSidebarOpen = sidebarOpenState[1];
+
   var mapInstanceRef = useRef(null);
 
   // Auto-exit draw mode after 3s idle (resets when user adds a vertex or clicks a side)
@@ -621,8 +625,16 @@ function MapboxDrawView(props) {
             })
           ),
           slopeAnswer !== null && slopeAnswer !== 'flat' ?
-            React.createElement('div', { className: 'mbx-sidebar' },
-              React.createElement('h3', null, 'Your fence segments'),
+            React.createElement('div', {
+              className: 'mbx-sidebar ' + (sidebarOpen ? 'open' : ''),
+              onClick: function(e) {
+                // Toggle only when tapping the header region (h3) — not the body controls.
+                if (e.target && e.target.tagName === 'H3') {
+                  setSidebarOpen(function(prev) { return !prev; });
+                }
+              },
+            },
+              React.createElement('h3', { style: { cursor: 'pointer' } }, 'Your fence segments'),
               React.createElement('p', null, 'Leave Standard on flat sections. Only change the ones with slope.'),
               segments.map(function(s) {
                 return React.createElement(SegmentCard, {
