@@ -40,6 +40,7 @@ function buildSegmentsFromSides(selected) {
     var lengthFt = distanceBetween(ss.side.start, ss.side.end);
     return {
       index: i,
+      mapLayerIdx: ss.side.index,
       lengthFeet: lengthFt,
       color: ss.color,
       compassLabel: ss.side.compassLabel,
@@ -56,7 +57,7 @@ function buildSegmentsFromManual(points) {
     var color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
     var lengthFt = distanceBetween(points[i], points[i+1]);
     segs.push({
-      index: i, lengthFeet: lengthFt, color: color,
+      index: i, mapLayerIdx: null, lengthFeet: lengthFt, color: color,
       compassLabel: compassBearing(points[i], points[i+1]),
       panels: Math.ceil(lengthFt / 6),
       start: points[i], end: points[i+1],
@@ -347,7 +348,8 @@ function MapScreen(props) {
     if (!mapRef.current) return;
     if (!props.segments) return;
     props.segments.forEach(function(s) {
-      var layerId = 'side-' + s.index + '-line';
+      if (s.mapLayerIdx == null) return;
+      var layerId = 'side-' + s.mapLayerIdx + '-line';
       if (mapRef.current.getLayer && mapRef.current.getLayer(layerId)) {
         mapRef.current.setPaintProperty(layerId, 'line-width',
           props.highlightedIdx === s.index ? 14 : 10);
