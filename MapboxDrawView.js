@@ -428,6 +428,12 @@ function MapboxDrawView(props) {
   var sidebarOpen = sidebarOpenState[0];
   var setSidebarOpen = sidebarOpenState[1];
 
+  var bannerShownState = useState(function() {
+    return !sessionStorage.getItem('gv_draw_banner_shown');
+  });
+  var bannerShown = bannerShownState[0];
+  var setBannerShown = bannerShownState[1];
+
   var mapInstanceRef = useRef(null);
 
   // Auto-exit draw mode after 3s idle (resets when user adds a vertex or clicks a side)
@@ -577,6 +583,18 @@ function MapboxDrawView(props) {
     !location
       ? React.createElement(AddressEntry, { onAddressEntered: handleAddress })
       : React.createElement(React.Fragment, null,
+          bannerShown && React.createElement('div', { className: 'mbx-cya-banner' },
+            'You\u2019ll mark your fence line on this map. ',
+            React.createElement('strong', null,
+              'It\u2019s your responsibility to double-check the math and validate your measurements yourself '),
+            '\u2014 we\u2019ll verify with you before production, but the measurements you enter are what we build to.',
+            React.createElement('button', {
+              onClick: function() {
+                sessionStorage.setItem('gv_draw_banner_shown', '1');
+                setBannerShown(false);
+              },
+            }, 'Got it')
+          ),
           React.createElement('div', { className: 'mbx-map-area', style: { flex: 1, display: 'flex', flexDirection: 'column' } },
             React.createElement('button', {
               className: 'mbx-manual-mode-btn',
