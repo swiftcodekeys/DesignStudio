@@ -70,3 +70,17 @@
 @media (max-width: 768px) {
   .mbx-slope-popup { padding: 1rem; width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
 }
+
+.mbx-segment-card {
+  padding: 1rem; background: white; border-radius: 8px; margin-bottom: 0.5rem;
+  border-left: 6px solid #22C55E;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s;
+}
+.mbx-segment-card.highlighted { box-shadow: 0 0 0 2px #6BA3C2; }
+.mbx-segment-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.mbx-segment-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+.mbx-segment-meta { color: #8e95a0; margin-left: auto; font-size: 13px; }
+.mbx-segment-body { display: flex; flex-direction: column; gap: 0.5rem; }
+.mbx-segment-warning { color: #d97706; font-size: 13px; }
+.mbx-segment-help { color: #6BA3C2; font-size: 12px; text-decoration: none; }
