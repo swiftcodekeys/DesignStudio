@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import React from 'react';
 
@@ -18,6 +18,10 @@ vi.mock('mapbox-gl', () => ({
 import MapboxDrawView from '../MapboxDrawView.js';
 
 describe('MapboxDrawView', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('renders without crashing', () => {
     const { container } = render(
       <MapboxDrawView onComplete={() => {}} initialLocation={null} />
@@ -50,5 +54,17 @@ describe('MapboxDrawView', () => {
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
       projection: 'globe',
     }));
+  });
+
+  it('hydrates initial location from gv_bridge_location', () => {
+    localStorage.setItem('gv_bridge_location', JSON.stringify({
+      lat: 42.6, lng: -83.9, placeName: '123 Main St',
+    }));
+    const { queryByPlaceholderText } = render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={null} />
+    );
+    // Should skip AddressEntry, go straight to map
+    expect(queryByPlaceholderText(/enter your address/i)).toBeFalsy();
+    localStorage.clear();
   });
 });

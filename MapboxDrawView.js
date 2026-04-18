@@ -107,13 +107,25 @@ function MapScreen(props) {
 }
 
 function MapboxDrawView(props) {
-  var locationState = useState(props.initialLocation || null);
+  var locationState = useState(function() {
+    if (props.initialLocation) return props.initialLocation;
+    try {
+      var raw = localStorage.getItem('gv_bridge_location');
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+    return null;
+  });
   var location = locationState[0];
   var setLocation = locationState[1];
 
+  function handleAddress(loc) {
+    try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
+    setLocation(loc);
+  }
+
   return React.createElement('div', { className: 'mbx-container' },
     !location
-      ? React.createElement(AddressEntry, { onAddressEntered: function(result) { setLocation(result); } })
+      ? React.createElement(AddressEntry, { onAddressEntered: handleAddress })
       : React.createElement(MapScreen, { location: location })
   );
 }
