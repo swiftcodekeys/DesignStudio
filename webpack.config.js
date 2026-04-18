@@ -43,6 +43,8 @@ module.exports = {
         { from: 'landing.css', to: 'landing.css' },
         { from: 'wizard.css', to: 'wizard.css' },
         { from: '_redirects', to: '_redirects' },
+        { from: 'docs/research/how-to-measure-yard-for-fence-guide.md', to: 'docs/how-to-measure-yard-for-fence-guide.md' },
+        { from: 'assets/slope-guides', to: 'assets/slope-guides' },
       ]
     }),
     new webpack.DefinePlugin({
