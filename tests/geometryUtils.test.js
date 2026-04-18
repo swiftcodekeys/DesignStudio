@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount } from '../geometryUtils.js';
+import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments } from '../geometryUtils.js';
 
 describe('simplifyRDP', () => {
   it('passes through points below threshold', () => {
@@ -58,5 +58,39 @@ describe('computeSampleStepCount', () => {
     var short = computeSampleStepCount([0,42.5], [0.0001,42.5], 6);
     var long = computeSampleStepCount([0,42.5], [0.001,42.5], 6);
     expect(long).toBeGreaterThan(short);
+  });
+});
+
+describe('aggregateClassificationsForUserSegments', () => {
+  it('maps per-sample classifications to per-user-segment summaries', () => {
+    // Two user-segments: short (~6ft) and long (~30ft) along same latitude
+    var userSegments = [
+      { start: [0, 42.5], end: [0.0000160, 42.5] },        // ~4.4ft → 1 step
+      { start: [0.0000160, 42.5], end: [0.0001280, 42.5] } // ~30ft → 5 steps
+    ];
+    // 6 total samples — first belongs to user-seg 0, last 5 belong to user-seg 1
+    var classifications = [
+      { classification: 'flat',    deltaInches: 1 },
+      { classification: 'sloped',  deltaInches: 7 },
+      { classification: 'steep',   deltaInches: 22 },
+      { classification: 'flat',    deltaInches: 0 },
+      { classification: 'flat',    deltaInches: 1 },
+      { classification: 'sloped',  deltaInches: 8 }
+    ];
+    var result = aggregateClassificationsForUserSegments(userSegments, classifications, 6);
+    expect(result.length).toBe(2);
+    // user-seg 0 gets only sample[0] = flat
+    expect(result[0].classification).toBe('flat');
+    // user-seg 1 gets samples [1..5] — worst is 'steep' (sample[2])
+    expect(result[1].classification).toBe('steep');
+    expect(result[1].maxAbsDelta).toBeCloseTo(22);
+  });
+
+  it('returns "flat" with zero delta when classifications are empty/unavailable for a segment', () => {
+    var userSegments = [{ start: [0, 42.5], end: [0.0001, 42.5] }];
+    var result = aggregateClassificationsForUserSegments(userSegments, [], 6);
+    expect(result.length).toBe(1);
+    expect(result[0].classification).toBe('flat');
+    expect(result[0].maxAbsDelta).toBe(0);
   });
 });

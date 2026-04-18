@@ -7,7 +7,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing } from './geometryUtils';
+import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing, aggregateClassificationsForUserSegments } from './geometryUtils';
 import { classifyDrawnLine } from './epqsClient';
 import SlopePopup from './SlopePopup';
 import SegmentCard from './SegmentCard';
@@ -310,43 +310,20 @@ function MapScreen(props) {
     }
     if (userSegments.length === 0) return;
 
-    // Recompute densified-sample step counts (must match densifyPath in geometryUtils.js).
-    // densifyPath(pts, 6) sampled every ~6ft. Recreate the per-segment step counts.
-    var sampleSegStartIdx = 0;
+    var aggregated = aggregateClassificationsForUserSegments(
+      userSegments, props.epqs.segmentClassifications, 6
+    );
     var badges = [];
 
     userSegments.forEach(function(seg, segIdx) {
-      var steps = computeSampleStepCount(seg.start, seg.end, 6);
-
-      // sample-segment indices [sampleSegStartIdx .. sampleSegStartIdx + steps - 1] belong to this user-segment.
-      var rangeStart = sampleSegStartIdx;
-      var rangeEnd = sampleSegStartIdx + steps; // exclusive
-      sampleSegStartIdx = rangeEnd;
-
-      // Aggregate: pick the worst classification + max |delta| within range.
-      var severity = { flat: 0, sloped: 1, steep: 2, steps: 3, unknown: -1 };
-      var worstClass = 'flat';
-      var maxAbsDelta = 0;
-      var signedDelta = 0; // keep sign of the worst-magnitude sample for the arrow
-      for (var k = rangeStart; k < rangeEnd && k < props.epqs.segmentClassifications.length; k++) {
-        var sc = props.epqs.segmentClassifications[k];
-        var newSev = severity[sc.classification];
-        var curSev = severity[worstClass];
-        if (newSev !== undefined && curSev !== undefined && newSev > curSev) worstClass = sc.classification;
-        var abs = Math.abs(sc.deltaInches);
-        if (abs > maxAbsDelta) {
-          maxAbsDelta = abs;
-          signedDelta = sc.deltaInches;
-        }
-      }
-
+      var agg = aggregated[segIdx];
       var color = {
         flat: '#22C55E', sloped: '#F59E0B', steep: '#EF4444',
         steps: '#6366F1', unknown: '#9CA3AF',
-      }[worstClass] || '#9CA3AF';
+      }[agg.classification] || '#9CA3AF';
 
-      var arrow = signedDelta >= 0 ? '\u2197' : '\u2198';
-      var label = arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
+      var arrow = agg.signedDelta >= 0 ? '\u2197' : '\u2198';
+      var label = arrow + ' ' + agg.maxAbsDelta.toFixed(1) + '"';
 
       var midLng = (seg.start[0] + seg.end[0]) / 2;
       var midLat = (seg.start[1] + seg.end[1]) / 2;
@@ -503,9 +480,17 @@ function MapboxDrawView(props) {
       ? buildSegmentsFromManual(manualPoints)
       : buildSegmentsFromSides(selectedSides);
 
+    // Aggregate per-sample classifications back to per-user-segment summaries.
+    var aggregated = (epqs && epqs.segmentClassifications)
+      ? aggregateClassificationsForUserSegments(
+          src.map(function(s) { return { start: s.start, end: s.end }; }),
+          epqs.segmentClassifications,
+          6
+        )
+      : null;
+
     var segs = src.map(function(s, i) {
-      var epqsSeg = epqs && epqs.segmentClassifications[i];
-      var epqsClass = epqsSeg ? epqsSeg.classification : 'unknown';
+      var epqsClass = aggregated && aggregated[i] ? aggregated[i].classification : 'unknown';
       var tier;
       if (answer === 'flat') tier = 'standard';
       else if (answer === 'all') tier = epqsClass === 'steep' || epqsClass === 'steps' ? 'heavy-rackable' : 'rackable';

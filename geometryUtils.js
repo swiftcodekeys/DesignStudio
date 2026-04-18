@@ -73,6 +73,41 @@ export function computeSampleStepCount(start, end, sampleSpacingFeet) {
   return Math.max(1, Math.ceil(feetDist / sampleSpacingFeet));
 }
 
+// --- Sample-classification aggregator ---
+// Maps per-sample segmentClassifications back to per-user-segment summaries.
+// userSegments: [{ start: [lng,lat], end: [lng,lat] }, ...]
+// segmentClassifications: [{ classification, deltaInches, ... }, ...] from epqsClient.classifyDrawnLine
+// sampleSpacingFeet: same value passed to densifyPath (typically 6)
+// Returns: [{ classification, signedDelta, maxAbsDelta }, ...] keyed by user-segment index.
+export function aggregateClassificationsForUserSegments(userSegments, segmentClassifications, sampleSpacingFeet) {
+  var SEVERITY = { flat: 0, sloped: 1, steep: 2, steps: 3, unknown: -1 };
+  var out = [];
+  var sampleSegStartIdx = 0;
+  for (var u = 0; u < userSegments.length; u++) {
+    var seg = userSegments[u];
+    var steps = computeSampleStepCount(seg.start, seg.end, sampleSpacingFeet);
+    var rangeEnd = sampleSegStartIdx + steps;
+
+    var worstClass = 'flat';
+    var maxAbsDelta = 0;
+    var signedDelta = 0;
+    for (var k = sampleSegStartIdx; k < rangeEnd && k < segmentClassifications.length; k++) {
+      var sc = segmentClassifications[k];
+      var newSev = SEVERITY[sc.classification];
+      var curSev = SEVERITY[worstClass];
+      if (newSev !== undefined && curSev !== undefined && newSev > curSev) worstClass = sc.classification;
+      var abs = Math.abs(sc.deltaInches);
+      if (abs > maxAbsDelta) {
+        maxAbsDelta = abs;
+        signedDelta = sc.deltaInches;
+      }
+    }
+    out.push({ classification: worstClass, signedDelta: signedDelta, maxAbsDelta: maxAbsDelta });
+    sampleSegStartIdx = rangeEnd;
+  }
+  return out;
+}
+
 // --- Densify ---
 // Insert interpolated points every approxFeetPerSample feet along the path.
 export function densifyPath(points, approxFeetPerSample) {
