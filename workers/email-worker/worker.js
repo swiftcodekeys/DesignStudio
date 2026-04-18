@@ -470,6 +470,11 @@ function buildCustomerEmailHtml(p) {
         '</tr></table>',
         '</div>',
       ].join('') : '',
+      // Next steps (CYA #5)
+      '<div style="padding:0 24px 20px;">' +
+      '<h3 style="color:#1a1a2e">Next steps</h3>' +
+      '<p>Grandview reviews every order within 24 hours. If your site conditions differ from the quote (slope, obstacles, utility lines), we\u2019ll reach out before production starts.</p>' +
+      '</div>',
       footerHtml,
     ].join('');
   }
@@ -508,6 +513,11 @@ function buildCustomerEmailHtml(p) {
       '<span style="font-size:28px;font-weight:800;color:#1a2332;">$' + Number(p.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</span>',
       '</div>',
     ].join('') : '',
+    // Next steps (CYA #5)
+    '<div style="padding:0 24px 20px;">' +
+    '<h3 style="color:#1a1a2e">Next steps</h3>' +
+    '<p>Grandview reviews every order within 24 hours. If your site conditions differ from the quote (slope, obstacles, utility lines), we\u2019ll reach out before production starts.</p>' +
+    '</div>',
     footerHtml,
   ].join('');
 }
