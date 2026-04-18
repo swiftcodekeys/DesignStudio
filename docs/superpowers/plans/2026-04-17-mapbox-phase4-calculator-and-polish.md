@@ -438,7 +438,7 @@ git commit -m "chore: delete DrawYardView and USE_MAPBOX_DRAW feature flag (Mapb
 
 Edit `TECH_DEBT.md`:
 - `DrawYardView.js monolith` → strike (deleted)
-- `Dead slopedPostCount` → strike (removed in Phase 1.9.2)
+- `slopedPostCount` → wired in Phase 1.9.2 via `computeSlopedPostCount` helper (segments[].rackingTier → drawToolData → wizard state → config). Revisit in Phase 3 if per-segment SKU differentiation is needed.
 - Confirmed live pricing engine → keep, re-titled "pricingEngine.js vs priceCalculator.js consolidation" as a future task
 
 - [ ] **Step 2: Commit**

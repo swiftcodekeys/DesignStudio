@@ -67,4 +67,17 @@ describe('calculateZoneQuote — racking surcharge', () => {
     var rack = findRackLine(result.items);
     expect(rack).toBeUndefined();
   });
+
+  it('clamps slopedPostCount to totalPosts', function() {
+    var config = {
+      grade: 'residential', style: 'uaf_200', height: 48, linearFeet: 60,
+      rackingTier: 'rackable',
+      slopedPostCount: 100, // absurdly high
+      ends: 2, corners: 0, gates: [],
+    };
+    var r = calculateZoneQuote(config);
+    var rack = r.items.find(function(i) { return /double-punch|racking/i.test(i.label); });
+    // totalPosts = 11 (10 panels + 1); rack qty must not exceed that
+    expect(rack.qty).toBe(11);
+  });
 });

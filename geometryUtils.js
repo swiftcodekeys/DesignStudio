@@ -120,7 +120,7 @@ export function aggregateClassificationsForUserSegments(userSegments, segmentCla
 // Returns an integer count of sloped posts.
 export function computeSlopedPostCount(segments, panelLengthFt) {
   if (!segments || segments.length === 0) return 0;
-  var pl = panelLengthFt || 6;
+  var pl = panelLengthFt ?? 6;
   function isSloped(tier) {
     return tier && tier !== 'standard' && tier !== 'stair-step';
   }
