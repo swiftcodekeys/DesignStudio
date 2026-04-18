@@ -56,7 +56,8 @@ export function calculateZoneQuote(config) {
   var isPrivacy = config.fenceType === 'privacy';
 
   // Panels
-  var linearFt = config.linearFeet || 0;
+  var rawLinearFt = config.linearFeet || 0;
+  var linearFt = (config._source === 'auto') ? Math.ceil(rawLinearFt * 1.05) : rawLinearFt;
   var panelCount = Math.ceil(linearFt / panelLengthFt);
   var panelPrice = isPrivacy
     ? getPrivacyPanelPriceLookup(config.privacyType, config.height, grade)

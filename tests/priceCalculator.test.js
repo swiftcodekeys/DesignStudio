@@ -80,4 +80,30 @@ describe('calculateZoneQuote — racking surcharge', () => {
     // totalPosts = 11 (10 panels + 1); rack qty must not exceed that
     expect(rack.qty).toBe(11);
   });
+
+  it('pads footage by 5% when source is auto', () => {
+    const config = {
+      grade: 'residential', style: 'horizon', height: 48,
+      linearFeet: 100,
+      _source: 'auto',
+      rackingTier: 'standard', ends: 2, corners: 0, gates: [],
+    };
+    const r = calculateZoneQuote(config);
+    const panelLine = r.items.find(i => /panels/i.test(i.label));
+    // 105 ft / 6 ft = 17.5 → ceil = 18 panels
+    expect(panelLine.qty).toBe(18);
+  });
+
+  it('does NOT pad footage when source is manual', () => {
+    const config = {
+      grade: 'residential', style: 'horizon', height: 48,
+      linearFeet: 100,
+      _source: 'manual',
+      rackingTier: 'standard', ends: 2, corners: 0, gates: [],
+    };
+    const r = calculateZoneQuote(config);
+    const panelLine = r.items.find(i => /panels/i.test(i.label));
+    // 100 ft / 6 ft = 16.67 → ceil = 17 panels
+    expect(panelLine.qty).toBe(17);
+  });
 });

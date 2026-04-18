@@ -88,6 +88,26 @@ function QuoteStep2_Layout(props) {
     }
   }, []);
 
+  // Absorb draw-tool metadata into wizard data (Task 1.9.3):
+  //   - Mark _source='auto' so priceCalculator applies the 5% material pad.
+  //   - Pre-fill rackingTier from EPQS overall slope classification.
+  //   - Fallback to _source='manual' when no drawToolData and no prior source.
+  // Gate on data._source !== 'auto' so this only fires once per drawToolData
+  // absorption, not on every parent re-render.
+  useEffect(function() {
+    if (drawToolData && data._source !== 'auto') {
+      update({
+        linearFeet: drawToolData.totalFeet,
+        _source: 'auto',
+        rackingTier: drawToolData.epqsOverall === 'sloped' ? 'rackable'
+          : drawToolData.epqsOverall === 'steep' || drawToolData.epqsOverall === 'steps' ? 'heavy-rackable'
+          : 'standard',
+      });
+    } else if (!drawToolData && !data._source) {
+      update({ _source: 'manual' });
+    }
+  }, [drawToolData]);
+
   // Sync runs total back to linearFeet in advanced mode
   var runsTotal = runs.reduce(function(sum, r) { return sum + (parseFloat(r.length) || 0); }, 0);
 
@@ -127,6 +147,9 @@ function QuoteStep2_Layout(props) {
       slopedPostCount: data.slopedPostCount != null
         ? data.slopedPostCount
         : (drawToolData ? drawToolData.slopedPostCount : undefined),
+      // Preserve the pricing-meta source flag so subsequent field edits don't
+      // nuke the 'auto' marker set by the drawToolData-absorption effect.
+      _source: data._source,
     }, changes));
   }
 
