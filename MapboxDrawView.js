@@ -507,16 +507,18 @@ function MapboxDrawView(props) {
   }
 
   function buildDrawToolData() {
+    // Emit RAW total feet (sum of drawn segment lengths). The 5% material pad
+    // is applied at the pricing boundary (priceCalculator.js, gated on
+    // _source === 'auto'). Applying it here too would double-pad (compounds
+    // to ~10.25%). Single source of truth for the pad = pricing.
     var totalFeet = segments.reduce(function(a, s) { return a + s.lengthFeet; }, 0);
-    var paddedFeet = Math.ceil(totalFeet * 1.05);
     // Panel length for sloped-post counting defaults to 6ft (residential/commercial).
     // Industrial's 8ft panel length is applied later in priceCalculator based on grade,
     // which customers pick after the draw step. Using 6 here is a safe over-estimate
     // for post count; priceCalculator's tier gate still applies.
     var slopedPostCount = computeSlopedPostCount(segments, 6);
     return {
-      totalFeet: paddedFeet,
-      rawFeet: totalFeet,
+      totalFeet: totalFeet,
       corners: segments.length - 1 + (manualMode ? 0 : 0),
       ends: 2,
       lines: [{

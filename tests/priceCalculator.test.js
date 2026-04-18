@@ -106,4 +106,26 @@ describe('calculateZoneQuote — racking surcharge', () => {
     // 100 ft / 6 ft = 16.67 → ceil = 17 panels
     expect(panelLine.qty).toBe(17);
   });
+
+  it('applies exactly one 5% pad on auto source (regression: previously double-padded)', function() {
+    // Regression guard for the double-pad bug fixed by removing the pre-pad
+    // in MapboxDrawView.buildDrawToolData(). Previously buildDrawToolData
+    // emitted already-padded 105ft for a 100ft draw, then priceCalculator
+    // padded again to ceil(105*1.05)=111ft, yielding 19 panels instead of 18.
+    // This test locks in the contract: config.linearFeet is RAW, and the
+    // pricing boundary is the single place the pad is applied.
+    var config = {
+      grade: 'residential', style: 'horizon', height: 48,
+      linearFeet: 100,
+      _source: 'auto',
+      rackingTier: 'standard', ends: 2, corners: 0, gates: [],
+    };
+    var r = calculateZoneQuote(config);
+    var panelLine = r.items.find(function(i) { return /panels/i.test(i.label); });
+    // Intended behavior: 100 * 1.05 = 105; ceil(105/6) = 18 panels.
+    // Regression check: previously buildDrawToolData emitted already-padded 105,
+    // then priceCalculator padded again to 111, giving 19 panels.
+    expect(panelLine.qty).toBe(18);
+    expect(panelLine.qty).not.toBe(19);
+  });
 });
