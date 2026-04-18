@@ -293,6 +293,8 @@ function MapboxDrawView(props) {
   var setEpqsLoading = epqsLoadingState[1];
 
   useEffect(function() {
+    var cancelled = false;
+
     // Build flat array of all points on the drawn line
     var pts = [];
     if (manualMode) pts = manualPoints.slice();
@@ -306,9 +308,15 @@ function MapboxDrawView(props) {
     var samplePts = densifyPath(pts, 6);
     setEpqsLoading(true);
     classifyDrawnLine(samplePts, 6).then(function(result) {
+      if (cancelled) return;
       setEpqs(result);
       setEpqsLoading(false);
+    }).catch(function() {
+      if (cancelled) return;
+      setEpqsLoading(false);
     });
+
+    return function() { cancelled = true; };
   }, [selectedSides, manualPoints, manualMode]);
 
   function handleAddress(loc) {
