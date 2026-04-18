@@ -3,7 +3,7 @@
 Documented debt to tackle after the Mapbox upgrade ships. Not blocking.
 
 ## High-priority
-- **Two pricing engines** — `priceCalculator.js` (new) and `pricingEngine.js` (legacy) coexist. Audit which `QuoteStep6_Review → calculateZoneQuote` actually invokes; delete the other. Blocked on Phase 1.9 audit result.
+- **Two pricing engines** — `priceCalculator.js` (new) and `pricingEngine.js` (legacy) coexist. **AUDIT COMPLETE 2026-04-17 (Task 1.9.1):** runtime breadcrumb log fired `[pricing] priceCalculator.calculateZoneQuote called` when clicking Get Quote in the wizard; `pricingEngine.js` log did NOT fire. `priceCalculator.js` is the live engine. `pricingEngine.js` is dead at the wizard layer. Delete `pricingEngine.js` in a follow-up task after grep-confirming no other consumers.
 - **`DrawYardView.js` monolith (1,869 lines)** — scheduled for deletion at end of Phase 1 once `USE_MAPBOX_DRAW` flips permanently on.
 
 ## Medium-priority
@@ -12,7 +12,7 @@ Documented debt to tackle after the Mapbox upgrade ships. Not blocking.
 - **No ESLint / Prettier** — add before the next major refactor.
 
 ## Low-priority
-- **Dead code paths** — `slopedPostCount` in `priceCalculator.js:164` removed during Phase 1.9. Sweep for other dead paths after.
+- **`slopedPostCount` is NOT dead — DO NOT DELETE BLINDLY** — `priceCalculator.js:164` falls back to `totalPosts` when `slopedPostCount` is missing, but the math intent is "only posts on sloped sections get the $4.75 double-punch surcharge." Falling back to ALL posts overcharges any partially-sloped lot. Task 1.9.2's "just delete `slopedPostCount`" plan would lock in that overcharge. Correct fix: compute `slopedPostCount` from the per-segment `rackingTier` data introduced in Task 1.7.4, pass it through `drawToolData → config.slopedPostCount`, and only then make the fallback a hard error. Revise Task 1.9.2 before implementing.
 - **Unified snapshot + capture logic** — `captureSnapshot` in `WizardShell.js:330` could be split into its own module.
 - **Hardcoded Ultra colors** — live in multiple places (`configData.js`, `retailPricing.js`). Source of truth consolidation.
 
