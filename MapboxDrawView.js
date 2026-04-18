@@ -7,8 +7,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount } from './geometryUtils';
+import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing } from './geometryUtils';
 import { classifyDrawnLine } from './epqsClient';
+import SlopePopup from './SlopePopup';
+import SegmentCard from './SegmentCard';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -21,6 +23,47 @@ var SEGMENT_COLORS = [
   '#14B8A6', // teal
   '#A855F7', // purple
 ];
+
+function distanceBetween(a, b) {
+  // Haversine in feet
+  var R = 20902231;
+  var dLat = (b[1]-a[1]) * Math.PI/180;
+  var dLng = (b[0]-a[0]) * Math.PI/180;
+  var lat1 = a[1] * Math.PI/180;
+  var lat2 = b[1] * Math.PI/180;
+  var x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+function buildSegmentsFromSides(selected) {
+  return selected.map(function(ss, i) {
+    var lengthFt = distanceBetween(ss.side.start, ss.side.end);
+    return {
+      index: i,
+      lengthFeet: lengthFt,
+      color: ss.color,
+      compassLabel: ss.side.compassLabel,
+      panels: Math.ceil(lengthFt / 6),
+      start: ss.side.start,
+      end: ss.side.end,
+    };
+  });
+}
+
+function buildSegmentsFromManual(points) {
+  var segs = [];
+  for (var i = 0; i < points.length - 1; i++) {
+    var color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+    var lengthFt = distanceBetween(points[i], points[i+1]);
+    segs.push({
+      index: i, lengthFeet: lengthFt, color: color,
+      compassLabel: compassBearing(points[i], points[i+1]),
+      panels: Math.ceil(lengthFt / 6),
+      start: points[i], end: points[i+1],
+    });
+  }
+  return segs;
+}
 
 function AddressEntry(props) {
   var addressState = useState('');
@@ -322,6 +365,19 @@ function MapScreen(props) {
     return function() { badges.forEach(function(b) { b.remove(); }); };
   }, [props.epqs, props.selectedSides, props.manualPoints, props.manualMode]);
 
+  // TODO: coordinate with selected-side paint useEffect to avoid flicker
+  useEffect(function() {
+    if (!mapRef.current) return;
+    if (!props.segments) return;
+    props.segments.forEach(function(s) {
+      var layerId = 'side-' + s.index + '-line';
+      if (mapRef.current.getLayer && mapRef.current.getLayer(layerId)) {
+        mapRef.current.setPaintProperty(layerId, 'line-width',
+          props.highlightedIdx === s.index ? 14 : 10);
+      }
+    });
+  }, [props.highlightedIdx, props.segments]);
+
   return React.createElement('div', {
     ref: mapContainerRef,
     className: 'mbx-map',
@@ -362,6 +418,19 @@ function MapboxDrawView(props) {
   var epqsLoadingState = useState(false);
   var epqsLoading = epqsLoadingState[0];
   var setEpqsLoading = epqsLoadingState[1];
+
+  var slopePopupOpenState = useState(false);
+  var slopePopupOpen = slopePopupOpenState[0];
+  var setSlopePopupOpen = slopePopupOpenState[1];
+  var slopeAnswerState = useState(null); // 'flat' | 'some' | 'all' | null
+  var slopeAnswer = slopeAnswerState[0];
+  var setSlopeAnswer = slopeAnswerState[1];
+  var segmentsState = useState([]);
+  var segments = segmentsState[0];
+  var setSegments = segmentsState[1];
+  var highlightedIdxState = useState(null);
+  var highlightedIdx = highlightedIdxState[0];
+  var setHighlightedIdx = highlightedIdxState[1];
 
   useEffect(function() {
     var cancelled = false;
@@ -426,26 +495,87 @@ function MapboxDrawView(props) {
     });
   }
 
+  function handleSlopeAnswer(answer) {
+    setSlopeAnswer(answer);
+    setSlopePopupOpen(false);
+
+    var src = manualMode
+      ? buildSegmentsFromManual(manualPoints)
+      : buildSegmentsFromSides(selectedSides);
+
+    var segs = src.map(function(s, i) {
+      var epqsSeg = epqs && epqs.segmentClassifications[i];
+      var epqsClass = epqsSeg ? epqsSeg.classification : 'unknown';
+      var tier;
+      if (answer === 'flat') tier = 'standard';
+      else if (answer === 'all') tier = epqsClass === 'steep' || epqsClass === 'steps' ? 'heavy-rackable' : 'rackable';
+      else {
+        if (epqsClass === 'flat') tier = 'standard';
+        else if (epqsClass === 'sloped') tier = 'rackable';
+        else if (epqsClass === 'steep' || epqsClass === 'steps') tier = 'heavy-rackable';
+        else tier = 'standard';
+      }
+      return Object.assign({}, s, { rackingTier: tier, epqsClassification: epqsClass });
+    });
+    setSegments(segs);
+  }
+
   return React.createElement('div', { className: 'mbx-container' },
     !location
       ? React.createElement(AddressEntry, { onAddressEntered: handleAddress })
-      : React.createElement('div', { className: 'mbx-map-area', style: { flex: 1, display: 'flex', flexDirection: 'column' } },
-          React.createElement('button', {
-            className: 'mbx-manual-mode-btn',
-            onClick: function() { setManualMode(true); },
-          }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
-          React.createElement(MapScreen, {
-            location: location,
-            onParcelLoaded: handleParcelLoaded,
-            onParcelFallback: handleParcelFallback,
-            onSideClicked: handleSideClicked,
-            sides: sides,
-            selectedSides: selectedSides,
-            manualMode: manualMode,
-            manualPoints: manualPoints,
-            onManualVertex: handleManualVertex,
-            onVertexMoved: handleVertexMoved,
-            epqs: epqs,
+      : React.createElement(React.Fragment, null,
+          React.createElement('div', { className: 'mbx-map-area', style: { flex: 1, display: 'flex', flexDirection: 'column' } },
+            React.createElement('button', {
+              className: 'mbx-manual-mode-btn',
+              onClick: function() { setManualMode(true); },
+            }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
+            React.createElement('button', {
+              className: 'mbx-done-btn',
+              onClick: function() { setSlopePopupOpen(true); },
+              disabled: selectedSides.length === 0 && manualPoints.length < 2,
+            }, 'Done \u2014 review slope \u2192'),
+            React.createElement(MapScreen, {
+              location: location,
+              onParcelLoaded: handleParcelLoaded,
+              onParcelFallback: handleParcelFallback,
+              onSideClicked: handleSideClicked,
+              sides: sides,
+              selectedSides: selectedSides,
+              manualMode: manualMode,
+              manualPoints: manualPoints,
+              onManualVertex: handleManualVertex,
+              onVertexMoved: handleVertexMoved,
+              epqs: epqs,
+              segments: segments,
+              highlightedIdx: highlightedIdx,
+            })
+          ),
+          slopeAnswer !== null && slopeAnswer !== 'flat' ?
+            React.createElement('div', { className: 'mbx-sidebar' },
+              React.createElement('h3', null, 'Your fence segments'),
+              React.createElement('p', null, 'Leave Standard on flat sections. Only change the ones with slope.'),
+              segments.map(function(s) {
+                return React.createElement(SegmentCard, {
+                  key: s.index,
+                  segment: s,
+                  rackingTier: s.rackingTier,
+                  epqsClassification: s.epqsClassification,
+                  highlighted: highlightedIdx === s.index,
+                  onHover: setHighlightedIdx,
+                  onChange: function(idx, tier) {
+                    setSegments(function(prev) {
+                      return prev.map(function(x) {
+                        return x.index === idx ? Object.assign({}, x, { rackingTier: tier, customerOverrode: true }) : x;
+                      });
+                    });
+                  },
+                });
+              })
+            ) : null,
+          React.createElement(SlopePopup, {
+            open: slopePopupOpen,
+            onAnswer: handleSlopeAnswer,
+            onClose: function() { setSlopePopupOpen(false); },
           })
         )
   );
