@@ -190,6 +190,40 @@ function MapScreen(props) {
     });
   }, [props.selectedSides, props.sides]);
 
+  useEffect(function() {
+    if (!mapRef.current) return;
+    if (!props.manualMode) return;
+    var map = mapRef.current;
+    function handleClick(e) {
+      if (props.onManualVertex) props.onManualVertex([e.lngLat.lng, e.lngLat.lat]);
+    }
+    map.on('click', handleClick);
+    return function() {
+      if (map && map.off) map.off('click', handleClick);
+    };
+  }, [props.manualMode]);
+
+  useEffect(function() {
+    if (!mapRef.current || !props.manualPoints) return;
+    var id = 'manual-line';
+    var geoj = {
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: props.manualPoints },
+    };
+    if (mapRef.current.getSource && mapRef.current.getSource(id)) {
+      var src = mapRef.current.getSource(id);
+      if (src && src.setData) src.setData(geoj);
+    } else if (mapRef.current.addSource) {
+      mapRef.current.addSource(id, { type: 'geojson', data: geoj });
+      mapRef.current.addLayer({
+        id: id,
+        type: 'line',
+        source: id,
+        paint: { 'line-color': '#00d4d4', 'line-width': 6 },
+      });
+    }
+  }, [props.manualPoints]);
+
   return React.createElement('div', {
     ref: mapContainerRef,
     className: 'mbx-map',
@@ -221,6 +255,9 @@ function MapboxDrawView(props) {
   var selectedState = useState([]); // [{ side, color }]
   var selectedSides = selectedState[0];
   var setSelectedSides = selectedState[1];
+  var manualPointsState = useState([]);
+  var manualPoints = manualPointsState[0];
+  var setManualPoints = manualPointsState[1];
 
   function handleAddress(loc) {
     try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
@@ -241,18 +278,30 @@ function MapboxDrawView(props) {
       return prev.concat([{ side: side, color: color }]);
     });
   }
+  function handleManualVertex(lngLat) {
+    setManualPoints(function(prev) { return prev.concat([lngLat]); });
+  }
 
   return React.createElement('div', { className: 'mbx-container' },
     !location
       ? React.createElement(AddressEntry, { onAddressEntered: handleAddress })
-      : React.createElement(MapScreen, {
-          location: location,
-          onParcelLoaded: handleParcelLoaded,
-          onParcelFallback: handleParcelFallback,
-          onSideClicked: handleSideClicked,
-          sides: sides,
-          selectedSides: selectedSides,
-        })
+      : React.createElement('div', { className: 'mbx-map-area', style: { flex: 1, display: 'flex', flexDirection: 'column' } },
+          React.createElement('button', {
+            className: 'mbx-manual-mode-btn',
+            onClick: function() { setManualMode(true); },
+          }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
+          React.createElement(MapScreen, {
+            location: location,
+            onParcelLoaded: handleParcelLoaded,
+            onParcelFallback: handleParcelFallback,
+            onSideClicked: handleSideClicked,
+            sides: sides,
+            selectedSides: selectedSides,
+            manualMode: manualMode,
+            manualPoints: manualPoints,
+            onManualVertex: handleManualVertex,
+          })
+        )
   );
 }
 
