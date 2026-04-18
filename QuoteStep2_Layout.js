@@ -79,6 +79,13 @@ function QuoteStep2_Layout(props) {
     if (drawToolData && drawToolData.segments && drawToolData.segments.length > 1) {
       setAdvancedMode(true);
     }
+    // Seed data.slopedPostCount from drawToolData on mount so downstream
+    // pricing (priceCalculator.js) can charge the $4.75 racking surcharge
+    // only on posts belonging to rackable segments. Don't clobber a value
+    // the parent has already set (manual-entry callers keep their own).
+    if (drawToolData && drawToolData.slopedPostCount != null && data.slopedPostCount == null) {
+      update({ slopedPostCount: drawToolData.slopedPostCount });
+    }
   }, []);
 
   // Sync runs total back to linearFeet in advanced mode
@@ -115,6 +122,11 @@ function QuoteStep2_Layout(props) {
       sharpAngles: sharpAngles,
       gentleCurves: gentleCurves,
       runs: advancedMode ? runs : null,
+      // Preserve per-segment-derived sloped-post count across re-syncs so
+      // priceCalculator sees it on the final calculateZoneQuote(data) call.
+      slopedPostCount: data.slopedPostCount != null
+        ? data.slopedPostCount
+        : (drawToolData ? drawToolData.slopedPostCount : undefined),
     }, changes));
   }
 

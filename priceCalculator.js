@@ -161,7 +161,11 @@ export function calculateZoneQuote(config) {
 
   // Double punch (racking) — privacy panels cannot rack, skip surcharge
   if (!isPrivacy && config.rackingTier && config.rackingTier !== 'standard' && config.rackingTier !== 'stair-step') {
-    var slopedPosts = config.slopedPostCount || totalPosts;
+    // Use `??` not `||` so that a legitimate slopedPostCount: 0 is respected
+    // (a yard with a racking tier selected but no sloped segments should emit
+    // 0 rack posts, not fall back to totalPosts). Missing field (manual-entry
+    // callers with no per-segment data) still correctly falls back to totalPosts.
+    var slopedPosts = config.slopedPostCount ?? totalPosts;
     items.push({ label: 'Double-Punch Posts (racking)', qty: slopedPosts, unitPrice: DOUBLE_PUNCH_PER_POST, total: slopedPosts * DOUBLE_PUNCH_PER_POST });
   }
 

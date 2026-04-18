@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments } from '../geometryUtils.js';
+import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments, computeSlopedPostCount } from '../geometryUtils.js';
 
 describe('simplifyRDP', () => {
   it('passes through points below threshold', () => {
@@ -92,5 +92,77 @@ describe('aggregateClassificationsForUserSegments', () => {
     expect(result.length).toBe(1);
     expect(result[0].classification).toBe('flat');
     expect(result[0].maxAbsDelta).toBe(0);
+  });
+});
+
+describe('computeSlopedPostCount', () => {
+  it('returns 0 for empty segments', () => {
+    expect(computeSlopedPostCount([], 6)).toBe(0);
+  });
+
+  it('returns 0 when all segments are standard', () => {
+    var segs = [
+      { lengthFeet: 60, rackingTier: 'standard' },
+      { lengthFeet: 30, rackingTier: 'standard' },
+    ];
+    expect(computeSlopedPostCount(segs, 6)).toBe(0);
+  });
+
+  it('counts panelCount + 1 posts for a single rackable segment', () => {
+    var segs = [{ lengthFeet: 60, rackingTier: 'rackable' }];
+    // 60 / 6 = 10 panels -> 11 posts
+    expect(computeSlopedPostCount(segs, 6)).toBe(11);
+  });
+
+  it('counts sloped posts on middle-only-rackable run with shared boundaries', () => {
+    // Three 60ft segments: middle is rackable, neighbors are standard.
+    // Middle has 11 posts (10 panels + 1); both of its endpoints are shared with
+    // standard neighbors, but the either-adjacent rule keeps those boundary
+    // posts "sloped" because middle is sloped.
+    var segs = [
+      { lengthFeet: 60, rackingTier: 'standard' },
+      { lengthFeet: 60, rackingTier: 'rackable' },
+      { lengthFeet: 60, rackingTier: 'standard' },
+    ];
+    expect(computeSlopedPostCount(segs, 6)).toBe(11);
+  });
+
+  it('does not double-count the shared boundary post when both segments are sloped', () => {
+    // Two 60ft segments both rackable: 11 + 11 - 1 (shared) = 21.
+    var segs = [
+      { lengthFeet: 60, rackingTier: 'rackable' },
+      { lengthFeet: 60, rackingTier: 'rackable' },
+    ];
+    expect(computeSlopedPostCount(segs, 6)).toBe(21);
+  });
+
+  it('treats heavy-rackable the same as rackable (both are sloped)', () => {
+    var segs = [
+      { lengthFeet: 60, rackingTier: 'heavy-rackable' },
+      { lengthFeet: 60, rackingTier: 'rackable' },
+    ];
+    expect(computeSlopedPostCount(segs, 6)).toBe(21);
+  });
+
+  it('treats stair-step tier as not-sloped (same as standard)', () => {
+    var segs = [
+      { lengthFeet: 60, rackingTier: 'stair-step' },
+      { lengthFeet: 60, rackingTier: 'stair-step' },
+    ];
+    expect(computeSlopedPostCount(segs, 6)).toBe(0);
+  });
+
+  it('never exceeds totalPosts for fully-sloped runs', () => {
+    // Three 60ft segments all rackable: 3 * 11 - 2 shared = 31.
+    var segs = [
+      { lengthFeet: 60, rackingTier: 'rackable' },
+      { lengthFeet: 60, rackingTier: 'rackable' },
+      { lengthFeet: 60, rackingTier: 'rackable' },
+    ];
+    var totalLf = segs.reduce(function (a, s) { return a + s.lengthFeet; }, 0);
+    var totalPosts = Math.ceil(totalLf / 6) + 1;
+    var sloped = computeSlopedPostCount(segs, 6);
+    expect(sloped).toBe(31);
+    expect(sloped).toBeLessThanOrEqual(totalPosts);
   });
 });

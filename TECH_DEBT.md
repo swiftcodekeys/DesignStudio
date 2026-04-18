@@ -12,7 +12,6 @@ Documented debt to tackle after the Mapbox upgrade ships. Not blocking.
 - **No ESLint / Prettier** — add before the next major refactor.
 
 ## Low-priority
-- **`slopedPostCount` is NOT dead — DO NOT DELETE BLINDLY** — `priceCalculator.js:164` falls back to `totalPosts` when `slopedPostCount` is missing, but the math intent is "only posts on sloped sections get the $4.75 double-punch surcharge." Falling back to ALL posts overcharges any partially-sloped lot. Task 1.9.2's "just delete `slopedPostCount`" plan would lock in that overcharge. Correct fix: compute `slopedPostCount` from the per-segment `rackingTier` data introduced in Task 1.7.4, pass it through `drawToolData → config.slopedPostCount`, and only then make the fallback a hard error. Revise Task 1.9.2 before implementing.
 - **Unified snapshot + capture logic** — `captureSnapshot` in `WizardShell.js:330` could be split into its own module.
 - **Hardcoded Ultra colors** — live in multiple places (`configData.js`, `retailPricing.js`). Source of truth consolidation.
 

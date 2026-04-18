@@ -108,6 +108,53 @@ export function aggregateClassificationsForUserSegments(userSegments, segmentCla
   return out;
 }
 
+// --- Sloped post counting ---
+// Given per-user-segment rackingTier data, count how many physical posts sit
+// on a sloped (rackable / heavy-rackable) segment. Used to price the $4.75
+// "Double-Punch Posts (racking)" surcharge accurately on partially-sloped
+// yards. Shared boundary posts are counted once; a boundary post is marked
+// sloped if EITHER adjacent segment is sloped (the post receives the racked
+// panel).
+// segments: [{ lengthFeet, rackingTier }, ...]
+// panelLengthFt: 6 for residential/commercial, 8 for industrial.
+// Returns an integer count of sloped posts.
+export function computeSlopedPostCount(segments, panelLengthFt) {
+  if (!segments || segments.length === 0) return 0;
+  var pl = panelLengthFt || 6;
+  function isSloped(tier) {
+    return tier && tier !== 'standard' && tier !== 'stair-step';
+  }
+  var count = 0;
+  for (var i = 0; i < segments.length; i++) {
+    var seg = segments[i];
+    var panels = Math.max(0, Math.ceil((seg.lengthFeet || 0) / pl));
+    var segSloped = isSloped(seg.rackingTier);
+    var prevSloped = i > 0 && isSloped(segments[i - 1].rackingTier);
+
+    // Start post: shared with previous segment's end. Count only if sloped
+    // under the either-adjacent rule AND we haven't already counted it as
+    // the previous segment's end post.
+    var startSloped = segSloped || prevSloped;
+    if (i === 0) {
+      // First segment's start post has no previous neighbor.
+      if (segSloped) count += 1;
+    } else if (startSloped && !prevSloped) {
+      // Previous segment didn't claim this boundary as sloped; this segment
+      // does (previous was standard, current is sloped) — count once here.
+      count += 1;
+    }
+    // Otherwise the boundary post was already counted in the previous
+    // segment's loop iteration (if prevSloped is true).
+
+    // Interior + end posts belonging to this segment: panels posts after the
+    // start. These are new (not shared with any earlier-indexed segment).
+    if (segSloped) {
+      count += panels;
+    }
+  }
+  return count;
+}
+
 // --- Densify ---
 // Insert interpolated points every approxFeetPerSample feet along the path.
 export function densifyPath(points, approxFeetPerSample) {

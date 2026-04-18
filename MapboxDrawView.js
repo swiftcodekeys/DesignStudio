@@ -7,7 +7,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing, aggregateClassificationsForUserSegments } from './geometryUtils';
+import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing, aggregateClassificationsForUserSegments, computeSlopedPostCount } from './geometryUtils';
 import { classifyDrawnLine } from './epqsClient';
 import SlopePopup from './SlopePopup';
 import SegmentCard from './SegmentCard';
@@ -484,6 +484,11 @@ function MapboxDrawView(props) {
   function buildDrawToolData() {
     var totalFeet = segments.reduce(function(a, s) { return a + s.lengthFeet; }, 0);
     var paddedFeet = Math.ceil(totalFeet * 1.05);
+    // Panel length for sloped-post counting defaults to 6ft (residential/commercial).
+    // Industrial's 8ft panel length is applied later in priceCalculator based on grade,
+    // which customers pick after the draw step. Using 6 here is a safe over-estimate
+    // for post count; priceCalculator's tier gate still applies.
+    var slopedPostCount = computeSlopedPostCount(segments, 6);
     return {
       totalFeet: paddedFeet,
       rawFeet: totalFeet,
@@ -496,6 +501,7 @@ function MapboxDrawView(props) {
         segments: segments.slice(),
       }],
       slopeAnswer: slopeAnswer,
+      slopedPostCount: slopedPostCount,
       epqsOverall: epqs ? epqs.overallClassification : 'unknown',
       epqsConfidence: epqs ? epqs.confidence : 'low',
       epqsMaxDeltaInches: epqs ? epqs.maxDeltaInches : 0,
