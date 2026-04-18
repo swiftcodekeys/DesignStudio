@@ -1,0 +1,9 @@
+# workers/parcel-proxy/wrangler.toml
+name = "grandview-parcel-proxy"
+main = "src/index.js"
+compatibility_date = "2026-04-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://grandview-design-studio.pages.dev,http://localhost:3000"
+
+# REGRID_API_KEY and MAPBOX_ACCESS_TOKEN set via `wrangler secret put`
