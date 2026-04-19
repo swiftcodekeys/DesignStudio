@@ -36,10 +36,12 @@
 .wizard-shell .summary-page {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 .wizard-shell .zone-transition-overlay {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 /* ---- Progress Bar ---- */
