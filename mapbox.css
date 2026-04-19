@@ -473,8 +473,9 @@
 }
 .dy-breakdown-toggle:hover { color: var(--dy-accent); }
 
-/* Expanded panel */
-.dy-dock-expanded {
+/* Expanded panel (inner breakdown — distinct from the outer .dy-dock-expanded
+   phase modifier, which only sets the outer wrapper width on line 350). */
+.dy-dock-breakdown {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1038,8 +1039,9 @@
     width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);
   }
-  .dy-dock-expanded {
+  .dy-dock-breakdown {
     grid-template-columns: 1fr;
+    gap: 16px;
     max-height: 50vh;
   }
   .dy-dock-main {
@@ -1049,10 +1051,6 @@
   .dy-stat-range { font-size: 14px; }
   .dy-empty-title { font-size: 32px; }
   .dy-empty-sub { font-size: 14px; }
-  .dy-dock-expanded {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
   .dy-pill-addr { max-width: 140px; }
   .dy-save-btn { padding: 8px 12px; font-size: 12px; }
 }

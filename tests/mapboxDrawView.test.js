@@ -261,13 +261,13 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     const toggle = container.querySelector('.dy-breakdown-toggle');
     expect(toggle).toBeTruthy();
     act(() => { fireEvent.click(toggle); });
-    const expanded = container.querySelector('.dy-dock-expanded');
-    expect(expanded).toBeTruthy();
-    // Close button inside the expanded panel collapses it
-    const closeBtn = expanded.querySelector('.dy-expanded-close');
+    const breakdown = container.querySelector('.dy-dock-breakdown');
+    expect(breakdown).toBeTruthy();
+    // Close button inside the breakdown panel collapses it
+    const closeBtn = breakdown.querySelector('.dy-expanded-close');
     expect(closeBtn).toBeTruthy();
     act(() => { fireEvent.click(closeBtn); });
-    expect(container.querySelector('.dy-dock-expanded')).toBeNull();
+    expect(container.querySelector('.dy-dock-breakdown')).toBeNull();
   });
 
   it('expanded breakdown lists every drawn segment (one per vertex pair)', () => {

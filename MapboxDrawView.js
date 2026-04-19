@@ -518,7 +518,7 @@ function MorphingDock(props) {
     )
   );
 
-  var expandedPanel = isExpanded && segments.length > 0 && React.createElement('div', { className: 'dy-dock-expanded' },
+  var expandedPanel = isExpanded && segments.length > 0 && React.createElement('div', { className: 'dy-dock-breakdown' },
     React.createElement('button', {
       type: 'button',
       className: 'dy-expanded-close',
