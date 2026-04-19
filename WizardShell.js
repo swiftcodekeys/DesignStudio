@@ -1162,6 +1162,10 @@ var WizardShell = function() {
                     }}
                     skipToStep={skipToStep}
                     isFirstZone={orderedZones.indexOf(currentZone) === 0}
+                    // drawToolData is null here: the wizard uses its own zone-config flow
+                    // (address entry + manual linear-feet input) and is not wired to
+                    // MapboxDrawView's onComplete. The draw-tool path goes through
+                    // app.js → handleGetQuote → QuoteBuilder.
                     drawToolData={null}
                 />
             )}

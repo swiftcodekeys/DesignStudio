@@ -237,6 +237,12 @@ var DesignStudio = function() {
     var showPoolPopup = poolPopupState[0];
     var setShowPoolPopup = poolPopupState[1];
 
+    // Draw tool data from MapboxDrawView.onComplete — passed into QuoteBuilder so
+    // QuoteStep2_Layout can pre-fill linearFeet/segments/rackingTier from the drawn yard.
+    var drawToolDataState = useState(null);
+    var drawToolData = drawToolDataState[0];
+    var setDrawToolData = drawToolDataState[1];
+
     var buildSavedDesign = function(scene, activeConfig) {
         var acc = activeConfig.accessories || {};
         var isFence = (scene === 'fencing' || scene === 'backyard');
@@ -308,7 +314,13 @@ var DesignStudio = function() {
         };
     };
 
-    var handleGetQuote = function() {
+    var handleGetQuote = function(data) {
+        // Defensive: only store draw tool data when the arg is a real draw result.
+        // handleGetQuote is also called with no arg from the contact popup submit
+        // and from handleSkipToManualEntry — those callers must not clear state.
+        if (data && typeof data === 'object' && data.totalFeet != null) {
+            setDrawToolData(data);
+        }
         setContactPopupOpen(false);
 
         var isFenceScene = (activeTab === 'fencing' || activeTab === 'backyard');
@@ -448,7 +460,7 @@ var DesignStudio = function() {
     if (view === 'quote-builder') {
         return (
             <div className="app-shell">
-                <QuoteBuilder onClose={function() { setView('studio'); }} />
+                <QuoteBuilder drawToolData={drawToolData} onClose={function() { setView('studio'); }} />
             </div>
         );
     }
