@@ -392,10 +392,10 @@ function EstimatePopup(props) {
       ),
       React.createElement('p', null,
         React.createElement('strong', null, 'It\u2019s your responsibility to double-check the math '),
-        'and validate the measurements yourself. I review every order before production and catch obvious red flags, but the linear feet you submit are what I build to.'
+        'and validate the measurements yourself. Grandview reviews every order before production and catches obvious red flags, but the linear feet you submit are what we build to.'
       ),
       React.createElement('p', { className: 'dy-est-muted' },
-        'Satellite imagery can be a year or two old and tree canopy can hide features, so always walk the line once before you order. Questions? Call (855) FENCE-30.'
+        'Satellite imagery can be a year or two old and tree canopy can hide features, so always walk the line once yourself before you order. Questions? Call (855) FENCE-30.'
       ),
       React.createElement('div', { className: 'dy-est-actions' },
         React.createElement('button', {
@@ -1165,7 +1165,7 @@ function MapboxDrawView(props) {
         }, React.createElement(X, { size: 18, weight: 'bold' })),
         React.createElement('h3', null, 'Save your drawing'),
         React.createElement('p', { className: 'dy-save-copy' },
-          'I\u2019ll email you a link so you can resume exactly where you left off, from any device.'
+          'We\u2019ll email you a link so you can resume exactly where you left off, from any device.'
         ),
         React.createElement('input', {
           type: 'email',

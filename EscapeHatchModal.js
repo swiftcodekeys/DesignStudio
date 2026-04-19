@@ -106,8 +106,8 @@ function EscapeHatchModal(props) {
   if (!isOpen) return null;
 
   var subhead = trigger === 'exit-intent'
-    ? 'Before you go, I can pick up where you left off, or help if you\'re stuck.'
-    : 'I respond within one business day.';
+    ? 'Before you go, Grandview can pick up where you left off, or help if you\'re stuck.'
+    : 'A Grandview rep responds within one business day.';
 
   function handleFile(file) {
     setUploadError('');
@@ -203,13 +203,13 @@ function EscapeHatchModal(props) {
             <div className="escape-hatch-success-icon">
               <Check size={28} weight="bold" />
             </div>
-            <h3>Thanks, I'll be in touch.</h3>
-            <p>I'll follow up within one business day.</p>
+            <h3>Thanks. Grandview will be in touch.</h3>
+            <p>A Grandview rep will follow up within one business day.</p>
             <code>Reference ID: {success.refId}</code>
           </div>
         ) : (
           <form onSubmit={handleSend}>
-            <h2 className="escape-hatch-title">Stuck? I'll help.</h2>
+            <h2 className="escape-hatch-title">Stuck? Grandview can help.</h2>
             <p className="escape-hatch-sub">{subhead}</p>
 
             <div className="escape-hatch-field">
@@ -253,7 +253,7 @@ function EscapeHatchModal(props) {
                 maxLength={500}
                 value={note}
                 onChange={function(e) { setNote(e.target.value); }}
-                placeholder="Weird yard shape? Sloped hill? Just questions? Drop a yard sketch and I'll get back to you."
+                placeholder="Weird yard shape? Sloped hill? Just questions? Drop a yard sketch and a Grandview rep will get back to you."
               />
             </div>
 

@@ -351,7 +351,7 @@ var DesignReviewPage = function(props) {
                         <div className="bridge-contact">
                             <div className="bridge-contact-title">Have questions?</div>
                             <button className="bridge-contact-link" onClick={onOpenContact}>
-                                Drop me a line and I'll walk you through it
+                                Drop us a line and a Grandview rep will walk you through it
                             </button>
                             <div className="bridge-contact-phone">Or call (855) FENCE-30</div>
                         </div>
