@@ -450,7 +450,10 @@ function MapboxDrawView(props) {
   var drawMode = drawModeState[0];
   var setDrawMode = drawModeState[1];
 
-  var sidebarOpenState = useState(true);
+  var sidebarOpenState = useState(function() {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 768;
+  });
   var sidebarOpen = sidebarOpenState[0];
   var setSidebarOpen = sidebarOpenState[1];
 
