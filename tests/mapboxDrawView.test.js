@@ -270,6 +270,30 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(container.querySelector('.dy-dock-expanded')).toBeNull();
   });
 
+  it('expanded breakdown lists every drawn segment (one per vertex pair)', () => {
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [
+        [-83.9, 42.6],
+        [-83.9, 42.605],
+        [-83.905, 42.605],
+        [-83.905, 42.6],
+        [-83.9, 42.6],
+      ],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    const toggle = container.querySelector('.dy-breakdown-toggle');
+    act(() => { fireEvent.click(toggle); });
+    const items = container.querySelectorAll('.dy-segment-list .dy-segment-item');
+    // 5 points → 4 segments
+    expect(items.length).toBe(4);
+  });
+
   it('address pill renders short form of current location in the top bar', () => {
     const { container } = render(
       <MapboxDrawView
