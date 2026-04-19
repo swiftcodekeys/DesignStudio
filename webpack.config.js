@@ -52,7 +52,7 @@ module.exports = {
       'process.env.STRIPE_PUBLISHABLE_KEY': JSON.stringify(''),
       'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || ''),
       'process.env.ANTHROPIC_API_KEY': JSON.stringify(''),
-      'process.env.USE_MAPBOX_DRAW': JSON.stringify(process.env.USE_MAPBOX_DRAW === 'true'),
+      'process.env.USE_MAPBOX_DRAW': JSON.stringify(process.env.USE_MAPBOX_DRAW !== 'false'),
       'process.env.MAPBOX_ACCESS_TOKEN': JSON.stringify(process.env.MAPBOX_ACCESS_TOKEN || ''),
       'process.env.PARCEL_PROXY_URL': JSON.stringify(process.env.PARCEL_PROXY_URL || 'https://grandview-parcel-proxy.sarah-13a.workers.dev'),
     })
