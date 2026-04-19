@@ -14,6 +14,37 @@ import QuoteStep6_Review from './QuoteStep6_Review';
 
 var STEP_LABELS = ['Style & Config', 'Layout & Posts', 'Gates', 'Extras', 'Shipping', 'Review'];
 
+function titleCase(s) {
+  if (!s) return '';
+  return String(s).replace(/[-_]/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
+// Build the "Your design" sidebar spec list from whatever the buyer has
+// chosen so far. Progressive: only renders fields that are actually set.
+function buildSidebarSpecs(data) {
+  var specs = [];
+  if (data.style) specs.push({ label: 'Style', value: titleCase(data.style) });
+  if (data.height) specs.push({ label: 'Height', value: data.height + '"' });
+  if (data.color) specs.push({ label: 'Color', value: titleCase(data.color) });
+  if (data.grade && data.grade !== 'residential') specs.push({ label: 'Grade', value: titleCase(data.grade) });
+  if (data.bottomRail === 'flush') specs.push({ label: 'Bottom rail', value: 'Flush (pool code)' });
+  if (data.spacing && data.spacing !== 'standard') specs.push({ label: 'Spacing', value: titleCase(data.spacing) });
+  if (data.puppyPickets) specs.push({ label: 'Puppy pickets', value: data.puppyStyle ? titleCase(data.puppyStyle) : 'Yes' });
+  if (data.postCap && data.postCap !== 'flat') specs.push({ label: 'Post cap', value: titleCase(data.postCap) });
+  if (data.finialType) specs.push({ label: 'Finials', value: titleCase(data.finialType) });
+  if (data.privacyType) specs.push({ label: 'Privacy', value: titleCase(data.privacyType) });
+  if (data.linearFeet) specs.push({ label: 'Linear feet', value: Math.round(data.linearFeet) + ' ft' });
+  if (data.terrain) specs.push({ label: 'Terrain', value: titleCase(data.terrain) });
+  if (data.rackingTier && data.rackingTier !== 'standard') specs.push({ label: 'Racking', value: titleCase(data.rackingTier) });
+  if (Array.isArray(data.gates) && data.gates.length > 0) {
+    specs.push({ label: 'Gates', value: data.gates.length + ' gate' + (data.gates.length === 1 ? '' : 's') });
+  } else if (typeof data.gates === 'number' && data.gates > 0) {
+    specs.push({ label: 'Gates', value: data.gates + ' gate' + (data.gates === 1 ? '' : 's') });
+  }
+  if (data.zip) specs.push({ label: 'Ship to', value: data.zip });
+  return specs;
+}
+
 var DEFAULT_DATA = {
   grade: 'residential',
   fenceType: 'ornamental',
@@ -134,48 +165,72 @@ function QuoteBuilder(props) {
     });
   }
 
+  var specs = buildSidebarSpecs(data);
+
   return React.createElement('div', { className: 'qb-container' },
 
-    // ---- Snapshot header ----
-    props.snapshotDataUrl ? React.createElement('div', { className: 'qb-snapshot-header' },
-      React.createElement('div', { className: 'qb-snapshot-image-wrap' },
-        React.createElement('img', { src: props.snapshotDataUrl, className: 'qb-snapshot-img', alt: 'Your fence design' }),
-        React.createElement('div', { className: 'qb-snapshot-overlay' },
-          React.createElement('div', { className: 'qb-snapshot-headline' }, 'Your New Fence'),
-          React.createElement('div', { className: 'qb-snapshot-config' },
-            (data.style ? data.style.charAt(0).toUpperCase() + data.style.slice(1).replace(/_/g, ' ') : '') +
-            (data.height ? ' \u00B7 ' + data.height + '"' : '') +
-            (data.color ? ' \u00B7 ' + data.color.replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) : '')
+    React.createElement('div', { className: 'qb-layout' },
+
+      // ---- LEFT: Fixed sidebar with design snapshot + progressive spec list ----
+      React.createElement('aside', { className: 'qb-sidebar' },
+        React.createElement('div', { className: 'qb-sidebar-image-wrap' },
+          props.snapshotDataUrl
+            ? React.createElement('img', {
+                src: props.snapshotDataUrl,
+                className: 'qb-sidebar-img',
+                alt: 'Your fence design',
+              })
+            : React.createElement('div', { className: 'qb-sidebar-image-placeholder' },
+                'Design preview will appear here'
+              )
+        ),
+        React.createElement('div', { className: 'qb-sidebar-details' },
+          React.createElement('div', { className: 'qb-sidebar-title' }, 'Your design'),
+          specs.length > 0
+            ? React.createElement('ul', { className: 'qb-sidebar-specs' },
+                specs.map(function(s) {
+                  return React.createElement('li', { key: s.label, className: 'qb-sidebar-spec' },
+                    React.createElement('span', { className: 'qb-sidebar-spec-label' }, s.label),
+                    React.createElement('span', { className: 'qb-sidebar-spec-value' }, s.value)
+                  );
+                })
+              )
+            : React.createElement('div', { className: 'qb-sidebar-empty' },
+                'Selections will appear as you answer questions.'
+              ),
+          React.createElement('div', { className: 'qb-sidebar-prefill' },
+            React.createElement(ArrowRight, { size: 14, style: { flexShrink: 0 } }),
+            ' Pre-filled from your design. Finalize your quote on the right.'
           )
         )
       ),
-      React.createElement('div', { className: 'qb-snapshot-prefill' },
-        React.createElement(ArrowRight, { size: 14, style: { flexShrink: 0 } }),
-        ' Pre-filled from your design. Let\u2019s finalize your quote'
-      )
-    ) : null,
 
-    // ---- Phase label + step dots ----
-    // Wrapped in a "quote-phase" band so the buyer reads these as
-    // sub-steps of the Quote phase — NOT six more top-level wizard steps.
-    React.createElement('div', { className: 'qb-phase-band' },
-      React.createElement('div', { className: 'qb-phase-eyebrow' }, 'QUOTE DETAILS'),
-      React.createElement('div', { className: 'qb-step-dots' },
-        STEP_LABELS.map(function(label, i) {
-          return React.createElement('div', {
-            key: i,
-            className: 'qb-dot' + (i === step ? ' active' : '') + (i < step ? ' done' : ''),
-            onClick: function() { if (i < step) setStep(i); },
-          },
-            React.createElement('span', { className: 'qb-dot-num' }, i + 1),
-            React.createElement('span', { className: 'qb-dot-label' }, label)
-          );
-        })
+      // ---- RIGHT: Scrolling main column with step content ----
+      React.createElement('div', { className: 'qb-main' },
+
+        // ---- Phase label + step dots ----
+        // Wrapped in a "quote-phase" band so the buyer reads these as
+        // sub-steps of the Quote phase — NOT six more top-level wizard steps.
+        React.createElement('div', { className: 'qb-phase-band' },
+          React.createElement('div', { className: 'qb-phase-eyebrow' }, 'QUOTE DETAILS'),
+          React.createElement('div', { className: 'qb-step-dots' },
+            STEP_LABELS.map(function(label, i) {
+              return React.createElement('div', {
+                key: i,
+                className: 'qb-dot' + (i === step ? ' active' : '') + (i < step ? ' done' : ''),
+                onClick: function() { if (i < step) setStep(i); },
+              },
+                React.createElement('span', { className: 'qb-dot-num' }, i + 1),
+                React.createElement('span', { className: 'qb-dot-label' }, label)
+              );
+            })
+          )
+        ),
+
+        // ---- Step content ----
+        React.createElement('div', { className: 'qb-step-content' }, stepContent)
       )
     ),
-
-    // ---- Step content ----
-    React.createElement('div', { className: 'qb-step-content' }, stepContent),
 
     // ---- Footer nav ----
     React.createElement('div', { className: 'qb-footer' },

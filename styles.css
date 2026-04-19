@@ -4846,47 +4846,106 @@ html, body {
 .pool-popup-confirm:hover { background: #2b6cb0; }
 
 /* ============================================================
-   QuoteBuilder Shell
+   QuoteBuilder Shell — 2-column: fixed left (design + selection)
+   and scrolling right (quote form)
    ============================================================ */
 .qb-container {
-  max-width: 960px; margin: 0 auto; padding: 24px 24px 100px;
+  max-width: 1200px; margin: 0 auto; padding: 24px 24px 120px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Snapshot header — hero style; sticky on desktop so the user
-   keeps eyes on their design while answering QuoteBuilder questions */
-.qb-snapshot-header {
-  margin-bottom: 20px;
+.qb-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.qb-sidebar {
   position: sticky;
-  top: 0;
-  z-index: 10;
+  top: 16px;
+  align-self: start;
+  display: flex; flex-direction: column; gap: 14px;
   background: #fff;
-  padding-top: 8px;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 14px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
-.qb-snapshot-image-wrap {
-  position: relative; border-radius: 12px; overflow: hidden;
-  aspect-ratio: 21 / 7;
+
+.qb-sidebar-image-wrap {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: #f5f6f8;
+  flex-shrink: 0;
 }
-.qb-snapshot-img {
+.qb-sidebar-img {
   width: 100%; height: 100%; object-fit: cover; display: block;
 }
-.qb-snapshot-overlay {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: linear-gradient(transparent, rgba(0,0,0,0.7));
-  padding: 24px 20px 14px;
+.qb-sidebar-image-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: #8e95a0; font-size: 12px; font-weight: 500;
+  text-align: center; padding: 12px;
 }
-.qb-snapshot-headline {
-  font-size: 20px; font-weight: 800; color: #fff;
-  letter-spacing: -0.3px; text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+
+.qb-sidebar-details { display: flex; flex-direction: column; gap: 10px; }
+.qb-sidebar-title {
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: #6BA3C2;
+  margin: 2px 0 0;
 }
-.qb-snapshot-config {
-  font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 2px;
-  font-weight: 500;
+.qb-sidebar-specs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.qb-sidebar-spec {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 0;
+  gap: 8px;
+  border-bottom: 1px dashed #eef0f3;
 }
-.qb-snapshot-prefill {
+.qb-sidebar-spec:last-child { border-bottom: none; }
+.qb-sidebar-spec-label { color: #5a6270; font-weight: 500; flex-shrink: 0; }
+.qb-sidebar-spec-value {
+  color: #1a1a2e; font-weight: 700; text-align: right;
+  word-break: break-word;
+}
+.qb-sidebar-empty {
+  font-size: 12px; color: #8e95a0; font-style: italic;
+  padding: 4px 0 2px;
+}
+.qb-sidebar-prefill {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: #6BA3C2; font-weight: 600;
-  margin-top: 8px; padding: 0 4px;
+  font-size: 11px; color: #6BA3C2; font-weight: 600;
+  padding-top: 6px; border-top: 1px solid #eef0f3;
+}
+
+/* Right column: the scrolling quote form */
+.qb-main {
+  min-width: 0; /* allow grid child to shrink below content size */
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* Mobile: stack sidebar on top, non-sticky */
+@media (max-width: 900px) {
+  .qb-container { padding: 16px 16px 120px; }
+  .qb-layout { grid-template-columns: 1fr; gap: 16px; }
+  .qb-sidebar {
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .qb-sidebar-image-wrap { width: 40%; aspect-ratio: 4/3; }
+  .qb-sidebar-details { flex: 1; }
+}
+@media (max-width: 560px) {
+  .qb-sidebar { flex-direction: column; }
+  .qb-sidebar-image-wrap { width: 100%; }
 }
 
 /* Step dots */
