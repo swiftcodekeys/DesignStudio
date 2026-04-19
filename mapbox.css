@@ -750,16 +750,20 @@
   border: 3px solid var(--dy-accent);
   cursor: grab;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  position: relative;
 }
 .dy-vertex:active { cursor: grabbing; }
 .dy-vertex-first {
   background: var(--dy-accent);
   border-color: white;
 }
-.dy-vertex-hit {
+/* Enlarged invisible hit target — rendered as pseudo-element so it inherits
+   Mapbox's absolute positioning on the parent. Prior impl nested a div and
+   broke translate-based marker placement. */
+.dy-vertex::before {
+  content: '';
   position: absolute;
   inset: -14px;
+  border-radius: 50%;
 }
 
 .dy-seg-label {

@@ -211,6 +211,25 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(dialog.textContent).toMatch(/Got it/i);
   });
 
+  it('vertex marker element has no inline position style (relies on Mapbox transform)', () => {
+    // Guard: Mapbox Marker applies position:absolute + transform:translate().
+    // Our CSS must not set position:relative on .dy-vertex or the marker
+    // renders at origin with the inner dot offset by the transform. This
+    // test protects against a regression where a rewrite adds position
+    // back to the vertex class.
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(
+      path.join(__dirname, '..', 'mapbox.css'),
+      'utf8'
+    );
+    // Find the .dy-vertex rule (not .dy-vertex-first, not .dy-vertex-hit)
+    const match = css.match(/\.dy-vertex\s*\{([^}]*)\}/);
+    expect(match).toBeTruthy();
+    const rule = match[1];
+    expect(rule).not.toMatch(/position\s*:/);
+  });
+
   it('address pill renders short form of current location in the top bar', () => {
     const { container } = render(
       <MapboxDrawView

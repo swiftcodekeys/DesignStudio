@@ -772,9 +772,6 @@ function MapScreen(props) {
     props.points.forEach(function(pt, i) {
       var el = document.createElement('div');
       el.className = 'dy-vertex' + (i === 0 ? ' dy-vertex-first' : '');
-      var hit = document.createElement('div');
-      hit.className = 'dy-vertex-hit';
-      el.appendChild(hit);
 
       var marker = new mapboxgl.Marker({ element: el, draggable: true })
         .setLngLat(pt)
