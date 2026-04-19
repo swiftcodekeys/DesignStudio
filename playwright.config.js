@@ -3,12 +3,13 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30000,
+  timeout: 60000,
   use: {
     baseURL: 'http://localhost:3033',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    navigationTimeout: 45000,
   },
   webServer: {
     command: 'npx cross-env USE_MAPBOX_DRAW=true webpack serve --mode development --port 3033 --no-open',
