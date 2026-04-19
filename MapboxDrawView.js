@@ -638,34 +638,35 @@ function MapboxDrawView(props) {
             }, 'Got it')
           ),
           React.createElement('div', { className: 'mbx-map-area', style: { flex: 1, display: 'flex', flexDirection: 'column' } },
-            React.createElement('button', {
-              className: 'mbx-manual-mode-btn',
-              onClick: function() { setManualMode(true); },
-            }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
-            React.createElement('button', {
-              className: 'mbx-done-btn',
-              onClick: function() { setSlopePopupOpen(true); },
-              disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
-            }, 'Done \u2014 review slope \u2192'),
-            React.createElement('button', {
-              className: 'mbx-continue-btn primary',
-              onClick: function() {
-                var data = buildDrawToolData();
-                captureSnapshot().then(function(url) {
-                  data.mapboxSnapshotUrl = url;
-                  props.onComplete(data);
-                });
-              },
-              disabled: segments.length === 0 || slopeAnswer == null,
-            }, 'Continue to Quote \u2192'),
-            React.createElement('button', {
-              className: 'mbx-mode-toggle ' + drawMode,
-              onClick: function() { setDrawMode(drawMode === 'navigate' ? 'draw' : 'navigate'); },
-            }, drawMode === 'navigate' ? '\u270B Navigate \u2192 tap to Draw' : '\u270F\uFE0F Draw \u2192 tap to Navigate'),
-            epqsLoading ? React.createElement('span', {
-              className: 'mbx-epqs-loading',
-              style: { marginLeft: '0.5rem', fontSize: '13px', color: '#5a6270' },
-            }, 'Analyzing slope...') : null,
+            React.createElement('div', { className: 'mbx-bottom-toolbar' },
+              React.createElement('button', {
+                className: 'mbx-toolbar-btn mbx-manual-mode-btn',
+                onClick: function() { setManualMode(true); },
+              }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
+              React.createElement('button', {
+                className: 'mbx-toolbar-btn mbx-done-btn',
+                onClick: function() { setSlopePopupOpen(true); },
+                disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
+              }, 'Done \u2014 review slope \u2192'),
+              React.createElement('button', {
+                className: 'mbx-toolbar-btn mbx-continue-btn primary',
+                onClick: function() {
+                  var data = buildDrawToolData();
+                  captureSnapshot().then(function(url) {
+                    data.mapboxSnapshotUrl = url;
+                    props.onComplete(data);
+                  });
+                },
+                disabled: segments.length === 0 || slopeAnswer == null,
+              }, 'Continue to Quote \u2192'),
+              React.createElement('button', {
+                className: 'mbx-toolbar-btn mbx-mode-toggle ' + drawMode,
+                onClick: function() { setDrawMode(drawMode === 'navigate' ? 'draw' : 'navigate'); },
+              }, drawMode === 'navigate' ? '\u270B Navigate \u2192 tap to Draw' : '\u270F\uFE0F Draw \u2192 tap to Navigate'),
+              epqsLoading ? React.createElement('span', {
+                className: 'mbx-epqs-loading',
+              }, 'Analyzing slope...') : null
+            ),
             React.createElement(MapScreen, {
               location: location,
               onParcelLoaded: handleParcelLoaded,

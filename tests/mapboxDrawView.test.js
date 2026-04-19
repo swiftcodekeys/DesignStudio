@@ -264,6 +264,35 @@ describe('MapboxDrawView', () => {
       sessionStorage.removeItem('gv_draw_banner_shown');
     });
 
+    // ---------------------------------------------------------------------------
+    // Issue #15 — Unified floating bottom toolbar for draw flow
+    // ---------------------------------------------------------------------------
+
+    it('renders .mbx-bottom-toolbar containing all 4 draw-flow buttons', () => {
+      // When a location is provided, the draw screen is shown. The toolbar div
+      // must be present and must contain all 4 toolbar buttons (identified by
+      // the shared mbx-toolbar-btn class and by their variant classes).
+      const { container } = render(
+        <MapboxDrawView
+          onComplete={() => {}}
+          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        />
+      );
+
+      const toolbar = container.querySelector('.mbx-bottom-toolbar');
+      expect(toolbar, '.mbx-bottom-toolbar must exist in the DOM').toBeTruthy();
+
+      // All 4 buttons carry the shared base class
+      const toolbarBtns = toolbar.querySelectorAll('.mbx-toolbar-btn');
+      expect(toolbarBtns.length).toBe(4);
+
+      // Each variant class is also present inside the toolbar
+      expect(toolbar.querySelector('.mbx-manual-mode-btn')).toBeTruthy();
+      expect(toolbar.querySelector('.mbx-done-btn')).toBeTruthy();
+      expect(toolbar.querySelector('.mbx-continue-btn')).toBeTruthy();
+      expect(toolbar.querySelector('.mbx-mode-toggle')).toBeTruthy();
+    });
+
     it('vertex marker element has no inline position property that would override .mapboxgl-marker', () => {
       // Mapbox GL adds class "mapboxgl-marker" to custom marker elements and
       // relies on its CSS rule { position: absolute } to anchor the element.
