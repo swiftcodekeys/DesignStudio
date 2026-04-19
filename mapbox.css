@@ -624,50 +624,122 @@
   line-height: 1;
 }
 
-/* ===== Signed note ===== */
-.dy-signed-note {
+/* ===== Estimate banner (compact, tappable) ===== */
+.dy-est-banner {
   position: absolute;
-  bottom: 16px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
+  gap: 8px;
+  padding: 7px 14px 7px 12px;
   background: rgba(26, 25, 23, 0.88);
   color: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-family: var(--dy-font-ui);
   font-size: 12px;
-  line-height: 1.4;
-  max-width: calc(100vw - 32px);
-  z-index: 18;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  z-index: 19;
 }
-.dy-avatar {
-  width: 28px;
-  height: 28px;
+.dy-est-banner:hover {
+  background: rgba(26, 25, 23, 0.95);
+  transform: translateX(-50%) translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+.dy-est-banner-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--dy-accent) 0%, #ec8a4e 100%);
-  color: white;
+  background: var(--dy-accent);
+  box-shadow: 0 0 6px rgba(194, 65, 12, 0.7);
+  flex-shrink: 0;
+}
+
+/* Estimate popup */
+.dy-est-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 25, 23, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  z-index: 2100;
+  animation: dy-fade-in 0.15s ease-out;
+}
+.dy-est-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: var(--dy-font-ui);
+  color: var(--dy-ink-2);
+}
+.dy-est-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--dy-muted);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.dy-est-close:hover { background: var(--dy-cream); color: var(--dy-ink); }
+.dy-est-dialog h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  flex-shrink: 0;
+  color: var(--dy-ink);
+  letter-spacing: -0.01em;
 }
-.dy-signed-text {
-  color: rgba(255, 255, 255, 0.92);
+.dy-est-dialog p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--dy-ink-2);
 }
-.dy-signed-text strong { color: white; font-weight: 700; }
-.dy-signed-name {
-  color: rgba(255, 255, 255, 0.7);
+.dy-est-dialog p:last-of-type { margin-bottom: 18px; }
+.dy-est-dialog strong { color: var(--dy-ink); font-weight: 700; }
+.dy-est-muted {
+  color: var(--dy-muted) !important;
+  font-size: 13px !important;
   font-style: italic;
 }
+.dy-est-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.dy-est-btn {
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 10px;
+  border: none;
+  background: var(--dy-accent);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.dy-est-btn:hover { background: var(--dy-accent-2); transform: translateY(-1px); }
 
 /* ===== Map overlays (vertex markers, labels) ===== */
 .dy-vertex {
@@ -880,86 +952,51 @@
   50% { filter: brightness(1.3); }
 }
 
-/* Earth: a large blue sphere with a continents-like gradient that spins in */
+/* Earth: Phosphor GlobeHemisphereWest icon, large, spinning, with a glow */
 .dy-intro-earth {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 340px;
-  height: 340px;
-  margin-left: -170px;
-  margin-top: -170px;
+  width: 320px;
+  height: 320px;
+  margin-left: -160px;
+  margin-top: -160px;
   opacity: 0;
-  transform: scale(0.4) rotate(-20deg);
+  transform: scale(0.55) rotate(-14deg);
   transition: opacity 700ms ease-out, transform 1000ms cubic-bezier(0.22, 0.9, 0.28, 1.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.dy-intro-earth .dy-intro-earth-sphere {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 32%, rgba(255,255,255,0.25) 0%, transparent 40%),
-    radial-gradient(circle at 70% 60%, #1a4a72 0%, #0f2d4a 60%),
-    conic-gradient(from 180deg at 50% 50%, #2a6ea3 0deg, #1a4a72 90deg, #0f2d4a 180deg, #1a4a72 270deg, #2a6ea3 360deg);
-  box-shadow:
-    inset -20px -20px 60px rgba(0,0,0,0.5),
-    inset 10px 10px 30px rgba(255,255,255,0.1),
-    0 0 80px rgba(42, 110, 163, 0.4);
-  animation: dy-globe-spin 8s linear infinite;
-  position: relative;
-}
-.dy-intro-earth .dy-intro-earth-sphere::before {
-  content: '';
+.dy-intro-earth-glow {
   position: absolute;
-  inset: 0;
+  inset: 10px;
   border-radius: 50%;
-  background-image:
-    radial-gradient(ellipse 40px 20px at 30% 40%, rgba(34, 139, 34, 0.6), transparent),
-    radial-gradient(ellipse 60px 30px at 65% 45%, rgba(34, 139, 34, 0.5), transparent),
-    radial-gradient(ellipse 50px 25px at 45% 65%, rgba(34, 139, 34, 0.55), transparent),
-    radial-gradient(ellipse 30px 20px at 75% 70%, rgba(34, 139, 34, 0.5), transparent);
-  opacity: 0.7;
+  background: radial-gradient(circle at 40% 40%,
+    rgba(107, 163, 194, 0.55) 0%,
+    rgba(42, 110, 163, 0.35) 35%,
+    transparent 65%);
+  filter: blur(18px);
+}
+.dy-intro-earth-icon {
+  position: relative;
+  z-index: 1;
+  animation: dy-globe-spin 12s linear infinite;
+  filter: drop-shadow(0 0 22px rgba(107, 163, 194, 0.5));
 }
 @keyframes dy-globe-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.dy-intro-earth .dy-intro-earth-pin {
+.dy-intro-earth-pin {
   position: absolute;
-  top: 30%;
-  left: 55%;
+  top: 36%;
+  left: 56%;
+  z-index: 2;
   opacity: 0;
   transform: translate(-50%, -100%) scale(0);
-}
-.dy-intro-pin-head {
-  width: 16px;
-  height: 16px;
-  border-radius: 50% 50% 50% 0;
-  background: var(--dy-accent);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 12px rgba(194, 65, 12, 0.6);
-  transform: rotate(-45deg);
-  display: block;
-  position: relative;
-}
-.dy-intro-pin-head::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 8px;
-  height: 8px;
-  background: #fff;
-  border-radius: 50%;
-}
-.dy-intro-pin-tail {
-  position: absolute;
-  top: 16px;
-  left: 4px;
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(circle, rgba(194, 65, 12, 0.5) 0%, transparent 70%);
-  border-radius: 50%;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
 }
 
 /* Copy stack */
@@ -994,6 +1031,9 @@
   position: absolute;
   top: 22px;
   right: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -1014,10 +1054,10 @@
 }
 
 /* Stage-driven transitions (root gets .dy-intro-<stage>) */
-.dy-intro-starfield .dy-intro-earth { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+.dy-intro-starfield .dy-intro-earth { opacity: 0; transform: scale(0.55) rotate(-14deg); }
 .dy-intro-globe .dy-intro-earth     { opacity: 1; transform: scale(1) rotate(0deg); }
-.dy-intro-pin .dy-intro-earth       { opacity: 1; transform: scale(1.05) rotate(0deg); }
-.dy-intro-fading .dy-intro-earth    { opacity: 0.85; transform: scale(2.6) rotate(4deg); transition: all 400ms ease-in; }
+.dy-intro-pin .dy-intro-earth       { opacity: 1; transform: scale(1.03) rotate(0deg); }
+.dy-intro-fading .dy-intro-earth    { opacity: 0.8; transform: scale(2.6) rotate(3deg); transition: all 400ms ease-in; }
 
 .dy-intro-pin .dy-intro-earth-pin,
 .dy-intro-fading .dy-intro-earth-pin {

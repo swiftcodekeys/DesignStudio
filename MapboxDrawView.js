@@ -8,11 +8,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
+import {
+  Check, Pencil, MapPin, FloppyDisk, ArrowCounterClockwise,
+  X, CaretDown, CaretUp, ArrowRight, GlobeHemisphereWest,
+} from '@phosphor-icons/react';
 import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
 import { computeSlopedPostCount, compassBearing } from './geometryUtils';
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
+
+// OS-aware modifier key display. Mac shows ⌘, everyone else shows Ctrl.
+// The keyboard handler itself listens for both metaKey and ctrlKey so the
+// shortcut works regardless of platform — this is purely the label shown
+// in the keyboard-hints strip and the undo button's tooltip.
+function detectModKey() {
+  if (typeof navigator === 'undefined') return 'Ctrl';
+  var src = (navigator.platform || navigator.userAgent || '').toString();
+  return /Mac|iPhone|iPad|iPod/i.test(src) ? '\u2318' : 'Ctrl';
+}
+var MOD_KEY = detectModKey();
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -82,8 +97,10 @@ export function epqsBadgeLabel(args) {
 
 // ---------- Earth-view cinematic intro (first visit) ----------
 // 2.4s sequence: starfield fade-in → spinning globe rises → pin drops at
-// the user's address → crossfade into the satellite map. Gated by the
-// dy_seen cookie and EARTH_INTRO_ENABLED build flag.
+// the user's address → crossfade into the satellite map. Uses Phosphor's
+// GlobeHemisphereWest icon (thin weight, white) for the Earth and MapPin
+// for the address pin — no emoji. Gated by dy_seen cookie and the
+// EARTH_INTRO_ENABLED build flag.
 function EarthIntro(props) {
   var stageState = useState('starfield'); // 'starfield' | 'globe' | 'pin' | 'fading'
   var stage = stageState[0];
@@ -115,10 +132,15 @@ function EarthIntro(props) {
   },
     React.createElement('div', { className: 'dy-intro-starfield' }),
     React.createElement('div', { className: 'dy-intro-earth' },
-      React.createElement('div', { className: 'dy-intro-earth-sphere' }),
+      React.createElement('div', { className: 'dy-intro-earth-glow' }),
+      React.createElement(GlobeHemisphereWest, {
+        size: 280,
+        weight: 'thin',
+        color: '#ffffff',
+        className: 'dy-intro-earth-icon',
+      }),
       React.createElement('div', { className: 'dy-intro-earth-pin' },
-        React.createElement('span', { className: 'dy-intro-pin-head' }),
-        React.createElement('span', { className: 'dy-intro-pin-tail' })
+        React.createElement(MapPin, { size: 42, weight: 'fill', color: '#c2410c' })
       )
     ),
     React.createElement('div', { className: 'dy-intro-copy' },
@@ -129,7 +151,10 @@ function EarthIntro(props) {
       className: 'dy-intro-skip',
       onClick: function(e) { e.stopPropagation(); skip(); },
       type: 'button',
-    }, 'Skip \u2192')
+    },
+      React.createElement('span', null, 'Skip'),
+      React.createElement(ArrowRight, { size: 14, weight: 'bold' })
+    )
   );
 }
 
@@ -285,9 +310,9 @@ function AddressPill(props) {
       onClick: function() { setOpen(!open); },
       type: 'button',
     },
-      React.createElement('span', { className: 'dy-pill-pin' }, '\u{1F4CD}'),
+      React.createElement(MapPin, { size: 14, weight: 'fill', className: 'dy-pill-pin' }),
       React.createElement('span', { className: 'dy-pill-addr' }, shortAddr),
-      React.createElement('span', { className: 'dy-pill-caret' }, '\u25BE')
+      React.createElement(CaretDown, { size: 12, weight: 'bold', className: 'dy-pill-caret' })
     ),
     open && React.createElement('div', { className: 'dy-pill-dropdown' },
       React.createElement('form', { onSubmit: onSubmit },
@@ -342,14 +367,55 @@ function EmptyStateOverlay() {
   );
 }
 
-// ---------- Signed note (Sarah reassurance) ----------
-function SignedNote() {
-  return React.createElement('div', { className: 'dy-signed-note' },
-    React.createElement('div', { className: 'dy-avatar' }, 'SM'),
-    React.createElement('div', { className: 'dy-signed-text' },
-      React.createElement('strong', null, 'This is an estimate. '),
-      'I\u2019ll verify every foot with you on a free 20-min call before anything is cut. ',
-      React.createElement('span', { className: 'dy-signed-name' }, 'Sarah M., your designer')
+// ---------- Estimate banner (compact, tappable → popup) ----------
+// A small persistent pill at the top-center that says "This is an estimate".
+// Clicking opens the EstimatePopup with the full explanation + an Acknowledge
+// action. Replaces the old named signed-note; no personal names referenced.
+function EstimateBanner(props) {
+  return React.createElement('button', {
+    className: 'dy-est-banner',
+    onClick: props.onOpen,
+    type: 'button',
+    'aria-haspopup': 'dialog',
+  },
+    React.createElement('span', { className: 'dy-est-banner-dot' }),
+    React.createElement('span', null, 'This is an estimate'),
+    React.createElement(CaretDown, { size: 12, weight: 'bold' })
+  );
+}
+
+function EstimatePopup(props) {
+  return React.createElement('div', {
+    className: 'dy-est-overlay',
+    onClick: function(e) { if (e.target === e.currentTarget) props.onClose(); },
+    role: 'dialog',
+    'aria-modal': 'true',
+  },
+    React.createElement('div', { className: 'dy-est-dialog' },
+      React.createElement('button', {
+        type: 'button',
+        className: 'dy-est-close',
+        onClick: props.onClose,
+        'aria-label': 'Close',
+      }, React.createElement(X, { size: 18, weight: 'bold' })),
+      React.createElement('h3', null, 'About this estimate'),
+      React.createElement('p', null,
+        'The linear footage and price range on this screen come from the line you\u2019ve drawn on the satellite image. They\u2019re a solid starting point, but they\u2019re not a firm quote.'
+      ),
+      React.createElement('p', null,
+        React.createElement('strong', null, 'Every order gets verified before we cut. '),
+        'We\u2019ll walk your property (or set up a free 20-minute video call) to confirm measurements, gates, slope, and access. If anything changes, your price adjusts automatically — up or down — with no extra fees.'
+      ),
+      React.createElement('p', { className: 'dy-est-muted' },
+        'Satellite imagery can be a year or two old, and tree canopy can hide features. That\u2019s why we double-check every order.'
+      ),
+      React.createElement('div', { className: 'dy-est-actions' },
+        React.createElement('button', {
+          type: 'button',
+          className: 'dy-est-btn',
+          onClick: props.onClose,
+        }, 'Got it')
+      )
     )
   );
 }
@@ -391,21 +457,23 @@ function MorphingDock(props) {
     React.createElement('button', {
       className: 'dy-micro-btn',
       onClick: props.onUndo,
-      title: 'Undo last corner (\u2318Z)',
+      title: 'Undo last corner (' + MOD_KEY + 'Z)',
       type: 'button',
       'aria-label': 'Undo',
-    }, '\u21B6'),
+    }, React.createElement(ArrowCounterClockwise, { size: 16, weight: 'regular' })),
     React.createElement('button', {
       className: 'dy-micro-btn',
       onClick: props.onReset,
       title: 'Clear all corners',
       type: 'button',
       'aria-label': 'Reset',
-    }, '\u2715')
+    }, React.createElement(X, { size: 16, weight: 'regular' }))
   );
 
   var emptyContent = React.createElement(React.Fragment, null,
-    React.createElement('div', { className: 'dy-dock-icon' }, '\u270F\uFE0F'),
+    React.createElement('div', { className: 'dy-dock-icon' },
+      React.createElement(Pencil, { size: 22, weight: 'regular', color: '#c2410c' })
+    ),
     React.createElement('div', { className: 'dy-dock-copy' },
       React.createElement('strong', null, 'Ready when you are'),
       React.createElement('span', { className: 'dy-dock-sep' }, '\u00B7'),
@@ -418,15 +486,6 @@ function MorphingDock(props) {
     }, 'Start drawing')
   );
 
-  var continueLabel;
-  if (canContinue) {
-    var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
-    continueLabel = '\u2713 Continue \u00B7 ' + (priceRange ? '~' + formatMoney(mid) : '') + ' \u2192';
-  } else {
-    var needed = Math.max(0, MIN_DRAW_FT - Math.round(totalFt));
-    continueLabel = 'Keep going \u00B7 ' + needed + '+ ft';
-  }
-
   var drawingOrReadyContent = React.createElement(React.Fragment, null,
     statsRow,
     microActions,
@@ -435,12 +494,29 @@ function MorphingDock(props) {
       onClick: canContinue ? props.onContinue : null,
       disabled: !canContinue,
       type: 'button',
-    }, continueLabel),
+    },
+      canContinue ? (function() {
+        var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
+        return React.createElement(React.Fragment, null,
+          React.createElement(Check, { size: 14, weight: 'bold' }),
+          React.createElement('span', null, 'Continue'),
+          priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
+            '\u00B7 ~' + formatMoney(mid)
+          ),
+          React.createElement(ArrowRight, { size: 14, weight: 'bold' })
+        );
+      })() : React.createElement('span', null,
+        'Keep going \u00B7 ' + Math.max(0, MIN_DRAW_FT - Math.round(totalFt)) + '+ ft'
+      )
+    ),
     canContinue && React.createElement('button', {
       className: 'dy-breakdown-toggle',
       onClick: props.onToggleBreakdown,
       type: 'button',
-    }, isExpanded ? 'Hide breakdown \u2303' : 'View breakdown \u2304')
+    },
+      React.createElement('span', null, isExpanded ? 'Hide breakdown' : 'View breakdown'),
+      React.createElement(isExpanded ? CaretUp : CaretDown, { size: 12, weight: 'bold' })
+    )
   );
 
   var expandedPanel = isExpanded && segments.length > 0 && React.createElement('div', { className: 'dy-dock-expanded' },
@@ -458,7 +534,7 @@ function MorphingDock(props) {
               title: 'Remove this segment',
               type: 'button',
               'aria-label': 'Remove segment ' + (i + 1),
-            }, '\u00D7')
+            }, React.createElement(X, { size: 12, weight: 'bold' }))
           );
         })
       )
@@ -507,7 +583,7 @@ function MorphingDock(props) {
       React.createElement('span', { className: 'dy-kbd-hint' },
         React.createElement('kbd', null, 'Right-click'), ' delete'),
       React.createElement('span', { className: 'dy-kbd-hint' },
-        React.createElement('kbd', null, '\u2318Z'), ' undo')
+        React.createElement('kbd', null, MOD_KEY + 'Z'), ' undo')
     )
   );
 }
@@ -820,6 +896,10 @@ function MapboxDrawView(props) {
   var introVisible = introState[0];
   var setIntroVisible = introState[1];
 
+  var estOpenState = useState(false);
+  var estOpen = estOpenState[0];
+  var setEstOpen = estOpenState[1];
+
   var mapInstanceRef = useRef(null);
 
   // On mount: check URL hash for a resume link (#dy-resume=...)
@@ -1020,7 +1100,10 @@ function MapboxDrawView(props) {
         onClick: handleSaveForLater,
         type: 'button',
         title: 'Save this drawing to resume later',
-      }, '\u{1F4BE} Save for later')
+      },
+        React.createElement(FloppyDisk, { size: 14, weight: 'regular' }),
+        React.createElement('span', null, 'Save for later')
+      )
     ),
 
     // Map canvas
@@ -1050,12 +1133,18 @@ function MapboxDrawView(props) {
       onDeleteSegment: handleDeleteSegment,
     }),
 
-    // Signed note (only when actively drawing)
-    points.length > 0 && React.createElement(SignedNote, null),
+    // Estimate banner (compact, always visible while drawing) + popup
+    points.length > 0 && React.createElement(EstimateBanner, {
+      onOpen: function() { setEstOpen(true); },
+    }),
+    estOpen && React.createElement(EstimatePopup, {
+      onClose: function() { setEstOpen(false); },
+    }),
 
     // Save confirmation toast
     savedToast && React.createElement('div', { className: 'dy-toast' },
-      '\u2713 Email sent. Click the link anytime to resume.'
+      React.createElement(Check, { size: 14, weight: 'bold' }),
+      React.createElement('span', null, 'Email sent. Click the link anytime to resume.')
     ),
 
     // Save-for-later dialog
@@ -1069,7 +1158,7 @@ function MapboxDrawView(props) {
           className: 'dy-save-close',
           onClick: function() { setSaveDialogOpen(false); },
           'aria-label': 'Close',
-        }, '\u00D7'),
+        }, React.createElement(X, { size: 18, weight: 'bold' })),
         React.createElement('h3', null, 'Save your drawing'),
         React.createElement('p', { className: 'dy-save-copy' },
           'I\u2019ll email you a link so you can resume exactly where you left off, from any device.'

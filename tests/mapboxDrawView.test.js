@@ -141,8 +141,8 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
       />
     );
     expect(container.querySelector('.dy-empty-overlay')).toBeNull();
-    // Signed note and dock should show in drawing/ready phase
-    expect(container.querySelector('.dy-signed-note')).toBeTruthy();
+    // Estimate banner (compact, tappable) shows once user has drawn
+    expect(container.querySelector('.dy-est-banner')).toBeTruthy();
   });
 
   it('map click passes e.lngLat straight into setPoints (no pixel math)', async () => {
@@ -184,7 +184,7 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(received[0][0][1]).toBe(expectedLat);
   });
 
-  it('signed-note row is visible (non-dismissible) when user has drawn points', () => {
+  it('estimate banner is visible when user has drawn points and opens a popup on click', () => {
     localStorage.setItem('gv_draw_state', JSON.stringify({
       points: [[-83.9, 42.6], [-83.901, 42.601]],
       ts: Date.now(),
@@ -195,10 +195,20 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
         initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
       />
     );
-    const note = container.querySelector('.dy-signed-note');
-    expect(note).toBeTruthy();
-    // No dismiss button — handoff spec: "Do not make it dismissible"
-    expect(note.querySelector('button')).toBeNull();
+    const banner = container.querySelector('.dy-est-banner');
+    expect(banner).toBeTruthy();
+    // No personal name (no "Sarah" references anywhere in the banner)
+    expect(banner.textContent).not.toMatch(/Sarah/i);
+
+    // Clicking the banner opens the popup
+    expect(container.querySelector('.dy-est-dialog')).toBeNull();
+    act(() => { fireEvent.click(banner); });
+    const dialog = container.querySelector('.dy-est-dialog');
+    expect(dialog).toBeTruthy();
+    // Popup also doesn't mention the designer's name
+    expect(dialog.textContent).not.toMatch(/Sarah/i);
+    // "Got it" acknowledge button exists
+    expect(dialog.textContent).toMatch(/Got it/i);
   });
 
   it('address pill renders short form of current location in the top bar', () => {
