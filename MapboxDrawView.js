@@ -461,11 +461,18 @@ function MapboxDrawView(props) {
   var sidebarOpen = sidebarOpenState[0];
   var setSidebarOpen = sidebarOpenState[1];
 
-  var bannerShownState = useState(function() {
-    return !sessionStorage.getItem('gv_draw_banner_shown');
-  });
+  var bannerShownState = useState(false);
   var bannerShown = bannerShownState[0];
   var setBannerShown = bannerShownState[1];
+
+  // Show CYA banner on first draw action (first side selected or first manual vertex added),
+  // but only if the user hasn't already dismissed it this session.
+  useEffect(function() {
+    if (sessionStorage.getItem('gv_draw_banner_shown')) return;
+    if (selectedSides.length > 0 || manualPoints.length > 0) {
+      setBannerShown(true);
+    }
+  }, [selectedSides.length, manualPoints.length]);
 
   var mapInstanceRef = useRef(null);
 
