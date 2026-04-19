@@ -31,6 +31,7 @@
 .wizard-shell .qb-container {
   overflow-y: auto;
   flex: 1;
+  min-height: 0; /* flex child must opt out of min-height:auto so overflow-y:auto fires */
 }
 .wizard-shell .summary-page {
   overflow-y: auto;
