@@ -5,15 +5,15 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3033',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm start',
-    port: 3000,
+    command: 'npx cross-env USE_MAPBOX_DRAW=true webpack serve --mode development --port 3033 --no-open',
+    port: 3033,
     reuseExistingServer: true,
-    timeout: 60000,
+    timeout: 120000,
   },
 });
