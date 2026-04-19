@@ -95,21 +95,18 @@ export function epqsBadgeLabel(args) {
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
 }
 
-// ---------- Intro overlay (first visit — Earth-from-space video) ----------
-// Plays /assets/video/earth-intro.mp4 full-viewport while the Mapbox map
-// mounts in the background. At EARTH_INTRO_DURATION_MS the whole overlay
-// fades out and the map is ready underneath. Gated by the dy_seen cookie
+// ---------- Intro overlay (first visit — flies from globe to rooftop) ----------
+// MapScreen is already mounted behind this overlay with cinematic=true,
+// which starts the Mapbox globe at zoom 1 and flyTo()'s to the user's
+// address at zoom 20 over 2.4s. This overlay is just the "Finding your
+// home..." copy + vignette on top of that real satellite motion — no
+// video, no CSS-faked globe. When the camera arrives, the whole overlay
+// fades out and the user can start drawing. Gated by the dy_seen cookie
 // and EARTH_INTRO_ENABLED build flag.
-//
-// TODO(pre-launch): /assets/video/earth-intro.mp4 is currently VFP's
-// hero-loop.mp4 (direct copy for visual parity during dev). Before
-// public launch, swap to either a NASA public-domain Blue Marble clip or
-// a custom-rendered loop to avoid using their copyrighted asset.
 function IntroOverlay(props) {
   var visibleState = useState(true);
   var visible = visibleState[0];
   var setVisible = visibleState[1];
-  var videoRef = useRef(null);
 
   useEffect(function() {
     var fade = setTimeout(function() {
@@ -134,15 +131,6 @@ function IntroOverlay(props) {
     className: 'dy-intro-overlay' + (visible ? '' : ' dy-intro-overlay-hidden'),
     onClick: skip,
   },
-    React.createElement('video', {
-      ref: videoRef,
-      className: 'dy-intro-video',
-      src: 'assets/video/earth-intro.mp4',
-      autoPlay: true,
-      muted: true,
-      loop: true,
-      playsInline: true,
-    }),
     React.createElement('div', { className: 'dy-intro-copy' },
       React.createElement('div', { className: 'dy-intro-finding' }, 'Finding your home\u2026'),
       addrLine && React.createElement('div', { className: 'dy-intro-address' }, addrLine)

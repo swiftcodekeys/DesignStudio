@@ -907,10 +907,9 @@
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* ===== First-visit cinematic overlay (Earth-from-space video) ===== */
-/* Full-viewport video (Earth + satellites) plays while the Mapbox map
-   mounts behind. At 2.4s the whole overlay fades out, revealing the
-   satellite map ready to draw on. */
+/* ===== First-visit cinematic overlay (rides the Mapbox flyTo) ===== */
+/* MapScreen (below this overlay) starts at globe zoom 1 and flies to
+   zoom 20 over 2.4s. Overlay is just the copy + vignette + skip. */
 .dy-intro-overlay {
   position: absolute;
   inset: 0;
@@ -920,36 +919,13 @@
   font-family: var(--dy-font-ui);
   opacity: 1;
   transition: opacity 600ms ease-out;
-  background: #000;
-  overflow: hidden;
-}
-.dy-intro-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  pointer-events: none;
-}
-.dy-intro-overlay::after {
-  /* Subtle vignette on top of the video so overlay copy stays legible */
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, transparent 45%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+    radial-gradient(ellipse 80% 60% at center, transparent 0%, rgba(0, 0, 0, 0.35) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
 }
 .dy-intro-overlay-hidden {
   opacity: 0;
   pointer-events: none;
-}
-.dy-intro-overlay .dy-intro-copy,
-.dy-intro-overlay .dy-intro-skip {
-  z-index: 2;
 }
 
 /* Copy stack — bottom-center, clean, no pin or globe graphic */
