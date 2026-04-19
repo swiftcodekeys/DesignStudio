@@ -24,6 +24,16 @@ var SEGMENT_COLORS = [
   '#A855F7', // purple
 ];
 
+// Pure helper: compute the display label for an EPQS elevation badge.
+// Precedence: confidence-low > flat-threshold > numeric default.
+// Exported for unit-testing without DOM or React mounting.
+export function epqsBadgeLabel({ maxAbsDelta, signedDelta, confidence }) {
+  if (confidence === 'low') return '\u2014 unknown \u2014';
+  if (maxAbsDelta < 0.5) return 'Flat \u2713';
+  var arrow = signedDelta >= 0 ? '\u2197' : '\u2198';
+  return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
+}
+
 function distanceBetween(a, b) {
   // Haversine in feet
   var R = 20902231;
@@ -339,13 +349,27 @@ function MapScreen(props) {
 
     userSegments.forEach(function(seg, segIdx) {
       var agg = aggregated[segIdx];
-      var color = {
+      var confidence = props.epqs && props.epqs.confidence;
+      var label = epqsBadgeLabel({
+        maxAbsDelta: agg.maxAbsDelta,
+        signedDelta: agg.signedDelta,
+        confidence: confidence,
+      });
+
+      // Color: confidence-low always gets unknown grey; flat threshold uses flat green;
+      // otherwise use the classification color from the aggregated result.
+      var colorMap = {
         flat: '#22C55E', sloped: '#F59E0B', steep: '#EF4444',
         steps: '#6366F1', unknown: '#9CA3AF',
-      }[agg.classification] || '#9CA3AF';
-
-      var arrow = agg.signedDelta >= 0 ? '\u2197' : '\u2198';
-      var label = arrow + ' ' + agg.maxAbsDelta.toFixed(1) + '"';
+      };
+      var color;
+      if (confidence === 'low') {
+        color = colorMap.unknown;
+      } else if (agg.maxAbsDelta < 0.5) {
+        color = colorMap.flat;
+      } else {
+        color = colorMap[agg.classification] || '#9CA3AF';
+      }
 
       var midLng = (seg.start[0] + seg.end[0]) / 2;
       var midLat = (seg.start[1] + seg.end[1]) / 2;
