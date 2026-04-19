@@ -183,10 +183,10 @@ var DesignReviewPage = function(props) {
     var isPoolReady = hasDesign && saved.poolBarrier && POOL_STYLES.indexOf(saved.styleId) >= 0;
     var pricing = hasDesign ? estimatePricing(saved) : null;
 
-    var fmt = function(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+    var fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-US'); };
 
     return (
-        <div className="bridge-page bridge-page--compact" style={{ overflowY: 'auto' }}>
+        <div className="bridge-page bridge-page--compact">
 
             <div className="bridge-content">
                 <div className="bridge-header bridge-header--compact">

@@ -3838,13 +3838,17 @@ html, body {
    ============================================================ */
 .bridge-page {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   background: #f7fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-/* Compact variant when inside wizard (no separate topbar needed) */
+/* Compact variant when inside wizard (no separate topbar needed).
+   Keep scroll behavior — previous min-height:0 override removed the
+   100vh height entirely, so overflow-y never kicked in. */
 .bridge-page--compact {
-  min-height: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 .bridge-topbar {
   background: #1B3A5C;
