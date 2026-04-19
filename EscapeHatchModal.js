@@ -106,8 +106,8 @@ function EscapeHatchModal(props) {
   if (!isOpen) return null;
 
   var subhead = trigger === 'exit-intent'
-    ? 'Before you go — we can pick up where you left off, or help if you\'re stuck.'
-    : 'Our Michigan team responds within one business day.';
+    ? 'Before you go, I can pick up where you left off, or help if you\'re stuck.'
+    : 'I respond within one business day.';
 
   function handleFile(file) {
     setUploadError('');
@@ -118,7 +118,7 @@ function EscapeHatchModal(props) {
     }
     if (file.type === 'application/pdf') {
       if (file.size > MAX_PDF_BYTES) {
-        setUploadError('PDF too large — email it to sales@grandviewfence.com instead.');
+        setUploadError('PDF too large. Email it to sales@grandviewfence.com instead.');
         return;
       }
       readPdfAsDataUrl(file).then(function(dataUrl) {
@@ -132,7 +132,7 @@ function EscapeHatchModal(props) {
     compressImage(file).then(function(dataUrl) {
       var bytes = Math.ceil((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
       if (bytes > MAX_OUT_BYTES) {
-        setUploadError('File too large — email it to sales@grandviewfence.com instead.');
+        setUploadError('File too large. Email it to sales@grandviewfence.com instead.');
         return;
       }
       setUpload({ dataUrl: dataUrl, kind: 'image', name: file.name });
@@ -182,12 +182,12 @@ function EscapeHatchModal(props) {
         setTimeout(function() { onClose(); }, 4000);
       } else {
         setSubmitError((result && result.error)
-          ? 'Couldn\'t send — please try again or email sales@grandviewfence.com.'
-          : 'Couldn\'t send — please try again or email sales@grandviewfence.com.');
+          ? 'Couldn\'t send. Please try again or email sales@grandviewfence.com.'
+          : 'Couldn\'t send. Please try again or email sales@grandviewfence.com.');
       }
     }).catch(function() {
       setSending(false);
-      setSubmitError('Couldn\'t send — please try again or email sales@grandviewfence.com.');
+      setSubmitError('Couldn\'t send. Please try again or email sales@grandviewfence.com.');
     });
   }
 
@@ -203,13 +203,13 @@ function EscapeHatchModal(props) {
             <div className="escape-hatch-success-icon">
               <Check size={28} weight="bold" />
             </div>
-            <h3>Thanks — we'll be in touch.</h3>
-            <p>Our Michigan team will follow up within one business day.</p>
+            <h3>Thanks, I'll be in touch.</h3>
+            <p>I'll follow up within one business day.</p>
             <code>Reference ID: {success.refId}</code>
           </div>
         ) : (
           <form onSubmit={handleSend}>
-            <h2 className="escape-hatch-title">Stuck? We'll help.</h2>
+            <h2 className="escape-hatch-title">Stuck? I'll help.</h2>
             <p className="escape-hatch-sub">{subhead}</p>
 
             <div className="escape-hatch-field">
@@ -253,7 +253,7 @@ function EscapeHatchModal(props) {
                 maxLength={500}
                 value={note}
                 onChange={function(e) { setNote(e.target.value); }}
-                placeholder="Weird yard shape? Sloped hill? Just questions? Tell us and we'll get back to you..."
+                placeholder="Weird yard shape? Sloped hill? Just questions? Drop a yard sketch and I'll get back to you."
               />
             </div>
 
@@ -307,9 +307,11 @@ function EscapeHatchModal(props) {
 
             {submitError && <div className="escape-hatch-error">{submitError}</div>}
 
-            <div className="escape-hatch-reassure">
-              Your current design is attached 📐
-            </div>
+            {upload && (
+              <div className="escape-hatch-reassure">
+                Your current design is attached
+              </div>
+            )}
           </form>
         )}
       </div>
