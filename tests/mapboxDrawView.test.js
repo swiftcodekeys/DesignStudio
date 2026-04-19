@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 
 // Helper: build a mock Map instance with the methods MapboxDrawView calls
@@ -198,28 +198,50 @@ describe('MapboxDrawView', () => {
       expect(container.querySelector('.mbx-cya-banner')).toBeNull();
     });
 
-    it('CYA banner appears on first draw action — useEffect watches selectedSides/manualPoints', () => {
-      // Verify that the deferred-trigger effect is present and keyed on the correct deps.
-      // We inspect the source to confirm the effect body and dependency array rather than
-      // executing the full render+event-chain, keeping the test self-contained.
-      const fs = require('fs');
-      const src = fs.readFileSync(
-        require('path').resolve(__dirname, '../MapboxDrawView.js'),
-        'utf8'
+    it('CYA banner appears on first draw action — useEffect fires when manualPoints becomes non-empty', async () => {
+      // Behavioral test: render MapboxDrawView with a real location so the map screen
+      // is shown. Enable manual mode (click the button), enable draw mode (click toggle),
+      // then fire a synthetic map click. The click drives state through handleManualVertex
+      // → setManualPoints → useEffect → setBannerShown(true) → banner in DOM.
+
+      sessionStorage.removeItem('gv_draw_banner_shown');
+
+      const mapboxgl = await import('mapbox-gl');
+      const mockInstance = makeMockMapInstance();
+      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+      const { container } = render(
+        <MapboxDrawView
+          onComplete={() => {}}
+          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        />
       );
 
-      // Must initialise bannerShown as false (no longer reads sessionStorage on init)
-      expect(src).toMatch(/bannerShownState\s*=\s*useState\(false\)/);
+      // Banner must not be visible yet — no draw action has occurred.
+      expect(container.querySelector('.mbx-cya-banner')).toBeNull();
 
-      // Must contain an effect that checks sessionStorage AND sets bannerShown to true
-      // when selectedSides or manualPoints become non-empty.
-      expect(src).toMatch(/sessionStorage\.getItem\('gv_draw_banner_shown'\)/);
-      expect(src).toMatch(/selectedSides\.length > 0 \|\| manualPoints\.length > 0/);
-      expect(src).toMatch(/setBannerShown\(true\)/);
+      // Enable manual mode — the "Use Manual Mode Instead" button calls setManualMode(true),
+      // which causes MapScreen to register its click handler (props.manualMode is now true).
+      const manualBtn = container.querySelector('.mbx-manual-mode-btn');
+      act(function () { fireEvent.click(manualBtn); });
 
-      // Dependency array must include both length expressions so the effect re-runs
-      // whenever either collection gains its first element.
-      expect(src).toMatch(/\[selectedSides\.length,\s*manualPoints\.length\]/);
+      // Enable draw mode — the mode toggle sets drawMode='draw', which is required for
+      // the click handler inside MapScreen to forward events to onManualVertex.
+      const drawToggle = container.querySelector('.mbx-mode-toggle');
+      act(function () { fireEvent.click(drawToggle); });
+
+      // Fire a synthetic Mapbox click via the established _fire pattern. This drives
+      // the MapScreen click handler → props.onManualVertex([lng, lat]) →
+      // MapboxDrawView.handleManualVertex → setManualPoints grows → useEffect fires.
+      await act(async function () {
+        mockInstance._fire('click', {
+          lngLat: { lng: -83.9, lat: 42.6 },
+          point: { x: 400, y: 300 },
+        });
+      });
+
+      // The CYA banner should now be visible in the DOM.
+      expect(container.querySelector('.mbx-cya-banner')).toBeTruthy();
     });
 
     it('CYA banner does not re-trigger after "Got it" dismissed — sessionStorage gate in effect', () => {
