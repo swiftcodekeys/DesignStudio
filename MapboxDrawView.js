@@ -498,7 +498,7 @@ function MorphingDock(props) {
         var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
         return React.createElement(React.Fragment, null,
           React.createElement(Check, { size: 14, weight: 'bold' }),
-          React.createElement('span', null, 'Continue'),
+          React.createElement('span', null, 'Done. Continue'),
           priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
             '\u00B7 ~' + formatMoney(mid)
           ),
@@ -519,6 +519,12 @@ function MorphingDock(props) {
   );
 
   var expandedPanel = isExpanded && segments.length > 0 && React.createElement('div', { className: 'dy-dock-expanded' },
+    React.createElement('button', {
+      type: 'button',
+      className: 'dy-expanded-close',
+      onClick: props.onToggleBreakdown,
+      'aria-label': 'Close breakdown',
+    }, React.createElement(X, { size: 16, weight: 'bold' })),
     // Segment list
     React.createElement('div', { className: 'dy-expanded-col' },
       React.createElement('h4', { className: 'dy-expanded-head' }, 'Your fence line'),

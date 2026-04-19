@@ -475,6 +475,7 @@
 
 /* Expanded panel */
 .dy-dock-expanded {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
@@ -483,6 +484,22 @@
   border-top: 1px solid var(--dy-rule);
   animation: dy-expand-in 320ms var(--dy-spring) both;
 }
+.dy-expanded-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--dy-muted, #8a7a63);
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dy-expanded-close:hover { background: var(--dy-cream, #f6efe3); color: var(--dy-ink, #1a1917); }
 @keyframes dy-expand-in {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }

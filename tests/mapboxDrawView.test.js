@@ -244,6 +244,32 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(rule).not.toMatch(/position\s*:/);
   });
 
+  it('expanded breakdown has a dedicated close button that collapses the panel', () => {
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [
+        [-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605], [-83.905, 42.6],
+      ],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    // Open the expanded panel via the existing toggle
+    const toggle = container.querySelector('.dy-breakdown-toggle');
+    expect(toggle).toBeTruthy();
+    act(() => { fireEvent.click(toggle); });
+    const expanded = container.querySelector('.dy-dock-expanded');
+    expect(expanded).toBeTruthy();
+    // Close button inside the expanded panel collapses it
+    const closeBtn = expanded.querySelector('.dy-expanded-close');
+    expect(closeBtn).toBeTruthy();
+    act(() => { fireEvent.click(closeBtn); });
+    expect(container.querySelector('.dy-dock-expanded')).toBeNull();
+  });
+
   it('address pill renders short form of current location in the top bar', () => {
     const { container } = render(
       <MapboxDrawView
