@@ -75,19 +75,15 @@ function QuoteBuilder(props) {
     });
   }
 
-  // Pool compliance smart defaults (Task 2 — warn, don't wall):
-  //   - Auto-select flush bottom rail
-  //   - Auto-bump height to the minimum compliant for the current style
-  //     when the user has chosen (or just switched to) that style. Users
-  //     can still manually lower height afterwards; they just get a
-  //     yellow warning (shown by QuoteStep1_Style).
+  // Pool compliance smart defaults (warn, don't wall):
+  //   Auto-select flush bottom rail. Height is NOT auto-bumped — the user
+  //   gets a yellow warning in QuoteStep1_Style if they pick below the
+  //   style's pool-code minimum, but the selection sticks. Previously this
+  //   effect snapped height back every re-render, making the height
+  //   selector appear stuck in the backyard pool flow.
   useEffect(function() {
     if (!(props.poolCompliance && props.poolCompliance.poolBarrier)) return;
-    var patch = {};
-    if (data.bottomRail !== 'flush') patch.bottomRail = 'flush';
-    var min = POOL_MIN_HEIGHT_BY_STYLE[data.style];
-    if (min && data.height < min) patch.height = min;
-    if (Object.keys(patch).length) update(patch);
+    if (data.bottomRail !== 'flush') update({ bottomRail: 'flush' });
   }, [props.poolCompliance, data.style]);
 
   // Track step enters
@@ -155,7 +151,7 @@ function QuoteBuilder(props) {
       ),
       React.createElement('div', { className: 'qb-snapshot-prefill' },
         React.createElement(ArrowRight, { size: 14, style: { flexShrink: 0 } }),
-        ' Pre-filled from your design \u2014 let\u2019s finalize your quote'
+        ' Pre-filled from your design. Let\u2019s finalize your quote'
       )
     ) : null,
 
