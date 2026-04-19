@@ -374,7 +374,7 @@ Upload them with your order. If Sarah spots something in the photos that doesn't
 
 ### How accurate does it need to be?
 
-Approximate with best-effort honesty. Within ±2 feet on total footage, within one slope tier on rackability. If you're genuinely unsure between Standard and Rackable, order Rackable. If you're unsure between Rackable and Heavy Rack, call us — that's a more expensive upgrade and we'd rather walk the line with you on a video call than over-order.
+Approximate with best-effort honesty. Within ±2 feet on total footage, within one slope tier on rackability. If you're genuinely unsure between Standard and Rackable, order Rackable. If you're unsure between Rackable and Heavy Rack, call (855) FENCE-30 before ordering — that's a more expensive upgrade and we'd rather confirm once than have you over-order.
 
 ---
 
@@ -408,7 +408,7 @@ The instant-quote tool is designed for 80% of yards: rectangular, single slope t
 - **Commercial / industrial applications** that require wind-load ratings, security upgrades, or specific BOCA compliance beyond residential.
 - **Sharp corners (less than 60°)** that need adjustable rail ends.
 - **Estate or cantilever driveway gates** — these are configured orders, not standard stock.
-- **You're not sure between two slope tiers** and you want us to walk the line with you via video call.
+- **You're not sure between two slope tiers** and want to talk it through on the phone before ordering.
 
 ### Sarah's 24-hour review process
 

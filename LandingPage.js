@@ -246,8 +246,8 @@ var LandingPage = function() {
                             <div className="step-icon"><PriceIcon /></div>
                             <h3 className="step-heading">Get your instant price</h3>
                             <p className="step-body">
-                                See a full itemized quote with real pricing.
-                                Order online or schedule a free consultation.
+                                See a full itemized quote with real pricing. Order
+                                online, save it for later, or call (855) FENCE-30.
                             </p>
                         </div>
                     </div>

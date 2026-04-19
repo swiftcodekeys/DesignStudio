@@ -391,11 +391,11 @@ function EstimatePopup(props) {
         'The linear footage and price range on this screen come from the line you\u2019ve drawn on the satellite image. They\u2019re a solid starting point, but they\u2019re not a firm quote.'
       ),
       React.createElement('p', null,
-        React.createElement('strong', null, 'Every order gets verified before we cut. '),
-        'We\u2019ll walk your property (or set up a free 20-minute video call) to confirm measurements, gates, slope, and access. If anything changes, your price adjusts automatically — up or down — with no extra fees.'
+        React.createElement('strong', null, 'It\u2019s your responsibility to double-check the math '),
+        'and validate the measurements yourself. I review every order before production and catch obvious red flags, but the linear feet you submit are what I build to.'
       ),
       React.createElement('p', { className: 'dy-est-muted' },
-        'Satellite imagery can be a year or two old, and tree canopy can hide features. That\u2019s why we double-check every order.'
+        'Satellite imagery can be a year or two old and tree canopy can hide features, so always walk the line once before you order. Questions? Call (855) FENCE-30.'
       ),
       React.createElement('div', { className: 'dy-est-actions' },
         React.createElement('button', {

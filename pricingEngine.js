@@ -342,7 +342,7 @@ export function calculateQuote(config) {
       });
     }
     if (hasStairStep) {
-      warnings.push('Stair-step sections cannot be racked. We recommend a free consultation to determine the best approach.');
+      warnings.push('Stair-step sections cannot be racked. Call (855) FENCE-30 so we can confirm the right approach before you order.');
     }
   } else if (hasSlope) {
     // Fallback: whole-yard slope (legacy behavior)
@@ -355,7 +355,7 @@ export function calculateQuote(config) {
       note: 'Required for racked panels on sloped terrain',
     });
     if (terrain === 'steep' || terrain === 'mixed') {
-      warnings.push('Steep or mixed terrain may require stair-stepped sections. We recommend a free consultation to confirm quantities.');
+      warnings.push('Steep or mixed terrain may need stair-stepped sections. Call (855) FENCE-30 before ordering so we can confirm quantities.');
     }
   }
 
