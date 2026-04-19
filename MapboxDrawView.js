@@ -553,7 +553,7 @@ function MapboxDrawView(props) {
     // which customers pick after the draw step. Using 6 here is a safe over-estimate
     // for post count; priceCalculator's tier gate still applies.
     var slopedPostCount = computeSlopedPostCount(segments, 6);
-    return {
+    var data = {
       totalFeet: totalFeet,
       corners: segments.length - 1 + (manualMode ? 0 : 0),
       ends: 2,
@@ -572,6 +572,13 @@ function MapboxDrawView(props) {
       source: 'auto',
       parcel: parcel,
     };
+    // Test hook: expose draw data to E2E specs without touching the DOM or
+    // modifying the pricing chain. Guarded for SSR safety (unit tests mount
+    // without a browser window).
+    if (typeof window !== 'undefined') {
+      window.__DRAW_TOOL_DATA__ = data;
+    }
+    return data;
   }
 
   function captureSnapshot() {
