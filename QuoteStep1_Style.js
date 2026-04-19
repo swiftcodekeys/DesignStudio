@@ -1,7 +1,7 @@
 // QuoteStep1_Style.js — Style & Config step for QuoteBuilder
 // React.createElement, var, function declarations, vanilla CSS
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Check, Info, SwimmingPool, ShieldCheck } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
 import { PRIVACY_STYLES } from './configData';
@@ -148,14 +148,21 @@ function QuoteStep1_Style(props) {
     setTimeout(function() { update({ style: '' }); }, 0);
   }
 
-  // If current height not available for grade, pick closest
-  var heightValid = availableHeights.indexOf(data.height) >= 0;
-  if (!heightValid && data.height) {
+  // If current height not available for grade, pick closest.
+  // useEffect with [grade] dep: only fires when grade changes, not on every
+  // render. Prevents a race where repeated render-phase setTimeouts clobber
+  // the user's height click when data.height is a string ("48") but
+  // availableHeights contains numbers (indexOf never matches, so every
+  // render queued a reset that fired after the click).
+  var numHeight = Number(data.height);
+  useEffect(function() {
+    if (availableHeights.indexOf(numHeight) >= 0) return;
+    if (!data.height) return;
     var closest = availableHeights.reduce(function(prev, curr) {
-      return Math.abs(curr - data.height) < Math.abs(prev - data.height) ? curr : prev;
+      return Math.abs(curr - numHeight) < Math.abs(prev - numHeight) ? curr : prev;
     });
-    setTimeout(function() { update({ height: closest }); }, 0);
-  }
+    update({ height: closest });
+  }, [grade]);
 
   // Pro spacing availability — only for styles that support it
   var proSpacingAvailable = PRO_SPACING_STYLES.indexOf(data.style) >= 0;
@@ -384,7 +391,7 @@ function QuoteStep1_Style(props) {
       availableHeights.map(function(h) {
         return el('button', {
           key: h,
-          className: 'qs1-height-card' + (data.height === h ? ' selected' : ''),
+          className: 'qs1-height-card' + (numHeight === h ? ' selected' : ''),
           onClick: function() { update({ height: h }); },
         },
           el('div', { className: 'qs1-height-val' }, h + '"'),
@@ -393,7 +400,7 @@ function QuoteStep1_Style(props) {
       })
     ),
     // Pool-code warning when selected height is below style minimum
-    poolLocked && data.style && POOL_MIN_HEIGHT_BY_STYLE[data.style] && data.height < POOL_MIN_HEIGHT_BY_STYLE[data.style] ? el('div', { className: 'qs1-warning' },
+    poolLocked && data.style && POOL_MIN_HEIGHT_BY_STYLE[data.style] && numHeight < POOL_MIN_HEIGHT_BY_STYLE[data.style] ? el('div', { className: 'qs1-warning' },
       'Heads up: this height may not meet pool code for this style. ',
       'Haven styles are the safest choice at 48". Always verify with your local inspector.'
     ) : null,
