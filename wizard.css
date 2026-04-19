@@ -209,10 +209,10 @@
   border-radius: 16px;
   width: 440px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - 24px);
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 28px 28px 20px;
+  padding: 20px 24px 16px;
   position: relative;
 }
 .escape-hatch-close {
@@ -230,22 +230,22 @@
 
 .escape-hatch-title {
   font-family: var(--font-sans);
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
   color: var(--navy);
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 .escape-hatch-sub {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #5a6270;
-  margin: 0 0 20px;
+  margin: 0 0 12px;
 }
 
 .escape-hatch-field {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .escape-hatch-field label {
   display: block;
@@ -276,20 +276,20 @@
 }
 .escape-hatch-field textarea {
   resize: vertical;
-  min-height: 72px;
+  min-height: 52px;
 }
 
 .escape-hatch-drop {
   border: 1.5px dashed #c0c8d0;
   border-radius: 10px;
-  padding: 18px;
+  padding: 12px;
   text-align: center;
   font-family: var(--font-sans);
   font-size: 13px;
   color: #5a6270;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .escape-hatch-drop:hover,
 .escape-hatch-drop.drag-over {
@@ -334,7 +334,7 @@
 .escape-hatch-actions {
   display: flex;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 10px;
 }
 .escape-hatch-send {
   flex: 1;
