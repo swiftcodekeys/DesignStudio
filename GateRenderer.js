@@ -136,6 +136,18 @@ function GateRenderer(container) {
         }
     });
 
+    // Allow the app shell to force a render before capturing a snapshot.
+    // buildSavedDesign in app.js dispatches gv:request-render immediately
+    // before toDataURL so the back buffer reflects the current scene state.
+    this._onRequestRender = function() {
+        try {
+            if (this.renderer && this.scene && this.camera) {
+                this.renderer.render(this.scene, this.camera);
+            }
+        } catch (e) { /* non-fatal */ }
+    }.bind(this);
+    window.addEventListener('gv:request-render', this._onRequestRender);
+
     // Start render loop
     (function animate() {
         self._animId = requestAnimationFrame(animate);
@@ -152,6 +164,10 @@ GateRenderer.prototype.resize = function(w, h) {
 
 GateRenderer.prototype.dispose = function() {
     if (this._animId) cancelAnimationFrame(this._animId);
+    if (this._onRequestRender) {
+        window.removeEventListener('gv:request-render', this._onRequestRender);
+        this._onRequestRender = null;
+    }
     if (this._envMap) this._envMap.dispose();
     if (this._bumpMap) this._bumpMap.dispose();
     if (this._container && this.renderer.domElement) {

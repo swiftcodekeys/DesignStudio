@@ -250,9 +250,13 @@ var DesignStudio = function() {
         // Capture viewport snapshot (background image + 3D canvas composited)
         var snapshotDataUrl = '';
         try {
+            // Request a synchronous render pass from whichever renderer is
+            // currently mounted. With preserveDrawingBuffer:true the back
+            // buffer then contains the latest frame for toDataURL.
+            try { window.dispatchEvent(new CustomEvent('gv:request-render')); } catch (_) {}
+
             var viewportWrap = document.querySelector('.viewport-wrap');
             var canvasEl = document.querySelector('.viewport-scene canvas');
-            // Find the background <img> inside the UnifiedCanvas wrapper
             var bgImgEl = viewportWrap ? viewportWrap.querySelector('.viewport-scene img') : null;
             if (canvasEl && viewportWrap) {
                 var w = canvasEl.width;
@@ -261,11 +265,9 @@ var DesignStudio = function() {
                 offscreen.width = w;
                 offscreen.height = h;
                 var ctx = offscreen.getContext('2d');
-                // Draw the background image (fb.jpg, bb.jpg, or GateBackground.jpg)
                 if (bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth > 0) {
                     ctx.drawImage(bgImgEl, 0, 0, w, h);
                 } else {
-                    // Fallback: draw the CSS gradient
                     var grad = ctx.createLinearGradient(0, 0, 0, h);
                     grad.addColorStop(0, '#cddcea');
                     grad.addColorStop(0.25, '#b4c6d6');
@@ -274,7 +276,6 @@ var DesignStudio = function() {
                     ctx.fillStyle = grad;
                     ctx.fillRect(0, 0, w, h);
                 }
-                // Draw the 3D canvas on top
                 ctx.drawImage(canvasEl, 0, 0, w, h);
                 snapshotDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
             } else if (canvasEl) {

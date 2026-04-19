@@ -214,6 +214,13 @@ var DesignReviewPage = function(props) {
                                 <div className="bridge-snapshot-badge">SAVED</div>
                                 {isPoolReady && <div className="bridge-pool-badge">POOL READY</div>}
                             </div>
+                        ) : hasDesign ? (
+                            <div className="bridge-snapshot bridge-snapshot-empty">
+                                <div className="bridge-snapshot-placeholder">
+                                    Your design is saved. Preview image unavailable. Selections below are accurate.
+                                </div>
+                                {isPoolReady && <div className="bridge-pool-badge">POOL READY</div>}
+                            </div>
                         ) : (
                             <div className="bridge-snapshot bridge-snapshot-empty">
                                 <div className="bridge-snapshot-placeholder">No design configured yet</div>
