@@ -242,7 +242,7 @@ function ZoneQuoteSummary(props) {
         className: 'summary-cta-btn summary-cta-order',
         onClick: onOrderNow,
       },
-        el('span', null, 'Order Now \u2014 We Verify Before We Build'),
+        el('span', null, 'Order Now. I Verify Before I Build'),
         React.createElement(ArrowSquareOut, { size: 18, weight: 'bold', style: { flexShrink: 0 } })
       ),
 

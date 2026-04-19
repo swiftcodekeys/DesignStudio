@@ -299,7 +299,7 @@ var AddressEntry = function(props) {
                     </button>
                 </form>
                 <button className="draw-skip-link" onClick={onSkip}>
-                    Skip &mdash; I'll enter measurements manually
+                    Skip. I'll enter measurements manually
                 </button>
             </div>
         </div>

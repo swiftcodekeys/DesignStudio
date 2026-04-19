@@ -49,7 +49,7 @@ function getHeader(activeTab, config, isFence) {
     var idx = ['style','color','size','options','puppyPickets','details','quote'].indexOf(activeTab);
     if (idx < 0) idx = 0;
     return {
-        line: 'Step ' + (idx + 1) + ' of 7 — ' + (labels[activeTab] || labels.style),
+        line: 'Step ' + (idx + 1) + ' of 7 | ' + (labels[activeTab] || labels.style),
     };
 }
 
@@ -179,7 +179,7 @@ var FloatingPanel = function(props) {
                     {visibleTabs.map(function(tab, i) {
                         return (
                             <div key={tab.id} id={'section-' + tab.id} className="panel-section">
-                                <div className="panel-section-label">{'Step ' + (i + 1) + ' of ' + visibleTabs.length + ' \u2014 ' + sectionLabels[tab.id]}</div>
+                                <div className="panel-section-label">{'Step ' + (i + 1) + ' of ' + visibleTabs.length + ' | ' + sectionLabels[tab.id]}</div>
                                 {renderTabContent(tab.id, config, onConfigChange, props.isFence, onGetQuote, props.activeScene, props.onSceneChange)}
                                 {i < visibleTabs.length - 1 && <div className="panel-section-divider" />}
                             </div>

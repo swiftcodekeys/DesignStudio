@@ -90,8 +90,8 @@ const Sidebar = ({ config, onConfigChange }) => {
                     </span>
                     <span>
                         {renderMode === 'overlay'
-                            ? 'Overlay mode \u2014 3D controls disabled'
-                            : 'Preview mode \u2014 3D controls disabled'}
+                            ? 'Overlay mode. 3D controls disabled'
+                            : 'Preview mode. 3D controls disabled'}
                     </span>
                 </div>
             )}

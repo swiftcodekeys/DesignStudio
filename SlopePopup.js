@@ -18,8 +18,8 @@ function SlopePopup(props) {
       React.createElement('div', { className: 'mbx-slope-options' },
         ['flat', 'some', 'all'].map(function(val) {
           var label = {
-            flat: 'Mostly flat \u2014 no panels need racking',
-            some: 'Some sections slope \u2014 I\u2019ll mark them',
+            flat: 'Mostly flat. No panels need racking',
+            some: 'Some sections slope. I\u2019ll mark them',
             all:  'Very sloped throughout',
           }[val];
           return React.createElement('label', {

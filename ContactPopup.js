@@ -199,7 +199,7 @@ var ContactPopup = function(props) {
               type="submit"
               disabled={!isValid || status === 'sending' || cooldown}
             >
-              {status === 'sending' ? 'Sending...' : cooldown ? 'Sent \u2014 wait 30s' : 'Send Message'}
+              {status === 'sending' ? 'Sending...' : cooldown ? 'Sent, wait 30s' : 'Send Message'}
             </button>
           </form>
         )}

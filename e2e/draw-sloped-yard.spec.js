@@ -105,7 +105,7 @@ test.describe('sloped yard end-to-end', () => {
     // Done button triggers handleSlopeAnswer('some') → builds segments from manualPoints.
     // In headless mode Mapbox GL canvas clicks may not register vertex events, so
     // the sidebar may have 0 or 4 cards depending on the GL driver availability.
-    await page.click('button:has-text("Done \u2014 review segments")', { force: true });
+    await page.click('button:has-text("Done, review segments")', { force: true });
 
     // Wait briefly for React state updates
     await page.waitForTimeout(2000);

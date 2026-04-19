@@ -17,7 +17,7 @@ test.describe('flat yard end-to-end', () => {
     await page.click('.mbx-map', { position: { x: 400, y: 500 } });
 
     // Finalize drawing — SlopePopup removed post-Task#9; per-segment cards appear in sidebar
-    await page.click('button:has-text("Done \u2014 review segments")', { force: true });
+    await page.click('button:has-text("Done, review segments")', { force: true });
 
     // Continue becomes enabled once segments exist
     await expect(page.locator('button:has-text("Continue to Quote")')).toBeVisible();

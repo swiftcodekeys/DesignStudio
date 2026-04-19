@@ -75,7 +75,7 @@ var QuoteTab = function(props) {
 
     return (
         <div className="quote-layout-compact">
-            <p className="quote-intro">Your configuration carries over to your quote. Pick your style, color, height, and options — then get an instant estimate or request a custom quote.</p>
+            <p className="quote-intro">Your configuration carries over to your quote. Pick your style, color, height, and options, then get an instant estimate or request a custom quote.</p>
             <div className="quote-summary-compact">
                 <div className="quote-row"><span className="ql">Style</span><span className="qv">{style.name}</span></div>
                 <div className="quote-row"><span className="ql">Color</span><span className="qv">{colorName}</span></div>

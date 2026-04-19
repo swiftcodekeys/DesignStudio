@@ -88,7 +88,7 @@ function QuoteStep4_Extras(props) {
           className: 'qb-extras-thumb-card' + (currentFinial === 'none' ? ' active' : ''),
           onClick: function() { update({ finialType: 'none' }); },
         },
-          el('div', { className: 'qb-extras-thumb-none' }, '\u2014'),
+          el('div', { className: 'qb-extras-thumb-none' }, '-'),
           el('div', { className: 'qb-extras-thumb-name' }, 'None')
         ),
         finialOptions.map(function(f) {

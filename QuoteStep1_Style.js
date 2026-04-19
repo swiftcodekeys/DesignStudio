@@ -339,7 +339,7 @@ function QuoteStep1_Style(props) {
       )
     ) : null,
     isProSpacing ? el('div', { className: 'qs1-tip' },
-      'Pro spacing already includes extra pickets \u2014 puppy pickets may not be needed.'
+      'Pro spacing already includes extra pickets. Puppy pickets may not be needed.'
     ) : null,
 
     // ---- Puppy Pickets ----
@@ -394,7 +394,7 @@ function QuoteStep1_Style(props) {
     ),
     // Pool-code warning when selected height is below style minimum
     poolLocked && data.style && POOL_MIN_HEIGHT_BY_STYLE[data.style] && data.height < POOL_MIN_HEIGHT_BY_STYLE[data.style] ? el('div', { className: 'qs1-warning' },
-      'Heads up \u2014 this height may not meet pool code for this style. ',
+      'Heads up: this height may not meet pool code for this style. ',
       'Haven styles are the safest choice at 48". Always verify with your local inspector.'
     ) : null,
 
@@ -442,7 +442,7 @@ function QuoteStep1_Style(props) {
       text: 'Standard bottom rail sits above ground level. Flush bottom rail sits at ground level, required for pool code compliance to prevent gaps.',
     }),
     poolLocked ? el('div', { className: 'qs1-pool-note' },
-      'Pool compliance requires flush bottom rail \u2014 auto-selected.'
+      'Pool compliance requires flush bottom rail. Auto-selected.'
     ) : null,
     el('div', { className: 'qs1-toggle-row' },
       el('button', {

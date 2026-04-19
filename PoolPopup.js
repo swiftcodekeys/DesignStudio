@@ -5,7 +5,7 @@ import React from 'react';
 import { SwimmingPool, Check, X } from '@phosphor-icons/react';
 
 var POOL_STYLES = [
-  { id: 'haven', name: 'Haven', desc: 'Built for pool code — flush bottom by design', recommended: true,
+  { id: 'haven', name: 'Haven', desc: 'Built for pool code. Flush bottom by design', recommended: true,
     image: 'assets/ifence_previews/gate_styles/boca_grande_45.png' },
   { id: 'horizon', name: 'Horizon Flush', desc: 'Flat top with flush bottom 2-rail variant',
     image: 'assets/ifence_previews/gate_styles/san_marino_15.png' },
@@ -62,7 +62,7 @@ function PoolPopup(props) {
       ),
       React.createElement('button', { className: 'pool-popup-confirm', onClick: onConfirm },
         React.createElement(Check, { size: 16, weight: 'bold' }),
-        ' Got It \u2014 Configure for Pool Code'
+        ' Got It, Configure for Pool Code'
       )
     )
   );

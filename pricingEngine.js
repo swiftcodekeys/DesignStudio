@@ -176,7 +176,7 @@ export function calculateQuote(config) {
     'Includes ' + linePosts + ' line post' + (linePosts !== 1 ? 's' : '') +
     ', ' + corners + ' corner post' + (corners !== 1 ? 's' : '') +
     ', ' + endCount + ' end post' + (endCount !== 1 ? 's' : '') +
-    ' \u2014 calculated from your layout';
+    ', calculated from your layout';
 
   // ── Line items ──
 
@@ -212,7 +212,7 @@ export function calculateQuote(config) {
         qty: gatePostCount,
         unitPrice: gatePostPrice,
         total: gatePostCount * gatePostPrice,
-        note: '2 per gate \u2014 required for adjustable hinges',
+        note: '2 per gate, required for adjustable hinges',
       });
     }
   }
@@ -220,7 +220,7 @@ export function calculateQuote(config) {
   // Gates + hardware
   for (var i = 0; i < gates.length; i++) {
     var g = gates[i];
-    var gLabel = (g.type === 'walk' ? 'Walk' : 'Drive') + ' Gate \u2014 ' + g.widthInches + '" wide';
+    var gLabel = (g.type === 'walk' ? 'Walk' : 'Drive') + ' Gate | ' + g.widthInches + '" wide';
     var gPrice = getGatePrice(style, height, g.widthInches, g.type, grade);
     var surcharges = 0;
     var widthFt = g.widthInches / 12;
@@ -253,7 +253,7 @@ export function calculateQuote(config) {
         qty: 1,
         unitPrice: hwTotal,
         total: hwTotal,
-        note: 'Hinges + latch' + (g.hardware && g.hardware.dropRod ? ' + drop rod' : '') + ' \u2014 sold separately',
+        note: 'Hinges + latch' + (g.hardware && g.hardware.dropRod ? ' + drop rod' : '') + ', sold separately',
       });
     }
   }

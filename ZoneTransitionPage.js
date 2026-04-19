@@ -17,9 +17,9 @@ function ZoneTransitionPage(props) {
   var onSame            = props.onSame;
   var onDifferent       = props.onDifferent;
 
-  var styleName  = completedConfig.style  || '—';
-  var heightVal  = completedConfig.height ? completedConfig.height + '"' : '—';
-  var colorName  = completedConfig.color  || '—';
+  var styleName  = completedConfig.style  || '-';
+  var heightVal  = completedConfig.height ? completedConfig.height + '"' : '-';
+  var colorName  = completedConfig.color  || '-';
 
   return el('div', { className: 'zone-transition-overlay' },
     el('div', { className: 'zone-transition-card' },

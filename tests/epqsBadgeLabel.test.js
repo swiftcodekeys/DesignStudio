@@ -25,14 +25,14 @@ describe('epqsBadgeLabel', () => {
       .toBe('\u2198 2.3"');
   });
 
-  it('returns "— unknown —" (em dashes) when confidence is "low", regardless of maxAbsDelta', () => {
+  it('returns "Unknown" when confidence is "low", regardless of maxAbsDelta', () => {
     expect(epqsBadgeLabel({ maxAbsDelta: 2.3, signedDelta: 2.3, confidence: 'low' }))
-      .toBe('\u2014 unknown \u2014');
+      .toBe('Unknown');
   });
 
-  it('returns "— unknown —" when confidence is "low" AND maxAbsDelta is sub-threshold (low wins over flat)', () => {
+  it('returns "Unknown" when confidence is "low" AND maxAbsDelta is sub-threshold (low wins over flat)', () => {
     expect(epqsBadgeLabel({ maxAbsDelta: 0.2, signedDelta: 0.1, confidence: 'low' }))
-      .toBe('\u2014 unknown \u2014');
+      .toBe('Unknown');
   });
 
   it('returns numeric label at exactly 0.5" boundary (not flat)', () => {

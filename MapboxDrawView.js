@@ -27,7 +27,7 @@ var SEGMENT_COLORS = [
 // Precedence: confidence-low > flat-threshold > numeric default.
 // Exported for unit-testing without DOM or React mounting.
 export function epqsBadgeLabel({ maxAbsDelta, signedDelta, confidence }) {
-  if (confidence === 'low') return '\u2014 unknown \u2014';
+  if (confidence === 'low') return 'Unknown';
   if (maxAbsDelta < 0.5) return 'Flat \u2713';
   var arrow = signedDelta >= 0 ? '\u2197' : '\u2198';
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
@@ -631,7 +631,7 @@ function MapboxDrawView(props) {
             'You\u2019ll mark your fence line on this map. ',
             React.createElement('strong', null,
               'It\u2019s your responsibility to double-check the math and validate your measurements yourself '),
-            '\u2014 we\u2019ll verify with you before production, but the measurements you enter are what we build to.',
+            '. I\u2019ll verify with you before production, but the measurements you enter are what I build to.',
             React.createElement('button', {
               onClick: function() {
                 sessionStorage.setItem('gv_draw_banner_shown', '1');
@@ -649,7 +649,7 @@ function MapboxDrawView(props) {
                 className: 'mbx-toolbar-btn mbx-done-btn',
                 onClick: function() { handleSlopeAnswer('some'); },
                 disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
-              }, 'Done \u2014 review segments \u2192'),
+              }, 'Done, review segments \u2192'),
               React.createElement('button', {
                 className: 'mbx-toolbar-btn mbx-continue-btn primary',
                 onClick: function() {
@@ -698,7 +698,7 @@ function MapboxDrawView(props) {
               },
             },
               React.createElement('h3', { style: { cursor: 'pointer' } }, 'Your fence segments'),
-              React.createElement('p', null, 'We auto-detected slope from elevation data. Each segment\u2019s tier is pre-filled \u2014 override any that look wrong.'),
+              React.createElement('p', null, 'I auto-detected slope from elevation data. Each segment\u2019s tier is pre-filled. Override any that look wrong.'),
               segments.map(function(s) {
                 return React.createElement(SegmentCard, {
                   key: s.index,

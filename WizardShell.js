@@ -821,7 +821,7 @@ var WizardShell = function() {
                     />
                     <span className="wizard-step-label">
                         Step {step} of {TOTAL_STEPS}
-                        <span className="wizard-step-name"> &mdash; {STEP_NAMES[step - 1] || ''}</span>
+                        <span className="wizard-step-name"> | {STEP_NAMES[step - 1] || ''}</span>
                     </span>
                 </div>
                 <div className="wizard-progress-bar">
@@ -950,7 +950,7 @@ var WizardShell = function() {
                             Next &rarr;
                         </button>
                         <button className="wizard-btn-secondary" onClick={function() { navigate('/studio'); }}>
-                            Or skip &mdash; just show me the configurator &rarr;
+                            Or skip. Just show me the configurator &rarr;
                         </button>
                     </div>
                 </div>

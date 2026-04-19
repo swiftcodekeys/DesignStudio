@@ -112,10 +112,10 @@ export function calculateZoneQuote(config) {
       }
       items.push({ label: gateLabel, qty: 1, unitPrice: gateTotal, total: gateTotal });
     } else {
-      warnings.push('Gate ' + (i + 1) + ': price not available — custom quote required');
+      warnings.push('Gate ' + (i + 1) + ': price not available. Custom quote required');
     }
     if (hwCost > 0) {
-      items.push({ label: 'Hardware — Gate ' + (i + 1), qty: 1, unitPrice: hwCost, total: hwCost });
+      items.push({ label: 'Hardware | Gate ' + (i + 1), qty: 1, unitPrice: hwCost, total: hwCost });
     }
   });
 

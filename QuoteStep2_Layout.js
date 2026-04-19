@@ -28,8 +28,8 @@ var TERRAIN_OPTIONS = [
 
 var RACKING_TIERS = [
   { id: 'standard',       name: 'Standard',        desc: 'Follow slopes up to 6 inches per panel' },
-  { id: 'rackable',       name: 'Rackable',         desc: 'Follow slopes up to 20 inches per panel \u2014 requires double-punched rails' },
-  { id: 'heavy-rackable', name: 'Heavy Rackable',   desc: 'Follow slopes up to 36 inches per panel \u2014 requires double-punched rails' },
+  { id: 'rackable',       name: 'Rackable',         desc: 'Follow slopes up to 20 inches per panel. Requires double-punched rails' },
+  { id: 'heavy-rackable', name: 'Heavy Rackable',   desc: 'Follow slopes up to 36 inches per panel. Requires double-punched rails' },
 ];
 
 var POST_SIZES = {
@@ -184,7 +184,7 @@ function QuoteStep2_Layout(props) {
     // ---- Draw Tool Banner ----
     drawToolData ? el('div', { className: 'qb-layout-draw-banner' },
       el(Check, { size: 16, weight: 'bold' }),
-      ' Layout imported from your drawing \u2014 ',
+      ' Layout imported from your drawing. ',
       el('strong', null, (drawToolData.totalFeet || 0) + ' ft'),
       ' across ',
       el('strong', null, (drawToolData.segments ? drawToolData.segments.length : 1) + ' runs'),

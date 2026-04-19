@@ -32,13 +32,13 @@ var WIDTHS_DRIVE  = [72, 84, 96, 120, 144];
 // IDs must match retailPricing.js keys (hinges, latches) — drift causes $0 pricing
 var HINGE_OPTIONS = [
   { id: 'standard',           name: 'Standard',              price: 33.50, unit: '/pair', info: 'Heavy-duty steel hinges, field adjustable' },
-  { id: 'truclose',           name: 'TruClose Self-Closing',  price: 95.50, unit: '/pair', info: 'Polymer self-closing hinge \u2014 required for pool code compliance' },
+  { id: 'truclose',           name: 'TruClose Self-Closing',  price: 95.50, unit: '/pair', info: 'Polymer self-closing hinge. Required for pool code compliance' },
   { id: 'ultra-adjustable',   name: 'Ultra Adjustable',        price: 333.50, unit: '/pair', info: 'Tension-adjustable, 3-way alignment. Requires 4\u00d74 posts.' },
 ];
 
 var LATCH_OPTIONS = [
   { id: 'lokklatch',          name: 'LokkLatch',           price: 58.50,  info: 'Key-lockable gravity latch' },
-  { id: 'magna-latch',        name: 'MagnaLatch Pool',     price: 186.50, info: 'Magnetic, key-lockable, self-latching \u2014 pool code compliant' },
+  { id: 'magna-latch',        name: 'MagnaLatch Pool',     price: 186.50, info: 'Magnetic, key-lockable, self-latching. Pool code compliant' },
   { id: 'lokklatch-deluxe',   name: 'LokkLatch Deluxe',    price: 175.00, info: 'Premium key-lockable gravity latch with dual access' },
   { id: 'lokklatch-magnetic', name: 'LokkLatch Magnetic', price: 227.00, info: 'Magnetic key-lockable latch, dual-side keyed' },
 ];
@@ -310,7 +310,7 @@ function QuoteStep3_Gates(props) {
       el('div', { className: 'qb-gates-estate-body' },
         el('div', { className: 'qb-gates-estate-title' }, 'Estate or Cantilever Gate?'),
         el('div', { className: 'qb-gates-estate-text' },
-          'Custom order \u2014 preview in the 3D Design Studio or call (855) FENCE-30'
+          'Custom order. Preview in the 3D Design Studio or call (855) FENCE-30'
         ),
         el('div', { className: 'qb-gates-estate-note' },
           'Cantilever gates carry a 5-year limited warranty (not lifetime)'

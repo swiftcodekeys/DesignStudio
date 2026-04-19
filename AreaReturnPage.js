@@ -14,7 +14,7 @@ var AreaReturnPage = function(props) {
             <div className="area-return-content">
                 <div className="area-return-progress">
                     <span className="area-return-step done">Area 1: Front Yard &#10003;</span>
-                    <span className="area-return-step-divider">&mdash;</span>
+                    <span className="area-return-step-divider">|</span>
                     <span className="area-return-step current">Area 2: Backyard</span>
                 </div>
 

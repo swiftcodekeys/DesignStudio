@@ -93,7 +93,7 @@ export default {
             body: JSON.stringify({
               from: 'Grandview Fence <noreply@grandviewfence.com>',
               to: [payload.email],
-              subject: 'Your Saved Fence Design — Grandview Fence',
+              subject: 'Your Saved Fence Design | Grandview Fence',
               html: saveHtml,
               reply_to: 'sales@grandviewfence.com',
             }),
@@ -134,8 +134,8 @@ export default {
           from: 'Grandview Design Studio <noreply@grandviewfence.com>',
           to: ['sales@grandviewfence.com'],
           subject: payload.source === 'design-studio-quote'
-            ? 'New Quote Request — ' + (payload.quoteId || 'Design Studio')
-            : 'New Contact — ' + (payload.inquiryType || 'Design Studio'),
+            ? 'New Quote Request | ' + (payload.quoteId || 'Design Studio')
+            : 'New Contact | ' + (payload.inquiryType || 'Design Studio'),
           html: salesHtml,
           reply_to: payload.email || undefined,
         }),
@@ -159,7 +159,7 @@ export default {
           body: JSON.stringify({
             from: 'Grandview Fence <noreply@grandviewfence.com>',
             to: [payload.email],
-            subject: 'Your Fence Quote — ' + (payload.quoteId || 'Grandview Fence'),
+            subject: 'Your Fence Quote | ' + (payload.quoteId || 'Grandview Fence'),
             html: customerHtml,
             reply_to: 'sales@grandviewfence.com',
           }),
