@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 
+// Stub global fetch so EPQS calls resolve immediately (flat, no slope) in all tests.
+// Tests that care about EPQS behavior use their own per-test fetch overrides.
+global.fetch = vi.fn(function () {
+  return Promise.resolve({
+    ok: true,
+    json: function () { return Promise.resolve({ value: 100.0 }); },
+  });
+});
+
 // Helper: build a mock Map instance with the methods MapboxDrawView calls
 function makeMockMapInstance() {
   const listeners = {};
@@ -291,6 +300,92 @@ describe('MapboxDrawView', () => {
       expect(toolbar.querySelector('.mbx-done-btn')).toBeTruthy();
       expect(toolbar.querySelector('.mbx-continue-btn')).toBeTruthy();
       expect(toolbar.querySelector('.mbx-mode-toggle')).toBeTruthy();
+    });
+
+    // ---------------------------------------------------------------------------
+    // Task #16 — VFP-inspired per-segment sidebar replaces SlopePopup modal
+    // ---------------------------------------------------------------------------
+
+    it('sidebar .mbx-sidebar is visible with .mbx-segment-card elements after clicking Done', async () => {
+      // Build a scenario: enable manual mode, draw mode, add 2 clicks to build
+      // manualPoints, then click Done. The sidebar must appear and contain
+      // SegmentCard-rendered .mbx-segment-card elements.
+
+      const mapboxgl = await import('mapbox-gl');
+      const mockInstance = makeMockMapInstance();
+      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+      const { container } = render(
+        <MapboxDrawView
+          onComplete={() => {}}
+          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        />
+      );
+
+      // Enable manual mode
+      const manualBtn = container.querySelector('.mbx-manual-mode-btn');
+      act(function () { fireEvent.click(manualBtn); });
+
+      // Enable draw mode
+      const drawToggle = container.querySelector('.mbx-mode-toggle');
+      act(function () { fireEvent.click(drawToggle); });
+
+      // Add 3 manual vertices to produce at least 2 segments
+      await act(async function () {
+        mockInstance._fire('click', { lngLat: { lng: -83.90, lat: 42.60 }, point: { x: 100, y: 100 } });
+      });
+      await act(async function () {
+        mockInstance._fire('click', { lngLat: { lng: -83.91, lat: 42.60 }, point: { x: 200, y: 100 } });
+      });
+      await act(async function () {
+        mockInstance._fire('click', { lngLat: { lng: -83.91, lat: 42.61 }, point: { x: 200, y: 200 } });
+      });
+
+      // Click Done — this should call handleSlopeAnswer('some') and reveal sidebar
+      const doneBtn = container.querySelector('.mbx-done-btn');
+      await act(async function () { fireEvent.click(doneBtn); });
+
+      // Sidebar must now be visible
+      const sidebar = container.querySelector('.mbx-sidebar');
+      expect(sidebar, '.mbx-sidebar must be in the DOM after Done is clicked').toBeTruthy();
+
+      // Sidebar must contain at least one SegmentCard
+      const cards = container.querySelectorAll('.mbx-segment-card');
+      expect(cards.length, 'At least one .mbx-segment-card must be rendered in the sidebar').toBeGreaterThan(0);
+    });
+
+    it('SlopePopup modal overlay is NOT rendered after clicking Done', async () => {
+      // After the Done button is clicked, the old .mbx-slope-popup-overlay must
+      // not appear in the DOM — the modal has been replaced by the inline sidebar.
+
+      const mapboxgl = await import('mapbox-gl');
+      const mockInstance = makeMockMapInstance();
+      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+      const { container } = render(
+        <MapboxDrawView
+          onComplete={() => {}}
+          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        />
+      );
+
+      // Enable manual mode + draw mode
+      act(function () { fireEvent.click(container.querySelector('.mbx-manual-mode-btn')); });
+      act(function () { fireEvent.click(container.querySelector('.mbx-mode-toggle')); });
+
+      // Add 2 vertices
+      await act(async function () {
+        mockInstance._fire('click', { lngLat: { lng: -83.90, lat: 42.60 }, point: { x: 100, y: 100 } });
+      });
+      await act(async function () {
+        mockInstance._fire('click', { lngLat: { lng: -83.91, lat: 42.60 }, point: { x: 200, y: 100 } });
+      });
+
+      // Click Done
+      await act(async function () { fireEvent.click(container.querySelector('.mbx-done-btn')); });
+
+      // The SlopePopup overlay must not be in the DOM
+      expect(container.querySelector('.mbx-slope-popup-overlay')).toBeNull();
     });
 
     it('vertex marker element has no inline position property that would override .mapboxgl-marker', () => {

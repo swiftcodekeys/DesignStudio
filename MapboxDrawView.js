@@ -9,7 +9,6 @@ import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
 import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing, aggregateClassificationsForUserSegments, computeSlopedPostCount } from './geometryUtils';
 import { classifyDrawnLine } from './epqsClient';
-import SlopePopup from './SlopePopup';
 import SegmentCard from './SegmentCard';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
@@ -437,9 +436,6 @@ function MapboxDrawView(props) {
   var epqsLoading = epqsLoadingState[0];
   var setEpqsLoading = epqsLoadingState[1];
 
-  var slopePopupOpenState = useState(false);
-  var slopePopupOpen = slopePopupOpenState[0];
-  var setSlopePopupOpen = slopePopupOpenState[1];
   var slopeAnswerState = useState(null); // 'flat' | 'some' | 'all' | null
   var slopeAnswer = slopeAnswerState[0];
   var setSlopeAnswer = slopeAnswerState[1];
@@ -590,7 +586,6 @@ function MapboxDrawView(props) {
 
   function handleSlopeAnswer(answer) {
     setSlopeAnswer(answer);
-    setSlopePopupOpen(false);
 
     var src = manualMode
       ? buildSegmentsFromManual(manualPoints)
@@ -645,9 +640,9 @@ function MapboxDrawView(props) {
               }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
               React.createElement('button', {
                 className: 'mbx-toolbar-btn mbx-done-btn',
-                onClick: function() { setSlopePopupOpen(true); },
+                onClick: function() { handleSlopeAnswer('some'); },
                 disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
-              }, 'Done \u2014 review slope \u2192'),
+              }, 'Done \u2014 review segments \u2192'),
               React.createElement('button', {
                 className: 'mbx-toolbar-btn mbx-continue-btn primary',
                 onClick: function() {
@@ -657,7 +652,7 @@ function MapboxDrawView(props) {
                     props.onComplete(data);
                   });
                 },
-                disabled: segments.length === 0 || slopeAnswer == null,
+                disabled: segments.length === 0,
               }, 'Continue to Quote \u2192'),
               React.createElement('button', {
                 className: 'mbx-toolbar-btn mbx-mode-toggle ' + drawMode,
@@ -685,7 +680,7 @@ function MapboxDrawView(props) {
               drawMode: drawMode,
             })
           ),
-          slopeAnswer !== null && slopeAnswer !== 'flat' ?
+          segments.length > 0 ?
             React.createElement('div', {
               className: 'mbx-sidebar ' + (sidebarOpen ? 'open' : ''),
               onClick: function(e) {
@@ -696,7 +691,7 @@ function MapboxDrawView(props) {
               },
             },
               React.createElement('h3', { style: { cursor: 'pointer' } }, 'Your fence segments'),
-              React.createElement('p', null, 'Leave Standard on flat sections. Only change the ones with slope.'),
+              React.createElement('p', null, 'We auto-detected slope from elevation data. Each segment\u2019s tier is pre-filled \u2014 override any that look wrong.'),
               segments.map(function(s) {
                 return React.createElement(SegmentCard, {
                   key: s.index,
@@ -714,12 +709,7 @@ function MapboxDrawView(props) {
                   },
                 });
               })
-            ) : null,
-          React.createElement(SlopePopup, {
-            open: slopePopupOpen,
-            onAnswer: handleSlopeAnswer,
-            onClose: function() { setSlopePopupOpen(false); },
-          })
+            ) : null
         )
   );
 }

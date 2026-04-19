@@ -28,6 +28,7 @@ function SegmentCard(props) {
           onChange: function(e) { props.onChange(s.index, e.target.value); },
         },
           React.createElement('option', { value: 'standard' }, 'Standard (flat, 0-6")'),
+          React.createElement('option', { value: 'stair-step' }, 'Stepped (any direction)'),
           React.createElement('option', { value: 'rackable' }, 'Rackable (6-20") +$4.75/post'),
           React.createElement('option', { value: 'heavy-rackable' }, 'Heavy Rack (20-36") +$4.75/post'),
         )
