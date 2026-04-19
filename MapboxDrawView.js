@@ -95,21 +95,26 @@ export function epqsBadgeLabel(args) {
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
 }
 
-// ---------- Intro overlay (first visit — rides on top of the live map) ----------
-// No fake CSS globe. Mapbox already has a real satellite globe via
-// projection: 'globe'; we start the map at zoom 1, then flyTo zoom 20 over
-// 2.4s, with this thin overlay showing "Finding your home…" and the
-// resolved address as the camera descends. On subsequent visits (dy_seen
-// cookie set), the map mounts at zoom 18 and this overlay never renders.
+// ---------- Intro overlay (first visit — Earth-from-space video) ----------
+// Plays /assets/video/earth-intro.mp4 full-viewport while the Mapbox map
+// mounts in the background. At EARTH_INTRO_DURATION_MS the whole overlay
+// fades out and the map is ready underneath. Gated by the dy_seen cookie
+// and EARTH_INTRO_ENABLED build flag.
+//
+// TODO(pre-launch): /assets/video/earth-intro.mp4 is currently VFP's
+// hero-loop.mp4 (direct copy for visual parity during dev). Before
+// public launch, swap to either a NASA public-domain Blue Marble clip or
+// a custom-rendered loop to avoid using their copyrighted asset.
 function IntroOverlay(props) {
   var visibleState = useState(true);
   var visible = visibleState[0];
   var setVisible = visibleState[1];
+  var videoRef = useRef(null);
 
   useEffect(function() {
     var fade = setTimeout(function() {
       setVisible(false);
-    }, EARTH_INTRO_DURATION_MS - 300); // start fade ~300ms before arrival
+    }, EARTH_INTRO_DURATION_MS - 400); // start fade ~400ms before end
     var done = setTimeout(function() {
       markEarthIntroSeen();
       if (props.onComplete) props.onComplete();
@@ -129,6 +134,15 @@ function IntroOverlay(props) {
     className: 'dy-intro-overlay' + (visible ? '' : ' dy-intro-overlay-hidden'),
     onClick: skip,
   },
+    React.createElement('video', {
+      ref: videoRef,
+      className: 'dy-intro-video',
+      src: 'assets/video/earth-intro.mp4',
+      autoPlay: true,
+      muted: true,
+      loop: true,
+      playsInline: true,
+    }),
     React.createElement('div', { className: 'dy-intro-copy' },
       React.createElement('div', { className: 'dy-intro-finding' }, 'Finding your home\u2026'),
       addrLine && React.createElement('div', { className: 'dy-intro-address' }, addrLine)
