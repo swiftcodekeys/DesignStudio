@@ -356,20 +356,10 @@ function MapScreen(props) {
         confidence: confidence,
       });
 
-      // Color: confidence-low always gets unknown grey; flat threshold uses flat green;
-      // otherwise use the classification color from the aggregated result.
-      var colorMap = {
+      var color = {
         flat: '#22C55E', sloped: '#F59E0B', steep: '#EF4444',
         steps: '#6366F1', unknown: '#9CA3AF',
-      };
-      var color;
-      if (confidence === 'low') {
-        color = colorMap.unknown;
-      } else if (agg.maxAbsDelta < 0.5) {
-        color = colorMap.flat;
-      } else {
-        color = colorMap[agg.classification] || '#9CA3AF';
-      }
+      }[agg.classification] || '#9CA3AF';
 
       var midLng = (seg.start[0] + seg.end[0]) / 2;
       var midLat = (seg.start[1] + seg.end[1]) / 2;
