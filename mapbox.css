@@ -722,6 +722,24 @@
   font-size: 13px !important;
   font-style: italic;
 }
+.dy-est-measure-img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin: 4px 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dy-border, #e6e0d7);
+}
+.dy-est-measure-link {
+  display: inline-block;
+  color: var(--dy-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.dy-est-measure-link:hover { text-decoration: underline; }
 .dy-est-actions {
   display: flex;
   justify-content: flex-end;

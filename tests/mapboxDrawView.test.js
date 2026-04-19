@@ -216,6 +216,13 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(dialog.textContent).toMatch(/verify/i);
     expect(dialog.textContent).toMatch(/before production/i);
     expect(dialog.textContent).toMatch(/what (we|Grandview) build(s)? to/i);
+    // Measurement guide image + Read-More link must be present in the popup.
+    // These were in the original SlopePopup and got stripped in the rewrite.
+    const img = dialog.querySelector('img.dy-est-measure-img');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toMatch(/measure-slope\.png/);
+    const readMore = dialog.querySelector('a[href="/how-to-measure-your-yard"]');
+    expect(readMore).toBeTruthy();
   });
 
   it('vertex marker element has no inline position style (relies on Mapbox transform)', () => {

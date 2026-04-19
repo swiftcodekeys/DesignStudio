@@ -397,6 +397,17 @@ function EstimatePopup(props) {
       React.createElement('p', { className: 'dy-est-muted' },
         'Satellite imagery can be a year or two old, and tree canopy can hide features. When in doubt, walk the line with a tape measure before you submit.'
       ),
+      React.createElement('img', {
+        src: 'assets/slope-guides/measure-slope.png',
+        alt: 'How to measure your yard for a fence',
+        className: 'dy-est-measure-img',
+      }),
+      React.createElement('a', {
+        href: '/how-to-measure-your-yard',
+        target: '_blank',
+        rel: 'noopener',
+        className: 'dy-est-measure-link',
+      }, 'Read: Full yard measurement guide \u2192'),
       React.createElement('div', { className: 'dy-est-actions' },
         React.createElement('button', {
           type: 'button',
