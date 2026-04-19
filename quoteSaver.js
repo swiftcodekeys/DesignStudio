@@ -58,3 +58,50 @@ export function emailSaveLink(email, quoteId) {
     }),
   }).then(function(r) { return r.ok; }).catch(function() { return false; });
 }
+
+// Draw-tool specific encode/resume. The draw state (points + location) is
+// tiny compared to a full wizard, so it fits comfortably in a URL hash.
+function encodeDrawState(state) {
+  try {
+    return btoa(encodeURIComponent(JSON.stringify(state)));
+  } catch (e) { return null; }
+}
+
+function decodeDrawState(encoded) {
+  try {
+    return JSON.parse(decodeURIComponent(atob(encoded)));
+  } catch (e) { return null; }
+}
+
+export function getDrawSaveLink(drawState) {
+  var encoded = encodeDrawState(drawState);
+  if (!encoded) return null;
+  return window.location.origin + window.location.pathname + '?tab=draw#dy-resume=' + encoded;
+}
+
+export function checkForDrawResume() {
+  var hash = window.location.hash;
+  if (!hash || hash.indexOf('#dy-resume=') !== 0) return null;
+  var encoded = hash.replace('#dy-resume=', '');
+  var state = decodeDrawState(encoded);
+  if (state) {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+  return state;
+}
+
+export function emailDrawSaveLink(email, drawState) {
+  var link = getDrawSaveLink(drawState);
+  if (!link) return Promise.resolve(false);
+
+  return fetch('https://grandview-email-worker.sarah-13a.workers.dev', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source: 'save-quote-link',
+      email: email,
+      quoteId: 'draw-' + Date.now(),
+      resumeUrl: link,
+    }),
+  }).then(function(r) { return r.ok; }).catch(function() { return false; });
+}
