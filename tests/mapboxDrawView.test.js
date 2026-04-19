@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import React from 'react';
 
 // Helper: build a mock Map instance with the methods MapboxDrawView calls
@@ -34,7 +34,7 @@ function makeMockMapInstance() {
 vi.mock('mapbox-gl', () => {
   const MockMarker = vi.fn(function (opts) {
     this._opts = opts;
-    this._lngLat = null;
+    this._lngLat = [0, 0];
     this.setLngLat = vi.fn(function (ll) { this._lngLat = ll; return this; }.bind(this));
     this.addTo = vi.fn(function () { return this; }.bind(this));
     this.remove = vi.fn();
@@ -51,23 +51,7 @@ vi.mock('mapbox-gl', () => {
   };
 });
 
-import MapboxDrawView from '../MapboxDrawView.js';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * The manual-mode click handler in MapScreen reads e.lngLat.lng / e.lngLat.lat
- * and passes [lng, lat] straight to props.onManualVertex without any pixel math.
- * This helper tests that logic in isolation so we don't need a live Mapbox map.
- */
-function makeManualClickHandler(onManualVertex, drawModeRef) {
-  return function handleClick(e) {
-    if (drawModeRef.current !== 'draw') return;
-    if (onManualVertex) onManualVertex([e.lngLat.lng, e.lngLat.lat]);
-  };
-}
+import MapboxDrawView, { MapScreen } from '../MapboxDrawView.js';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -130,23 +114,38 @@ describe('MapboxDrawView', () => {
   // pass-through with no pixel math or offset introduced.
   // ---------------------------------------------------------------------------
   describe('manual vertex click alignment (issue #17)', () => {
-    it('passes e.lngLat directly to onManualVertex — no pixel math applied', () => {
-      // Simulate what map.unproject([400, 300]) would return for a given pixel
+    it('passes e.lngLat directly to onManualVertex — no pixel math applied', async () => {
+      // Mount the production MapScreen component with manualMode:true and drawMode:'draw'.
+      // The component's useEffect registers a 'click' listener on the mock map instance.
+      // We then fire a synthetic click via _fire and assert that onManualVertex receives
+      // the geographic coordinate straight from e.lngLat — with no pixel math applied.
       const expectedLng = -83.912345;
       const expectedLat = 42.601234;
 
       const onManualVertex = vi.fn();
-      const drawModeRef = { current: 'draw' };
 
-      const handler = makeManualClickHandler(onManualVertex, drawModeRef);
+      // Capture the mock map instance that MapScreen will create so we can _fire on it.
+      const mapboxgl = await import('mapbox-gl');
+      const mockInstance = makeMockMapInstance();
+      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
 
-      // Simulate a Mapbox click event: Mapbox provides e.lngLat, not pixel coords
-      const syntheticEvent = {
+      render(
+        <MapScreen
+          location={{ lat: 42.6, lng: -83.9 }}
+          manualMode={true}
+          drawMode="draw"
+          onManualVertex={onManualVertex}
+          selectedSides={[]}
+          manualPoints={[]}
+        />
+      );
+
+      // Fire a synthetic Mapbox click event: Mapbox provides e.lngLat, not pixel coords.
+      // The handler must NOT use e.point — only e.lngLat is the authoritative geo coord.
+      mockInstance._fire('click', {
         lngLat: { lng: expectedLng, lat: expectedLat },
-        point: { x: 400, y: 300 },   // pixel hit — handler must NOT use these
-      };
-
-      handler(syntheticEvent);
+        point: { x: 400, y: 300 },   // pixel hit — production handler must NOT use these
+      });
 
       expect(onManualVertex).toHaveBeenCalledTimes(1);
       const [result] = onManualVertex.mock.calls[0];
@@ -154,12 +153,26 @@ describe('MapboxDrawView', () => {
       expect(result[1]).toBe(expectedLat);
     });
 
-    it('does not call onManualVertex when drawMode is not "draw"', () => {
+    it('does not call onManualVertex when drawMode is not "draw"', async () => {
+      // Mount MapScreen with drawMode:'navigate' — click events must be ignored.
       const onManualVertex = vi.fn();
-      const drawModeRef = { current: 'navigate' };
 
-      const handler = makeManualClickHandler(onManualVertex, drawModeRef);
-      handler({ lngLat: { lng: -83.9, lat: 42.6 }, point: { x: 100, y: 100 } });
+      const mapboxgl = await import('mapbox-gl');
+      const mockInstance = makeMockMapInstance();
+      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+      render(
+        <MapScreen
+          location={{ lat: 42.6, lng: -83.9 }}
+          manualMode={true}
+          drawMode="navigate"
+          onManualVertex={onManualVertex}
+          selectedSides={[]}
+          manualPoints={[]}
+        />
+      );
+
+      mockInstance._fire('click', { lngLat: { lng: -83.9, lat: 42.6 }, point: { x: 100, y: 100 } });
 
       expect(onManualVertex).not.toHaveBeenCalled();
     });
@@ -181,6 +194,8 @@ describe('MapboxDrawView', () => {
       );
 
       // Find the cssText line for the vertex handle element
+      // This regex assumes single-quoted string literal — if cssText is refactored to
+      // double-quotes or a template literal, update the regex capture group accordingly.
       const match = src.match(/mbx-vertex-handle[\s\S]*?el\.style\.cssText\s*=\s*'([^']+)'/);
       expect(match, 'Should find the el.style.cssText assignment for mbx-vertex-handle').toBeTruthy();
       const cssText = match[1];

@@ -695,4 +695,5 @@ function MapboxDrawView(props) {
   );
 }
 
+export { MapScreen };
 export default MapboxDrawView;
