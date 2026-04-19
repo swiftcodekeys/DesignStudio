@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 
-// Stub global fetch so EPQS calls resolve immediately (flat, no slope) in all tests.
-// Tests that care about EPQS behavior use their own per-test fetch overrides.
+// Stub global fetch so any incidental EPQS / parcel calls resolve cleanly.
 global.fetch = vi.fn(function () {
   return Promise.resolve({
     ok: true,
@@ -11,7 +10,7 @@ global.fetch = vi.fn(function () {
   });
 });
 
-// Helper: build a mock Map instance with the methods MapboxDrawView calls
+// Helper: build a mock Map instance with the methods the draw view calls.
 function makeMockMapInstance() {
   const listeners = {};
   return {
@@ -28,11 +27,11 @@ function makeMockMapInstance() {
     setTerrain: vi.fn(),
     getSource: vi.fn(() => null),
     getLayer: vi.fn(() => null),
-    getCanvas: vi.fn(() => ({ style: {} })),
+    getCanvas: vi.fn(() => ({ style: {}, toDataURL: function() { return 'data:image/png;base64,x'; } })),
     isStyleLoaded: vi.fn(() => false),
     setPaintProperty: vi.fn(),
+    triggerRepaint: vi.fn(),
     addControl: vi.fn(),
-    // Expose internal listeners so tests can fire synthetic events
     _listeners: listeners,
     _fire: function (event, arg) {
       (listeners[event] || []).forEach(function (h) { h(arg); });
@@ -40,7 +39,7 @@ function makeMockMapInstance() {
   };
 }
 
-// Mock mapbox-gl before importing MapboxDrawView
+// Mock mapbox-gl before importing MapboxDrawView.
 vi.mock('mapbox-gl', () => {
   const MockMarker = vi.fn(function (opts) {
     this._opts = opts;
@@ -66,13 +65,10 @@ vi.mock('mapbox-gl', () => {
 
 import MapboxDrawView, { MapScreen } from '../MapboxDrawView.js';
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe('MapboxDrawView', () => {
+describe('MapboxDrawView (pen-tool + morphing dock)', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     vi.clearAllMocks();
   });
 
@@ -80,338 +76,136 @@ describe('MapboxDrawView', () => {
     const { container } = render(
       <MapboxDrawView onComplete={() => {}} initialLocation={null} />
     );
-    expect(container.querySelector('.mbx-container')).toBeTruthy();
+    expect(container.querySelector('.dy-container')).toBeTruthy();
   });
 
-  it('renders an address entry screen when no location provided', () => {
+  it('renders address entry when no location provided', () => {
     const { getByPlaceholderText } = render(
       <MapboxDrawView onComplete={() => {}} initialLocation={null} />
     );
-    expect(getByPlaceholderText(/enter your address/i)).toBeTruthy();
+    expect(getByPlaceholderText(/123 Main St/i)).toBeTruthy();
   });
 
-  it('initializes Mapbox map with satellite-streets-v12 style', async () => {
+  it('skips address entry when gv_bridge_location is in localStorage', () => {
+    localStorage.setItem('gv_bridge_location', JSON.stringify({
+      lat: 42.6, lng: -83.9, address: '123 Main St',
+    }));
+    const { queryByPlaceholderText } = render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={null} />
+    );
+    expect(queryByPlaceholderText(/123 Main St/i)).toBeFalsy();
+  });
+
+  it('initializes Mapbox map with satellite-streets-v12 style when location provided', async () => {
     const mapboxgl = await import('mapbox-gl');
     const mockInstance = makeMockMapInstance();
     mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
 
     render(
-      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
     );
 
     expect(mapboxgl.default.Map).toHaveBeenCalledWith(expect.objectContaining({
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      projection: 'globe',
     }));
   });
 
-  it('hydrates initial location from gv_bridge_location', () => {
-    localStorage.setItem('gv_bridge_location', JSON.stringify({
-      lat: 42.6, lng: -83.9, placeName: '123 Main St',
-    }));
-    const { queryByPlaceholderText } = render(
-      <MapboxDrawView onComplete={() => {}} initialLocation={null} />
+  it('dock renders in "empty" phase when no points drawn', () => {
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
     );
-    // Should skip AddressEntry, go straight to map
-    expect(queryByPlaceholderText(/enter your address/i)).toBeFalsy();
-    localStorage.clear();
+    expect(container.querySelector('.dy-dock')).toBeTruthy();
+    expect(container.querySelector('.dy-dock-empty')).toBeTruthy();
+    expect(container.querySelector('.dy-empty-overlay')).toBeTruthy();
   });
 
-  // ---------------------------------------------------------------------------
-  // Issue #17 — Manual vertex lngLat must match click event lngLat exactly.
-  //
-  // The click handler uses e.lngLat (the geographic coordinate Mapbox already
-  // computed from the raw pixel hit) and passes it directly to onManualVertex.
-  // There must be NO pixel-to-lngLat conversion in application code, because
-  // Mapbox has already done it. This test verifies the handler is a pure
-  // pass-through with no pixel math or offset introduced.
-  // ---------------------------------------------------------------------------
-  describe('manual vertex click alignment (issue #17)', () => {
-    it('passes e.lngLat directly to onManualVertex — no pixel math applied', async () => {
-      // Mount the production MapScreen component with manualMode:true and drawMode:'draw'.
-      // The component's useEffect registers a 'click' listener on the mock map instance.
-      // We then fire a synthetic click via _fire and assert that onManualVertex receives
-      // the geographic coordinate straight from e.lngLat — with no pixel math applied.
-      const expectedLng = -83.912345;
-      const expectedLat = 42.601234;
+  it('empty-state overlay disappears once autosave state has points', () => {
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.901, 42.601]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    expect(container.querySelector('.dy-empty-overlay')).toBeNull();
+    // Signed note and dock should show in drawing/ready phase
+    expect(container.querySelector('.dy-signed-note')).toBeTruthy();
+  });
 
-      const onManualVertex = vi.fn();
+  it('map click passes e.lngLat straight into setPoints (no pixel math)', async () => {
+    // Contract: MapScreen's click handler reads Mapbox's already-computed
+    // e.lngLat and hands it to setPoints verbatim. Production must never
+    // re-derive from e.point or introduce offsets.
+    const expectedLng = -83.912345;
+    const expectedLat = 42.601234;
 
-      // Capture the mock map instance that MapScreen will create so we can _fire on it.
-      const mapboxgl = await import('mapbox-gl');
-      const mockInstance = makeMockMapInstance();
-      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+    const mapboxgl = await import('mapbox-gl');
+    const mockInstance = makeMockMapInstance();
+    mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
 
-      render(
-        <MapScreen
-          location={{ lat: 42.6, lng: -83.9 }}
-          manualMode={true}
-          drawMode="draw"
-          onManualVertex={onManualVertex}
-          selectedSides={[]}
-          manualPoints={[]}
-        />
-      );
+    const received = [];
+    const setPoints = vi.fn(function (updater) {
+      received.push(typeof updater === 'function' ? updater([]) : updater);
+    });
+    const setHoverPoint = vi.fn();
 
-      // Fire a synthetic Mapbox click event: Mapbox provides e.lngLat, not pixel coords.
-      // The handler must NOT use e.point — only e.lngLat is the authoritative geo coord.
-      mockInstance._fire('click', {
-        lngLat: { lng: expectedLng, lat: expectedLat },
-        point: { x: 400, y: 300 },   // pixel hit — production handler must NOT use these
-      });
+    render(
+      <MapScreen
+        location={{ lat: 42.6, lng: -83.9 }}
+        points={[]}
+        setPoints={setPoints}
+        setHoverPoint={setHoverPoint}
+      />
+    );
 
-      expect(onManualVertex).toHaveBeenCalledTimes(1);
-      const [result] = onManualVertex.mock.calls[0];
-      expect(result[0]).toBe(expectedLng);
-      expect(result[1]).toBe(expectedLat);
+    // Synthesize a Mapbox click — event shape is { lngLat, point, originalEvent }.
+    mockInstance._fire('click', {
+      lngLat: { lng: expectedLng, lat: expectedLat },
+      point: { x: 400, y: 300 },
+      originalEvent: { target: null },
     });
 
-    it('does not call onManualVertex when drawMode is not "draw"', async () => {
-      // Mount MapScreen with drawMode:'navigate' — click events must be ignored.
-      const onManualVertex = vi.fn();
+    expect(setPoints).toHaveBeenCalledTimes(1);
+    expect(received.length).toBe(1);
+    expect(received[0][0][0]).toBe(expectedLng);
+    expect(received[0][0][1]).toBe(expectedLat);
+  });
 
-      const mapboxgl = await import('mapbox-gl');
-      const mockInstance = makeMockMapInstance();
-      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+  it('signed-note row is visible (non-dismissible) when user has drawn points', () => {
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.901, 42.601]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    const note = container.querySelector('.dy-signed-note');
+    expect(note).toBeTruthy();
+    // No dismiss button — handoff spec: "Do not make it dismissible"
+    expect(note.querySelector('button')).toBeNull();
+  });
 
-      render(
-        <MapScreen
-          location={{ lat: 42.6, lng: -83.9 }}
-          manualMode={true}
-          drawMode="navigate"
-          onManualVertex={onManualVertex}
-          selectedSides={[]}
-          manualPoints={[]}
-        />
-      );
-
-      mockInstance._fire('click', { lngLat: { lng: -83.9, lat: 42.6 }, point: { x: 100, y: 100 } });
-
-      expect(onManualVertex).not.toHaveBeenCalled();
-    });
-
-    // ---------------------------------------------------------------------------
-    // CYA banner — deferred trigger tests (issue #14)
-    // ---------------------------------------------------------------------------
-
-    it('CYA banner is hidden on mount — starts false regardless of sessionStorage', () => {
-      // The banner must NOT show when the component mounts with no draw actions.
-      // Previously bannerShown was initialised from sessionStorage; now it starts false.
-      sessionStorage.removeItem('gv_draw_banner_shown');
-      const { container } = render(
-        <MapboxDrawView
-          onComplete={() => {}}
-          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
-        />
-      );
-      expect(container.querySelector('.mbx-cya-banner')).toBeNull();
-    });
-
-    it('CYA banner appears on first draw action — useEffect fires when manualPoints becomes non-empty', async () => {
-      // Behavioral test: render MapboxDrawView with a real location so the map screen
-      // is shown. Enable manual mode (click the button), enable draw mode (click toggle),
-      // then fire a synthetic map click. The click drives state through handleManualVertex
-      // → setManualPoints → useEffect → setBannerShown(true) → banner in DOM.
-
-      sessionStorage.removeItem('gv_draw_banner_shown');
-
-      const mapboxgl = await import('mapbox-gl');
-      const mockInstance = makeMockMapInstance();
-      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
-
-      const { container } = render(
-        <MapboxDrawView
-          onComplete={() => {}}
-          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
-        />
-      );
-
-      // Banner must not be visible yet — no draw action has occurred.
-      expect(container.querySelector('.mbx-cya-banner')).toBeNull();
-
-      // Enable manual mode — the "Use Manual Mode Instead" button calls setManualMode(true),
-      // which causes MapScreen to register its click handler (props.manualMode is now true).
-      const manualBtn = container.querySelector('.mbx-manual-mode-btn');
-      act(function () { fireEvent.click(manualBtn); });
-
-      // Enable draw mode — the mode toggle sets drawMode='draw', which is required for
-      // the click handler inside MapScreen to forward events to onManualVertex.
-      const drawToggle = container.querySelector('.mbx-mode-toggle');
-      act(function () { fireEvent.click(drawToggle); });
-
-      // Fire a synthetic Mapbox click via the established _fire pattern. This drives
-      // the MapScreen click handler → props.onManualVertex([lng, lat]) →
-      // MapboxDrawView.handleManualVertex → setManualPoints grows → useEffect fires.
-      await act(async function () {
-        mockInstance._fire('click', {
-          lngLat: { lng: -83.9, lat: 42.6 },
-          point: { x: 400, y: 300 },
-        });
-      });
-
-      // The CYA banner should now be visible in the DOM.
-      expect(container.querySelector('.mbx-cya-banner')).toBeTruthy();
-    });
-
-    it('CYA banner does not re-trigger after "Got it" dismissed — sessionStorage gate in effect', () => {
-      // Simulate a session where the user previously dismissed the banner.
-      // The effect early-returns when 'gv_draw_banner_shown' is set, so even though
-      // selectedSides/manualPoints grow, setBannerShown(true) is never called again.
-      sessionStorage.setItem('gv_draw_banner_shown', '1');
-
-      const { container } = render(
-        <MapboxDrawView
-          onComplete={() => {}}
-          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
-        />
-      );
-
-      // Banner must not appear even though we rendered with a real location (draw screen shown).
-      expect(container.querySelector('.mbx-cya-banner')).toBeNull();
-
-      // Clean up
-      sessionStorage.removeItem('gv_draw_banner_shown');
-    });
-
-    // ---------------------------------------------------------------------------
-    // Issue #15 — Unified floating bottom toolbar for draw flow
-    // ---------------------------------------------------------------------------
-
-    it('renders .mbx-bottom-toolbar containing all 4 draw-flow buttons', () => {
-      // When a location is provided, the draw screen is shown. The toolbar div
-      // must be present and must contain all 4 toolbar buttons (identified by
-      // the shared mbx-toolbar-btn class and by their variant classes).
-      const { container } = render(
-        <MapboxDrawView
-          onComplete={() => {}}
-          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
-        />
-      );
-
-      const toolbar = container.querySelector('.mbx-bottom-toolbar');
-      expect(toolbar, '.mbx-bottom-toolbar must exist in the DOM').toBeTruthy();
-
-      // All 4 buttons carry the shared base class
-      const toolbarBtns = toolbar.querySelectorAll('.mbx-toolbar-btn');
-      expect(toolbarBtns.length).toBe(4);
-
-      // Each variant class is also present inside the toolbar
-      expect(toolbar.querySelector('.mbx-manual-mode-btn')).toBeTruthy();
-      expect(toolbar.querySelector('.mbx-done-btn')).toBeTruthy();
-      expect(toolbar.querySelector('.mbx-continue-btn')).toBeTruthy();
-      expect(toolbar.querySelector('.mbx-mode-toggle')).toBeTruthy();
-    });
-
-    // ---------------------------------------------------------------------------
-    // Task #16 — VFP-inspired per-segment sidebar replaces SlopePopup modal
-    // ---------------------------------------------------------------------------
-
-    it('sidebar .mbx-sidebar is visible with .mbx-segment-card elements after clicking Done', async () => {
-      // Build a scenario: enable manual mode, draw mode, add 2 clicks to build
-      // manualPoints, then click Done. The sidebar must appear and contain
-      // SegmentCard-rendered .mbx-segment-card elements.
-
-      const mapboxgl = await import('mapbox-gl');
-      const mockInstance = makeMockMapInstance();
-      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
-
-      const { container } = render(
-        <MapboxDrawView
-          onComplete={() => {}}
-          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
-        />
-      );
-
-      // Enable manual mode
-      const manualBtn = container.querySelector('.mbx-manual-mode-btn');
-      act(function () { fireEvent.click(manualBtn); });
-
-      // Enable draw mode
-      const drawToggle = container.querySelector('.mbx-mode-toggle');
-      act(function () { fireEvent.click(drawToggle); });
-
-      // Add 3 manual vertices to produce at least 2 segments
-      await act(async function () {
-        mockInstance._fire('click', { lngLat: { lng: -83.90, lat: 42.60 }, point: { x: 100, y: 100 } });
-      });
-      await act(async function () {
-        mockInstance._fire('click', { lngLat: { lng: -83.91, lat: 42.60 }, point: { x: 200, y: 100 } });
-      });
-      await act(async function () {
-        mockInstance._fire('click', { lngLat: { lng: -83.91, lat: 42.61 }, point: { x: 200, y: 200 } });
-      });
-
-      // Click Done — this should call handleSlopeAnswer('some') and reveal sidebar
-      const doneBtn = container.querySelector('.mbx-done-btn');
-      await act(async function () { fireEvent.click(doneBtn); });
-
-      // Sidebar must now be visible
-      const sidebar = container.querySelector('.mbx-sidebar');
-      expect(sidebar, '.mbx-sidebar must be in the DOM after Done is clicked').toBeTruthy();
-
-      // Sidebar must contain at least one SegmentCard
-      const cards = container.querySelectorAll('.mbx-segment-card');
-      expect(cards.length, 'At least one .mbx-segment-card must be rendered in the sidebar').toBeGreaterThan(0);
-    });
-
-    it('SlopePopup modal overlay is NOT rendered after clicking Done', async () => {
-      // After the Done button is clicked, the old .mbx-slope-popup-overlay must
-      // not appear in the DOM — the modal has been replaced by the inline sidebar.
-
-      const mapboxgl = await import('mapbox-gl');
-      const mockInstance = makeMockMapInstance();
-      mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
-
-      const { container } = render(
-        <MapboxDrawView
-          onComplete={() => {}}
-          initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
-        />
-      );
-
-      // Enable manual mode + draw mode
-      act(function () { fireEvent.click(container.querySelector('.mbx-manual-mode-btn')); });
-      act(function () { fireEvent.click(container.querySelector('.mbx-mode-toggle')); });
-
-      // Add 2 vertices
-      await act(async function () {
-        mockInstance._fire('click', { lngLat: { lng: -83.90, lat: 42.60 }, point: { x: 100, y: 100 } });
-      });
-      await act(async function () {
-        mockInstance._fire('click', { lngLat: { lng: -83.91, lat: 42.60 }, point: { x: 200, y: 100 } });
-      });
-
-      // Click Done
-      await act(async function () { fireEvent.click(container.querySelector('.mbx-done-btn')); });
-
-      // The SlopePopup overlay must not be in the DOM
-      expect(container.querySelector('.mbx-slope-popup-overlay')).toBeNull();
-    });
-
-    it('vertex marker element has no inline position property that would override .mapboxgl-marker', () => {
-      // Mapbox GL adds class "mapboxgl-marker" to custom marker elements and
-      // relies on its CSS rule { position: absolute } to anchor the element.
-      // An inline position:relative would win over the class rule (inline > class
-      // specificity) and break positioning. Verify the cssText used in the marker
-      // effect does NOT include "position".
-      //
-      // We test this by inspecting the source string directly — the cssText is
-      // a constant literal in the effect, so a regex match on the module source
-      // is the most reliable unit-level check without a live DOM.
-      const fs = require('fs');
-      const src = fs.readFileSync(
-        require('path').resolve(__dirname, '../MapboxDrawView.js'),
-        'utf8'
-      );
-
-      // Find the cssText line for the vertex handle element
-      // This regex assumes single-quoted string literal — if cssText is refactored to
-      // double-quotes or a template literal, update the regex capture group accordingly.
-      const match = src.match(/mbx-vertex-handle[\s\S]*?el\.style\.cssText\s*=\s*'([^']+)'/);
-      expect(match, 'Should find the el.style.cssText assignment for mbx-vertex-handle').toBeTruthy();
-      const cssText = match[1];
-      // Must not contain "position" — Mapbox sets position via its own class
-      expect(cssText).not.toMatch(/position/);
-    });
+  it('address pill renders short form of current location in the top bar', () => {
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '4820 Beacon Hill Rd, Austin, TX 78731' }}
+      />
+    );
+    const pill = container.querySelector('.dy-pill');
+    expect(pill).toBeTruthy();
+    expect(pill.textContent).toContain('4820 Beacon Hill Rd');
   });
 });

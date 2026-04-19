@@ -1,5 +1,8 @@
-// MapboxDrawView.js — Mapbox GL JS satellite draw tool
-// Replaces DrawYardView when USE_MAPBOX_DRAW env flag is true.
+// MapboxDrawView.js — "Draw Your Yard" with pen-tool + morphing dock.
+// Redesigned per Claude-Handoff-Prompt.md: four-phase dock (empty / drawing /
+// ready / expanded), pen-tool interaction (click, drag, right-click delete,
+// hover ghost, ⌘Z undo), parcel overlay with pulsing orange while empty,
+// signed-note reassurance, real pricing via estimatePerFootRange.
 
 import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
@@ -7,74 +10,60 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import { geocodeAddress } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { simplifyRDP, splitPolygonIntoSides, densifyPath, computeSampleStepCount, compassBearing, aggregateClassificationsForUserSegments, computeSlopedPostCount } from './geometryUtils';
-import { classifyDrawnLine } from './epqsClient';
-import SegmentCard from './SegmentCard';
+import { computeSlopedPostCount, compassBearing } from './geometryUtils';
+import { estimatePerFootRange } from './retailPricing';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
 
-var SEGMENT_COLORS = [
-  '#22C55E', // green
-  '#3B82F6', // blue
-  '#F59E0B', // orange
-  '#EC4899', // pink
-  '#14B8A6', // teal
-  '#A855F7', // purple
-];
+// Haven Classic 60" residential is the default range baseline.
+// Per user preference — the handoff doc suggested 72, user overrode to 60 as
+// the most common residential height. Actual style/height selection happens
+// in the next step (QuoteBuilder).
+var DEFAULT_ESTIMATE_INPUTS = {
+  style: 'haven',
+  height: 60,
+  grade: 'residential',
+  spacing: 'standard',
+};
 
-// Pure helper: compute the display label for an EPQS elevation badge.
-// Precedence: confidence-low > flat-threshold > numeric default.
-// Exported for unit-testing without DOM or React mounting.
-export function epqsBadgeLabel({ maxAbsDelta, signedDelta, confidence }) {
+var MIN_DRAW_FT = 30;
+var AUTOSAVE_KEY = 'gv_draw_state';
+var AUTOSAVE_DEBOUNCE_MS = 2000;
+
+// ---------- Distance helpers ----------
+function distanceBetween(a, b) {
+  // Haversine in feet
+  var R = 20902231;
+  var dLat = (b[1] - a[1]) * Math.PI / 180;
+  var dLng = (b[0] - a[0]) * Math.PI / 180;
+  var lat1 = a[1] * Math.PI / 180;
+  var lat2 = b[1] * Math.PI / 180;
+  var x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function totalFeet(pts) {
+  var t = 0;
+  for (var i = 0; i < pts.length - 1; i++) t += distanceBetween(pts[i], pts[i + 1]);
+  return t;
+}
+
+// ---------- Pure helpers (exported for tests) ----------
+// Kept for backward compatibility with tests/epqsBadgeLabel.test.js even though
+// the draw screen no longer shows the elevation badge inline (slope tier is
+// chosen in the wizard's next step).
+export function epqsBadgeLabel(args) {
+  var maxAbsDelta = args.maxAbsDelta;
+  var signedDelta = args.signedDelta;
+  var confidence = args.confidence;
   if (confidence === 'low') return 'Unknown';
   if (maxAbsDelta < 0.5) return 'Flat \u2713';
   var arrow = signedDelta >= 0 ? '\u2197' : '\u2198';
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
 }
 
-function distanceBetween(a, b) {
-  // Haversine in feet
-  var R = 20902231;
-  var dLat = (b[1]-a[1]) * Math.PI/180;
-  var dLng = (b[0]-a[0]) * Math.PI/180;
-  var lat1 = a[1] * Math.PI/180;
-  var lat2 = b[1] * Math.PI/180;
-  var x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-}
-
-function buildSegmentsFromSides(selected) {
-  return selected.map(function(ss, i) {
-    var lengthFt = distanceBetween(ss.side.start, ss.side.end);
-    return {
-      index: i,
-      mapLayerIdx: ss.side.index,
-      lengthFeet: lengthFt,
-      color: ss.color,
-      compassLabel: ss.side.compassLabel,
-      panels: Math.ceil(lengthFt / 6),
-      start: ss.side.start,
-      end: ss.side.end,
-    };
-  });
-}
-
-function buildSegmentsFromManual(points) {
-  var segs = [];
-  for (var i = 0; i < points.length - 1; i++) {
-    var color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
-    var lengthFt = distanceBetween(points[i], points[i+1]);
-    segs.push({
-      index: i, mapLayerIdx: null, lengthFeet: lengthFt, color: color,
-      compassLabel: compassBearing(points[i], points[i+1]),
-      panels: Math.ceil(lengthFt / 6),
-      start: points[i], end: points[i+1],
-    });
-  }
-  return segs;
-}
-
+// ---------- AddressEntry (cold start, no localStorage location) ----------
 function AddressEntry(props) {
   var addressState = useState('');
   var address = addressState[0];
@@ -92,7 +81,9 @@ function AddressEntry(props) {
     setLoading(true);
     try {
       var result = await geocodeAddress(address, MAPBOX_TOKEN);
-      if (props.onAddressEntered) props.onAddressEntered(result);
+      if (props.onAddressEntered) props.onAddressEntered({
+        address: result.placeName, lat: result.lat, lng: result.lng,
+      });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -100,138 +91,375 @@ function AddressEntry(props) {
     }
   }
 
-  return React.createElement('div', { className: 'mbx-address-entry' },
-    React.createElement('h2', null, 'Enter your address'),
+  return React.createElement('div', { className: 'dy-address-entry' },
+    React.createElement('h2', null, 'Where are we fencing?'),
+    React.createElement('p', { className: 'dy-address-hint' }, 'Enter your property address so I can pull satellite imagery.'),
     React.createElement('input', {
       type: 'text',
-      placeholder: 'Enter your address (e.g., 123 Main St, Howell MI)',
+      placeholder: '123 Main St, Howell MI',
       value: address,
       onChange: function(e) { setAddress(e.target.value); },
-      className: 'mbx-address-input',
+      className: 'dy-address-input',
       disabled: loading,
+      onKeyDown: function(e) { if (e.key === 'Enter') submit(); },
     }),
-    error ? React.createElement('div', { className: 'mbx-address-error' }, error) : null,
+    error ? React.createElement('div', { className: 'dy-address-error' }, error) : null,
     React.createElement('button', {
       onClick: submit,
-      className: 'mbx-address-submit',
+      className: 'dy-address-submit',
       disabled: !address || loading,
-    }, loading ? 'Finding...' : 'Find my yard \u2192')
+    }, loading ? 'Finding\u2026' : 'Find my yard \u2192')
   );
 }
 
+// ---------- Top-bar address pill (compact) ----------
+function AddressPill(props) {
+  var openState = useState(false);
+  var open = openState[0];
+  var setOpen = openState[1];
+  var inputState = useState('');
+  var input = inputState[0];
+  var setInput = inputState[1];
+  var loadingState = useState(false);
+  var loading = loadingState[0];
+  var setLoading = loadingState[1];
+  var errorState = useState('');
+  var error = errorState[0];
+  var setError = errorState[1];
+
+  function onSubmit(e) {
+    e.preventDefault();
+    if (!input.trim()) return;
+    setLoading(true);
+    setError('');
+    geocodeAddress(input, MAPBOX_TOKEN).then(function(res) {
+      setLoading(false);
+      setOpen(false);
+      setInput('');
+      props.onChangeAddress({ address: res.placeName, lat: res.lat, lng: res.lng });
+    }).catch(function() {
+      setLoading(false);
+      setError('Could not find that address.');
+    });
+  }
+
+  var shortAddr = props.location && props.location.address
+    ? props.location.address.split(',')[0]
+    : 'Enter address';
+
+  return React.createElement('div', { className: 'dy-pill-wrap' },
+    React.createElement('button', {
+      className: 'dy-pill',
+      onClick: function() { setOpen(!open); },
+      type: 'button',
+    },
+      React.createElement('span', { className: 'dy-pill-pin' }, '\u{1F4CD}'),
+      React.createElement('span', { className: 'dy-pill-addr' }, shortAddr),
+      React.createElement('span', { className: 'dy-pill-caret' }, '\u25BE')
+    ),
+    open && React.createElement('div', { className: 'dy-pill-dropdown' },
+      React.createElement('form', { onSubmit: onSubmit },
+        React.createElement('input', {
+          type: 'text',
+          placeholder: 'New address',
+          value: input,
+          onChange: function(e) { setInput(e.target.value); },
+          autoFocus: true,
+          className: 'dy-pill-input',
+        }),
+        React.createElement('div', { className: 'dy-pill-actions' },
+          React.createElement('button', {
+            type: 'button',
+            onClick: function() { setOpen(false); },
+            className: 'dy-pill-btn dy-pill-btn-ghost',
+          }, 'Cancel'),
+          React.createElement('button', {
+            type: 'submit',
+            disabled: loading || !input.trim(),
+            className: 'dy-pill-btn dy-pill-btn-primary',
+          }, loading ? 'Searching\u2026' : 'Update')
+        )
+      ),
+      error && React.createElement('div', { className: 'dy-pill-error' }, error)
+    )
+  );
+}
+
+// ---------- Empty-state hero overlay ----------
+function EmptyStateOverlay() {
+  return React.createElement('div', { className: 'dy-empty-overlay' },
+    React.createElement('div', { className: 'dy-empty-badge' },
+      React.createElement('span', { className: 'dy-empty-dot' }),
+      ' Your property'
+    ),
+    React.createElement('h1', { className: 'dy-empty-title' }, 'Sketch your fence line'),
+    React.createElement('p', { className: 'dy-empty-sub' },
+      'Click to drop corners. Drag to adjust. Every measurement is verified on a free call before anything gets cut.'
+    )
+  );
+}
+
+// ---------- Signed note (Sarah reassurance) ----------
+function SignedNote() {
+  return React.createElement('div', { className: 'dy-signed-note' },
+    React.createElement('div', { className: 'dy-avatar' }, 'SM'),
+    React.createElement('div', { className: 'dy-signed-text' },
+      React.createElement('strong', null, 'This is an estimate. '),
+      'I\u2019ll verify every foot with you on a free 20-min call before anything is cut. ',
+      React.createElement('span', { className: 'dy-signed-name' }, 'Sarah M., your designer')
+    )
+  );
+}
+
+// ---------- Morphing bottom dock ----------
+function MorphingDock(props) {
+  var phase = props.phase;
+  var totalFt = props.totalFt;
+  var corners = props.corners;
+  var priceRange = props.priceRange;
+  var segments = props.segments;
+  var isEmpty = phase === 'empty';
+  var isReady = phase === 'ready';
+  var isExpanded = phase === 'expanded';
+  var canContinue = isReady || isExpanded;
+
+  function formatMoney(n) {
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  var statsRow = React.createElement('div', { className: 'dy-stats' },
+    React.createElement('div', { className: 'dy-stat' },
+      React.createElement('div', { className: 'dy-stat-num' }, Math.round(totalFt)),
+      React.createElement('div', { className: 'dy-stat-label' }, 'linear feet')
+    ),
+    React.createElement('div', { className: 'dy-stat' },
+      React.createElement('div', { className: 'dy-stat-num' }, corners),
+      React.createElement('div', { className: 'dy-stat-label' }, 'corners')
+    ),
+    priceRange && React.createElement('div', { className: 'dy-stat' },
+      React.createElement('div', { className: 'dy-stat-num dy-stat-range' },
+        formatMoney(priceRange.low) + ' – ' + formatMoney(priceRange.high)
+      ),
+      React.createElement('div', { className: 'dy-stat-label' }, 'est. range')
+    )
+  );
+
+  var microActions = React.createElement('div', { className: 'dy-micro' },
+    React.createElement('button', {
+      className: 'dy-micro-btn',
+      onClick: props.onUndo,
+      title: 'Undo last corner (\u2318Z)',
+      type: 'button',
+      'aria-label': 'Undo',
+    }, '\u21B6'),
+    React.createElement('button', {
+      className: 'dy-micro-btn',
+      onClick: props.onReset,
+      title: 'Clear all corners',
+      type: 'button',
+      'aria-label': 'Reset',
+    }, '\u2715')
+  );
+
+  var emptyContent = React.createElement(React.Fragment, null,
+    React.createElement('div', { className: 'dy-dock-icon' }, '\u270F\uFE0F'),
+    React.createElement('div', { className: 'dy-dock-copy' },
+      React.createElement('strong', null, 'Ready when you are'),
+      React.createElement('span', { className: 'dy-dock-sep' }, '\u00B7'),
+      'Click on the map to drop your first corner'
+    ),
+    React.createElement('button', {
+      className: 'dy-dock-cta dy-dock-cta-disabled',
+      disabled: true,
+      type: 'button',
+    }, 'Start drawing')
+  );
+
+  var continueLabel;
+  if (canContinue) {
+    var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
+    continueLabel = '\u2713 Continue \u00B7 ' + (priceRange ? '~' + formatMoney(mid) : '') + ' \u2192';
+  } else {
+    var needed = Math.max(0, MIN_DRAW_FT - Math.round(totalFt));
+    continueLabel = 'Keep going \u00B7 ' + needed + '+ ft';
+  }
+
+  var drawingOrReadyContent = React.createElement(React.Fragment, null,
+    statsRow,
+    microActions,
+    React.createElement('button', {
+      className: 'dy-dock-cta ' + (canContinue ? 'dy-dock-cta-ready' : 'dy-dock-cta-disabled'),
+      onClick: canContinue ? props.onContinue : null,
+      disabled: !canContinue,
+      type: 'button',
+    }, continueLabel),
+    canContinue && React.createElement('button', {
+      className: 'dy-breakdown-toggle',
+      onClick: props.onToggleBreakdown,
+      type: 'button',
+    }, isExpanded ? 'Hide breakdown \u2303' : 'View breakdown \u2304')
+  );
+
+  var expandedPanel = isExpanded && segments.length > 0 && React.createElement('div', { className: 'dy-dock-expanded' },
+    // Segment list
+    React.createElement('div', { className: 'dy-expanded-col' },
+      React.createElement('h4', { className: 'dy-expanded-head' }, 'Your fence line'),
+      React.createElement('ol', { className: 'dy-segment-list' },
+        segments.map(function(s, i) {
+          return React.createElement('li', { key: i, className: 'dy-segment-item' },
+            React.createElement('span', { className: 'dy-segment-num' }, i + 1),
+            React.createElement('span', { className: 'dy-segment-len' }, Math.round(s.lengthFeet) + ' ft'),
+            React.createElement('button', {
+              className: 'dy-segment-delete',
+              onClick: function() { props.onDeleteSegment(i); },
+              title: 'Remove this segment',
+              type: 'button',
+              'aria-label': 'Remove segment ' + (i + 1),
+            }, '\u00D7')
+          );
+        })
+      )
+    ),
+    // Materials
+    priceRange && React.createElement('div', { className: 'dy-expanded-col' },
+      React.createElement('h4', { className: 'dy-expanded-head' }, 'Materials (estimate)'),
+      React.createElement('ul', { className: 'dy-material-list' },
+        React.createElement('li', null,
+          React.createElement('span', null, Math.ceil(totalFt / priceRange.panelWidthFt) + ' panels \u00B7 6\u2032'),
+          React.createElement('span', { className: 'dy-material-price' },
+            formatMoney(priceRange.panelPrice * Math.ceil(totalFt / priceRange.panelWidthFt))
+          )
+        ),
+        React.createElement('li', null,
+          React.createElement('span', null, 'Posts (corner + end + line)'),
+          React.createElement('span', { className: 'dy-material-price' }, 'included')
+        ),
+        React.createElement('li', null,
+          React.createElement('span', null, 'Concrete (2 bags / post)'),
+          React.createElement('span', { className: 'dy-material-price' }, 'quoted on call')
+        ),
+        React.createElement('li', { className: 'dy-material-total' },
+          React.createElement('span', null, 'Estimated total range'),
+          React.createElement('span', { className: 'dy-material-price' },
+            formatMoney(priceRange.low) + ' \u2013 ' + formatMoney(priceRange.high)
+          )
+        )
+      ),
+      React.createElement('div', { className: 'dy-material-note' },
+        'Haven Classic 60" baseline. Actual style, height, and color chosen in the next step.'
+      )
+    )
+  );
+
+  return React.createElement('div', { className: 'dy-dock dy-dock-' + phase },
+    React.createElement('div', { className: 'dy-dock-main' },
+      isEmpty ? emptyContent : drawingOrReadyContent
+    ),
+    expandedPanel,
+    isEmpty && React.createElement('div', { className: 'dy-keyboard-hints' },
+      React.createElement('span', { className: 'dy-kbd-hint' },
+        React.createElement('kbd', null, 'Click'), ' drop corner'),
+      React.createElement('span', { className: 'dy-kbd-hint' },
+        React.createElement('kbd', null, 'Drag'), ' move corner'),
+      React.createElement('span', { className: 'dy-kbd-hint' },
+        React.createElement('kbd', null, 'Right-click'), ' delete'),
+      React.createElement('span', { className: 'dy-kbd-hint' },
+        React.createElement('kbd', null, '\u2318Z'), ' undo')
+    )
+  );
+}
+
+// ---------- Map canvas with pen-tool drawing ----------
 function MapScreen(props) {
   var mapContainerRef = useRef(null);
   var mapRef = useRef(null);
-  var drawModeRef = useRef(props.drawMode);
-  drawModeRef.current = props.drawMode;
+  var setPoints = props.setPoints;
+  var setHoverPoint = props.setHoverPoint;
+  var pointsRef = useRef(props.points);
+  pointsRef.current = props.points;
 
+  // One-time map init per location
   useEffect(function() {
     if (!mapContainerRef.current || mapRef.current) return;
 
     var map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      projection: 'globe',
       center: [props.location.lng || 0, props.location.lat || 20],
       zoom: props.location.lat ? 18 : 1,
       maxZoom: 22,
       pitch: 0,
       attributionControl: false,
     });
-
-    // Compact attribution collapses into a small "i" badge — less visual noise
-    // while remaining visible and legible (satisfies Mapbox ToS).
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
-
     mapRef.current = map;
     if (props.mapInstanceRef) props.mapInstanceRef.current = map;
 
     map.on('load', function() {
-      map.addSource('mapbox-dem', {
-        type: 'raster-dem',
-        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-        tileSize: 512,
-        maxzoom: 14,
+      var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      map.flyTo({
+        center: [props.location.lng, props.location.lat],
+        zoom: 20,
+        pitch: 0,
+        duration: prefersReduced ? 0 : 2400,
+        essential: true,
       });
-      if (props.location.lat) {
-        var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var duration = prefersReduced ? 0 : 4000;
-        map.flyTo({
-          center: [props.location.lng, props.location.lat],
-          zoom: 20,
-          pitch: 0,
-          duration: duration,
-          essential: true,
-        });
-      }
     });
 
-    map.on('idle', async function onceLoaded() {
-      map.off('idle', onceLoaded);  // one-shot
-      if (props.location.lat == null) return;
-      var result = await fetchParcel(
-        props.location.lat,
-        props.location.lng,
-        process.env.PARCEL_PROXY_URL
-      );
-      if (result.ok && result.data && result.data.boundary) {
-        var coords = result.data.boundary.coordinates[0];
-        var simplified = coords.length > 60 ? simplifyRDP(coords, 0.00001) : coords;
-        var sides = splitPolygonIntoSides(simplified);
-
-        map.addSource('parcel', {
-          type: 'geojson',
-          data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [simplified] } },
-        });
-        map.addLayer({
-          id: 'parcel-fill',
-          type: 'fill',
-          source: 'parcel',
-          paint: { 'fill-color': '#00d4d4', 'fill-opacity': 0.15 },
-        });
-        map.addLayer({
-          id: 'parcel-outline',
-          type: 'line',
-          source: 'parcel',
-          paint: { 'line-color': '#00d4d4', 'line-width': 2 },
-        });
-
-        if (props.onParcelLoaded) props.onParcelLoaded(sides, result.data);
-
-        sides.forEach(function(side, i) {
-          var color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
-          var sourceId = 'side-' + i;
-          map.addSource(sourceId, {
-            type: 'geojson',
-            data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [side.start, side.end] } },
-          });
-          map.addLayer({
-            id: sourceId + '-line',
-            type: 'line',
-            source: sourceId,
-            paint: { 'line-color': color, 'line-width': 6, 'line-opacity': 0.7 },
-          });
-          map.addLayer({
-            id: sourceId + '-hit',
-            type: 'line',
-            source: sourceId,
-            paint: { 'line-color': color, 'line-width': 20, 'line-opacity': 0 },  // invisible hit area
-          });
-
-          map.on('click', sourceId + '-hit', function() {
-            if (drawModeRef.current !== 'draw') return;
-            if (props.onSideClicked) props.onSideClicked(side, color);
-          });
-          map.on('mouseenter', sourceId + '-hit', function() {
-            map.getCanvas().style.cursor = 'pointer';
-          });
-          map.on('mouseleave', sourceId + '-hit', function() {
-            map.getCanvas().style.cursor = '';
-          });
-        });
-      } else {
-        if (props.onParcelFallback) props.onParcelFallback();
+    // Click to drop vertex (but not if the click hit an existing vertex marker)
+    map.on('click', function(e) {
+      if (e.originalEvent && e.originalEvent.target) {
+        var t = e.originalEvent.target;
+        if (t.closest && t.closest('.dy-vertex')) return;
       }
+      setPoints(function(prev) { return prev.concat([[e.lngLat.lng, e.lngLat.lat]]); });
+      setHoverPoint(null);
+    });
+
+    // Hover ghost preview after first point
+    map.on('mousemove', function(e) {
+      if (pointsRef.current.length === 0) { setHoverPoint(null); return; }
+      setHoverPoint([e.lngLat.lng, e.lngLat.lat]);
+    });
+    map.on('mouseout', function() { setHoverPoint(null); });
+
+    // Parcel outline on first idle
+    map.on('idle', async function onceLoaded() {
+      map.off('idle', onceLoaded);
+      if (props.location.lat == null) return;
+      try {
+        var result = await fetchParcel(props.location.lat, props.location.lng, process.env.PARCEL_PROXY_URL);
+        if (result && result.ok && result.data && result.data.boundary) {
+          var coords = result.data.boundary.coordinates[0];
+          if (!map.getSource('parcel')) {
+            map.addSource('parcel', {
+              type: 'geojson',
+              data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] } },
+            });
+            map.addLayer({
+              id: 'parcel-outline',
+              type: 'line',
+              source: 'parcel',
+              paint: {
+                'line-color': '#ffffff',
+                'line-width': 1.5,
+                'line-dasharray': [3, 3],
+                'line-opacity': 0.9,
+              },
+            });
+            map.addLayer({
+              id: 'parcel-pulse',
+              type: 'line',
+              source: 'parcel',
+              paint: {
+                'line-color': '#c2410c',
+                'line-width': 3,
+                'line-opacity': 0.8,
+              },
+            });
+          }
+        }
+      } catch (e) { /* parcel fetch failure is non-fatal */ }
     });
 
     return function() {
@@ -243,78 +471,83 @@ function MapScreen(props) {
     };
   }, [props.location.lat, props.location.lng]);
 
+  // Parcel-pulse visible only when no points drawn
+  useEffect(function() {
+    if (!mapRef.current || !mapRef.current.getLayer) return;
+    if (!mapRef.current.getLayer('parcel-pulse')) return;
+    mapRef.current.setPaintProperty('parcel-pulse', 'line-opacity', props.points.length === 0 ? 0.8 : 0);
+  }, [props.points.length]);
+
+  // Main polyline (glow + solid orange)
   useEffect(function() {
     if (!mapRef.current) return;
-    if (!props.sides || props.sides.length === 0) return;
-    props.sides.forEach(function(side, i) {
-      var selected = props.selectedSides.find(function(s) { return s.side.index === i; });
-      var sourceId = 'side-' + i;
-      if (mapRef.current.getLayer && mapRef.current.getLayer(sourceId + '-line')) {
-        mapRef.current.setPaintProperty(sourceId + '-line', 'line-width', selected ? 10 : 6);
-        mapRef.current.setPaintProperty(sourceId + '-line', 'line-opacity', selected ? 1 : 0.7);
-      }
-    });
-  }, [props.selectedSides, props.sides]);
-
-  useEffect(function() {
-    if (!mapRef.current) return;
-    if (!props.manualMode) return;
-    var map = mapRef.current;
-    function handleClick(e) {
-      if (props.drawMode !== 'draw') return;
-      if (props.onManualVertex) props.onManualVertex([e.lngLat.lng, e.lngLat.lat]);
-    }
-    map.on('click', handleClick);
-    return function() {
-      if (map && map.off) map.off('click', handleClick);
-    };
-  }, [props.manualMode, props.drawMode]);
-
-  useEffect(function() {
-    if (!mapRef.current || !props.manualPoints) return;
-    var id = 'manual-line';
-    var geoj = {
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: props.manualPoints },
-    };
-    function applySource() {
+    var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: props.points } };
+    function apply() {
       if (!mapRef.current) return;
-      if (mapRef.current.getSource && mapRef.current.getSource(id)) {
-        var src = mapRef.current.getSource(id);
-        if (src && src.setData) src.setData(geoj);
-      } else if (mapRef.current.addSource) {
-        mapRef.current.addSource(id, { type: 'geojson', data: geoj });
-        mapRef.current.addLayer({
-          id: id,
-          type: 'line',
-          source: id,
-          paint: { 'line-color': '#00d4d4', 'line-width': 6 },
-        });
-      }
+      var src = mapRef.current.getSource && mapRef.current.getSource('dy-line');
+      if (src && src.setData) { src.setData(geoj); return; }
+      if (!mapRef.current.addSource) return;
+      mapRef.current.addSource('dy-line', { type: 'geojson', data: geoj });
+      mapRef.current.addLayer({
+        id: 'dy-line-glow',
+        type: 'line',
+        source: 'dy-line',
+        paint: { 'line-color': '#c2410c', 'line-width': 10, 'line-opacity': 0.25, 'line-blur': 2 },
+      });
+      mapRef.current.addLayer({
+        id: 'dy-line',
+        type: 'line',
+        source: 'dy-line',
+        paint: { 'line-color': '#c2410c', 'line-width': 4 },
+      });
     }
-    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) {
-      applySource();
-    } else {
-      mapRef.current.once('style.load', applySource);
-    }
-  }, [props.manualPoints]);
+    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
+    else mapRef.current.once && mapRef.current.once('style.load', apply);
+  }, [props.points]);
 
+  // Dashed ghost segment from last point to hover
   useEffect(function() {
     if (!mapRef.current) return;
-    if (!props.manualPoints) return;
-    if (!mapboxgl || !mapboxgl.Marker) return;
+    var empty = { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } };
+    var coords = [];
+    if (props.points.length > 0 && props.hoverPoint) {
+      coords = [props.points[props.points.length - 1], props.hoverPoint];
+    }
+    var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
+    function apply() {
+      if (!mapRef.current) return;
+      var src = mapRef.current.getSource && mapRef.current.getSource('dy-ghost');
+      if (src && src.setData) { src.setData(geoj); return; }
+      if (!mapRef.current.addSource) return;
+      mapRef.current.addSource('dy-ghost', { type: 'geojson', data: empty });
+      mapRef.current.addLayer({
+        id: 'dy-ghost',
+        type: 'line',
+        source: 'dy-ghost',
+        paint: {
+          'line-color': '#c2410c',
+          'line-width': 2,
+          'line-dasharray': [2, 2],
+          'line-opacity': 0.55,
+        },
+      });
+      // Re-apply data after layer created
+      var src2 = mapRef.current.getSource('dy-ghost');
+      if (src2 && src2.setData) src2.setData(geoj);
+    }
+    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
+    else mapRef.current.once && mapRef.current.once('style.load', apply);
+  }, [props.points, props.hoverPoint]);
+
+  // Vertex markers (draggable, right-click to delete)
+  useEffect(function() {
+    if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
     var markers = [];
-    props.manualPoints.forEach(function(pt, i) {
+    props.points.forEach(function(pt, i) {
       var el = document.createElement('div');
-      el.className = 'mbx-vertex-handle';
-      // Do NOT set position here — Mapbox adds .mapboxgl-marker { position: absolute }
-      // directly to this element. Inline position:relative would override that class rule
-      // (inline > class specificity), keeping the dot in normal document flow and causing
-      // the visible marker to appear offset from the click coordinate.
-      el.style.cssText = 'width:20px;height:20px;border-radius:50%;background:white;border:3px solid #00d4d4;cursor:grab;';
-      // Invisible wider hit target for touch (44x44px)
+      el.className = 'dy-vertex' + (i === 0 ? ' dy-vertex-first' : '');
       var hit = document.createElement('div');
-      hit.style.cssText = 'position:absolute;inset:-22px;';
+      hit.className = 'dy-vertex-hit';
       el.appendChild(hit);
 
       var marker = new mapboxgl.Marker({ element: el, draggable: true })
@@ -322,402 +555,298 @@ function MapScreen(props) {
         .addTo(mapRef.current);
       marker.on('dragend', function() {
         var ll = marker.getLngLat();
-        if (props.onVertexMoved) props.onVertexMoved(i, [ll.lng, ll.lat]);
+        setPoints(function(prev) {
+          var next = prev.slice();
+          next[i] = [ll.lng, ll.lat];
+          return next;
+        });
+      });
+      el.addEventListener('contextmenu', function(ev) {
+        ev.preventDefault();
+        setPoints(function(prev) { return prev.filter(function(_, j) { return j !== i; }); });
       });
       markers.push(marker);
     });
     return function() { markers.forEach(function(m) { m.remove(); }); };
-  }, [props.manualPoints]);
+  }, [props.points]);
 
+  // Segment length labels at midpoints
   useEffect(function() {
-    if (!mapRef.current || !props.epqs || !props.epqs.segmentClassifications) return;
-
-    // Build user-drawn segments: each entry is { start: [lng,lat], end: [lng,lat] }
-    var userSegments = [];
-    if (props.manualMode) {
-      for (var mi = 0; mi < props.manualPoints.length - 1; mi++) {
-        userSegments.push({ start: props.manualPoints[mi], end: props.manualPoints[mi+1] });
-      }
-    } else {
-      props.selectedSides.forEach(function(ss) {
-        userSegments.push({ start: ss.side.start, end: ss.side.end });
-      });
-    }
-    if (userSegments.length === 0) return;
-
-    var aggregated = aggregateClassificationsForUserSegments(
-      userSegments, props.epqs.segmentClassifications, 6
-    );
-    var badges = [];
-
-    userSegments.forEach(function(seg, segIdx) {
-      var agg = aggregated[segIdx];
-      var confidence = props.epqs && props.epqs.confidence;
-      var label = epqsBadgeLabel({
-        maxAbsDelta: agg.maxAbsDelta,
-        signedDelta: agg.signedDelta,
-        confidence: confidence,
-      });
-
-      var color = {
-        flat: '#22C55E', sloped: '#F59E0B', steep: '#EF4444',
-        steps: '#6366F1', unknown: '#9CA3AF',
-      }[agg.classification] || '#9CA3AF';
-
-      var midLng = (seg.start[0] + seg.end[0]) / 2;
-      var midLat = (seg.start[1] + seg.end[1]) / 2;
-
+    if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
+    var labels = [];
+    for (var i = 0; i < props.points.length - 1; i++) {
+      var len = distanceBetween(props.points[i], props.points[i + 1]);
+      var midLng = (props.points[i][0] + props.points[i + 1][0]) / 2;
+      var midLat = (props.points[i][1] + props.points[i + 1][1]) / 2;
       var el = document.createElement('div');
-      el.className = 'mbx-elev-badge';
-      el.style.cssText = 'background:'+color+';color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.3);pointer-events:none;';
-      el.textContent = label;
-
+      el.className = 'dy-seg-label';
+      el.textContent = Math.round(len) + ' ft';
       var marker = new mapboxgl.Marker({ element: el })
         .setLngLat([midLng, midLat])
         .addTo(mapRef.current);
-      badges.push(marker);
-    });
+      labels.push(marker);
+    }
+    return function() { labels.forEach(function(m) { m.remove(); }); };
+  }, [props.points]);
 
-    return function() { badges.forEach(function(b) { b.remove(); }); };
-  }, [props.epqs, props.selectedSides, props.manualPoints, props.manualMode]);
-
-  // TODO: coordinate with selected-side paint useEffect to avoid flicker
+  // Live ghost distance label ("+42 ft")
   useEffect(function() {
-    if (!mapRef.current) return;
-    if (!props.segments) return;
-    props.segments.forEach(function(s) {
-      if (s.mapLayerIdx == null) return;
-      var layerId = 'side-' + s.mapLayerIdx + '-line';
-      if (mapRef.current.getLayer && mapRef.current.getLayer(layerId)) {
-        mapRef.current.setPaintProperty(layerId, 'line-width',
-          props.highlightedIdx === s.index ? 14 : 10);
-      }
-    });
-  }, [props.highlightedIdx, props.segments]);
+    if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
+    if (props.points.length === 0 || !props.hoverPoint) return;
+    var last = props.points[props.points.length - 1];
+    var len = distanceBetween(last, props.hoverPoint);
+    if (len < 1) return;
+    var midLng = (last[0] + props.hoverPoint[0]) / 2;
+    var midLat = (last[1] + props.hoverPoint[1]) / 2;
+    var el = document.createElement('div');
+    el.className = 'dy-seg-label dy-seg-label-ghost';
+    el.textContent = '+' + Math.round(len) + ' ft';
+    var marker = new mapboxgl.Marker({ element: el })
+      .setLngLat([midLng, midLat])
+      .addTo(mapRef.current);
+    return function() { marker.remove(); };
+  }, [props.points, props.hoverPoint]);
 
   return React.createElement('div', {
     ref: mapContainerRef,
-    className: 'mbx-map',
-    style: { width: '100%', height: '100%' },
+    className: 'dy-map',
   });
 }
 
+// ---------- Main view ----------
 function MapboxDrawView(props) {
   var locationState = useState(function() {
     if (props.initialLocation) return props.initialLocation;
     try {
       var raw = localStorage.getItem('gv_bridge_location');
       if (raw) return JSON.parse(raw);
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
     return null;
   });
   var location = locationState[0];
   var setLocation = locationState[1];
 
-  var parcelState = useState(null);
-  var parcel = parcelState[0];
-  var setParcel = parcelState[1];
-  var sidesState = useState([]);
-  var sides = sidesState[0];
-  var setSides = sidesState[1];
-  var fallbackState = useState(false);
-  var manualMode = fallbackState[0];
-  var setManualMode = fallbackState[1];
-  var selectedState = useState([]); // [{ side, color }]
-  var selectedSides = selectedState[0];
-  var setSelectedSides = selectedState[1];
-  var manualPointsState = useState([]);
-  var manualPoints = manualPointsState[0];
-  var setManualPoints = manualPointsState[1];
-  var epqsState = useState(null);
-  var epqs = epqsState[0];
-  var setEpqs = epqsState[1];
-  var epqsLoadingState = useState(false);
-  var epqsLoading = epqsLoadingState[0];
-  var setEpqsLoading = epqsLoadingState[1];
-
-  var slopeAnswerState = useState(null); // 'flat' | 'some' | 'all' | null
-  var slopeAnswer = slopeAnswerState[0];
-  var setSlopeAnswer = slopeAnswerState[1];
-  var segmentsState = useState([]);
-  var segments = segmentsState[0];
-  var setSegments = segmentsState[1];
-  var highlightedIdxState = useState(null);
-  var highlightedIdx = highlightedIdxState[0];
-  var setHighlightedIdx = highlightedIdxState[1];
-
-  var drawModeState = useState('navigate'); // 'navigate' | 'draw'
-  var drawMode = drawModeState[0];
-  var setDrawMode = drawModeState[1];
-
-  var sidebarOpenState = useState(function() {
-    if (typeof window === 'undefined') return true;
-    return window.innerWidth >= 768;
+  // Hydrate points from last autosave (persistence)
+  var pointsState = useState(function() {
+    try {
+      var raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.points)) return parsed.points;
+      }
+    } catch (e) {}
+    return [];
   });
-  var sidebarOpen = sidebarOpenState[0];
-  var setSidebarOpen = sidebarOpenState[1];
+  var points = pointsState[0];
+  var setPoints = pointsState[1];
 
-  var bannerShownState = useState(false);
-  var bannerShown = bannerShownState[0];
-  var setBannerShown = bannerShownState[1];
+  var hoverPointState = useState(null);
+  var hoverPoint = hoverPointState[0];
+  var setHoverPoint = hoverPointState[1];
 
-  // Show CYA banner on first draw action (first side selected or first manual vertex added),
-  // but only if the user hasn't already dismissed it this session.
-  useEffect(function() {
-    if (sessionStorage.getItem('gv_draw_banner_shown')) return;
-    if (selectedSides.length > 0 || manualPoints.length > 0) {
-      setBannerShown(true);
-    }
-  }, [selectedSides.length, manualPoints.length]);
+  var showBreakdownState = useState(false);
+  var showBreakdown = showBreakdownState[0];
+  var setShowBreakdown = showBreakdownState[1];
+
+  var savedToastState = useState(false);
+  var savedToast = savedToastState[0];
+  var setSavedToast = savedToastState[1];
 
   var mapInstanceRef = useRef(null);
 
-  // Auto-exit draw mode after 3s idle (resets when user adds a vertex or clicks a side)
+  // Derived values
+  var totalFt = totalFeet(points);
+  var corners = points.length >= 2 ? Math.max(0, points.length - 2) : 0;
+
+  var per = estimatePerFootRange(DEFAULT_ESTIMATE_INPUTS);
+  var priceRange = null;
+  if (per && totalFt > 0) {
+    priceRange = {
+      low: per.low * totalFt,
+      high: per.high * totalFt,
+      mid: per.mid * totalFt,
+      panelWidthFt: per.panelWidthFt,
+      panelPrice: per.panelPrice,
+      postPrice: per.postPrice,
+    };
+  }
+
+  var phase;
+  if (points.length === 0) phase = 'empty';
+  else if (totalFt < MIN_DRAW_FT) phase = 'drawing';
+  else if (showBreakdown) phase = 'expanded';
+  else phase = 'ready';
+
+  // Autosave: debounced 2s after last change
   useEffect(function() {
-    if (drawMode !== 'draw') return;
-    var timer = setTimeout(function() { setDrawMode('navigate'); }, 3000);
-    return function() { clearTimeout(timer); };
-  }, [drawMode, selectedSides, manualPoints]);
+    if (points.length === 0) {
+      try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+      return;
+    }
+    var t = setTimeout(function() {
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ points: points, ts: Date.now() }));
+      } catch (e) {}
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return function() { clearTimeout(t); };
+  }, [points]);
 
+  // Keyboard undo (⌘Z / Ctrl+Z)
   useEffect(function() {
-    var cancelled = false;
-
-    // Build flat array of all points on the drawn line
-    var pts = [];
-    if (manualMode) pts = manualPoints.slice();
-    else selectedSides.forEach(function(ss) {
-      pts.push(ss.side.start);
-      pts.push(ss.side.end);
-    });
-    if (pts.length < 2) { setEpqs(null); return; }
-
-    // Sample every ~6 ft along the line
-    var samplePts = densifyPath(pts, 6);
-    setEpqsLoading(true);
-    classifyDrawnLine(samplePts, 6).then(function(result) {
-      if (cancelled) return;
-      setEpqs(result);
-      setEpqsLoading(false);
-    }).catch(function() {
-      if (cancelled) return;
-      setEpqsLoading(false);
-    });
-
-    return function() { cancelled = true; };
-  }, [selectedSides, manualPoints, manualMode]);
+    function onKey(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        setPoints(function(prev) { return prev.slice(0, -1); });
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, []);
 
   function handleAddress(loc) {
     try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
     setLocation(loc);
   }
 
-  function handleParcelLoaded(newSides, data) {
-    setSides(newSides);
-    setParcel(data);
-  }
-  function handleParcelFallback() {
-    setManualMode(true);
-  }
-  function handleSideClicked(side, color) {
-    setSelectedSides(function(prev) {
-      var exists = prev.find(function(s) { return s.side.index === side.index; });
-      if (exists) return prev.filter(function(s) { return s.side.index !== side.index; });
-      return prev.concat([{ side: side, color: color }]);
-    });
-  }
-  function handleManualVertex(lngLat) {
-    setManualPoints(function(prev) { return prev.concat([lngLat]); });
-  }
-  function handleVertexMoved(idx, newPt) {
-    var snapped = newPt;
-    for (var i = 0; i < manualPoints.length; i++) {
-      if (i === idx) continue;
-      var dist = Math.sqrt(Math.pow(manualPoints[i][0] - newPt[0], 2) + Math.pow(manualPoints[i][1] - newPt[1], 2));
-      if (dist < 0.00003) { snapped = manualPoints[i].slice(); break; }
-    }
-    setManualPoints(function(prev) {
-      var next = prev.slice();
-      next[idx] = snapped;
-      return next;
-    });
+  function handleUndo() {
+    setPoints(function(prev) { return prev.slice(0, -1); });
   }
 
-  function buildDrawToolData() {
-    // Emit RAW total feet (sum of drawn segment lengths). The 5% material pad
-    // is applied at the pricing boundary (priceCalculator.js, gated on
-    // _source === 'auto'). Applying it here too would double-pad (compounds
-    // to ~10.25%). Single source of truth for the pad = pricing.
-    var totalFeet = segments.reduce(function(a, s) { return a + s.lengthFeet; }, 0);
-    // Panel length for sloped-post counting defaults to 6ft (residential/commercial).
-    // Industrial's 8ft panel length is applied later in priceCalculator based on grade,
-    // which customers pick after the draw step. Using 6 here is a safe over-estimate
-    // for post count; priceCalculator's tier gate still applies.
+  function handleReset() {
+    if (points.length === 0) return;
+    if (!window.confirm('Clear your drawing?')) return;
+    setPoints([]);
+    setShowBreakdown(false);
+  }
+
+  function buildAndComplete(snapshotUrl) {
+    var segments = [];
+    for (var i = 0; i < points.length - 1; i++) {
+      var lengthFt = distanceBetween(points[i], points[i + 1]);
+      segments.push({
+        index: i,
+        mapLayerIdx: null,
+        lengthFeet: lengthFt,
+        color: '#c2410c',
+        compassLabel: compassBearing(points[i], points[i + 1]),
+        panels: Math.ceil(lengthFt / 6),
+        start: points[i],
+        end: points[i + 1],
+        rackingTier: 'standard',
+        epqsClassification: 'unknown',
+      });
+    }
     var slopedPostCount = computeSlopedPostCount(segments, 6);
     var data = {
-      totalFeet: totalFeet,
-      corners: segments.length - 1 + (manualMode ? 0 : 0),
+      totalFeet: totalFt,
+      corners: corners,
       ends: 2,
       lines: [{
         id: 'line-0',
-        color: '#00d4d4',
-        points: manualMode ? manualPoints.slice() : segments.flatMap(function(s) { return [s.start, s.end]; }),
-        segments: segments.slice(),
+        color: '#c2410c',
+        points: points.slice(),
+        segments: segments,
       }],
-      slopeAnswer: slopeAnswer,
+      slopeAnswer: null,
       slopedPostCount: slopedPostCount,
-      epqsOverall: epqs ? epqs.overallClassification : 'unknown',
-      epqsConfidence: epqs ? epqs.confidence : 'low',
-      epqsMaxDeltaInches: epqs ? epqs.maxDeltaInches : 0,
-      mapboxSnapshotUrl: null, // filled by snapshot step
+      epqsOverall: 'unknown',
+      epqsConfidence: 'low',
+      epqsMaxDeltaInches: 0,
+      mapboxSnapshotUrl: snapshotUrl,
       source: 'auto',
-      parcel: parcel,
+      parcel: null,
     };
-    // Test hook: expose draw data to E2E specs without touching the DOM or
-    // modifying the pricing chain. Guarded for SSR safety (unit tests mount
-    // without a browser window).
-    if (typeof window !== 'undefined') {
-      window.__DRAW_TOOL_DATA__ = data;
-    }
-    return data;
+    if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
+    props.onComplete(data);
   }
 
-  function captureSnapshot() {
-    return new Promise(function(resolve) {
-      if (!mapInstanceRef.current) { resolve(null); return; }
-      mapInstanceRef.current.once('render', function() {
-        resolve(mapInstanceRef.current.getCanvas().toDataURL('image/png'));
-      });
-      mapInstanceRef.current.triggerRepaint();
+  function handleContinue() {
+    if (!mapInstanceRef.current) { buildAndComplete(null); return; }
+    var map = mapInstanceRef.current;
+    map.once('render', function() {
+      try { buildAndComplete(map.getCanvas().toDataURL('image/png')); }
+      catch (e) { buildAndComplete(null); }
     });
+    map.triggerRepaint();
   }
 
-  function handleSlopeAnswer(answer) {
-    setSlopeAnswer(answer);
+  function handleToggleBreakdown() { setShowBreakdown(!showBreakdown); }
 
-    var src = manualMode
-      ? buildSegmentsFromManual(manualPoints)
-      : buildSegmentsFromSides(selectedSides);
-
-    // Aggregate per-sample classifications back to per-user-segment summaries.
-    var aggregated = (epqs && epqs.segmentClassifications)
-      ? aggregateClassificationsForUserSegments(
-          src.map(function(s) { return { start: s.start, end: s.end }; }),
-          epqs.segmentClassifications,
-          6
-        )
-      : null;
-
-    var segs = src.map(function(s, i) {
-      var epqsClass = aggregated && aggregated[i] ? aggregated[i].classification : 'unknown';
-      var tier;
-      if (answer === 'flat') tier = 'standard';
-      else if (answer === 'all') tier = epqsClass === 'steep' || epqsClass === 'steps' ? 'heavy-rackable' : 'rackable';
-      else {
-        if (epqsClass === 'flat') tier = 'standard';
-        else if (epqsClass === 'sloped') tier = 'rackable';
-        else if (epqsClass === 'steep' || epqsClass === 'steps') tier = 'heavy-rackable';
-        else tier = 'standard';
-      }
-      return Object.assign({}, s, { rackingTier: tier, epqsClassification: epqsClass });
-    });
-    setSegments(segs);
+  function handleDeleteSegment(i) {
+    // Segment i spans points[i] → points[i+1]. Deleting removes the "end" of
+    // that segment (the vertex that created it), which shifts later segments.
+    setPoints(function(prev) { return prev.filter(function(_, j) { return j !== i + 1; }); });
   }
 
-  return React.createElement('div', { className: 'mbx-container' },
-    !location
-      ? React.createElement(AddressEntry, { onAddressEntered: handleAddress })
-      : React.createElement(React.Fragment, null,
-          bannerShown && React.createElement('div', { className: 'mbx-cya-banner' },
-            'You\u2019ll mark your fence line on this map. ',
-            React.createElement('strong', null,
-              'It\u2019s your responsibility to double-check the math and validate your measurements yourself '),
-            '. I\u2019ll verify with you before production, but the measurements you enter are what I build to.',
-            React.createElement('button', {
-              onClick: function() {
-                sessionStorage.setItem('gv_draw_banner_shown', '1');
-                setBannerShown(false);
-              },
-            }, 'Got it')
-          ),
-          React.createElement('div', { className: 'mbx-map-area', style: { flex: 1, display: 'flex', flexDirection: 'column' } },
-            React.createElement('div', { className: 'mbx-bottom-toolbar' },
-              React.createElement('button', {
-                className: 'mbx-toolbar-btn mbx-manual-mode-btn',
-                onClick: function() { setManualMode(true); },
-              }, manualMode ? '\u{1F4D0} Manual Mode' : '\u{1F4D0} Use Manual Mode Instead'),
-              React.createElement('button', {
-                className: 'mbx-toolbar-btn mbx-done-btn',
-                onClick: function() { handleSlopeAnswer('some'); },
-                disabled: (selectedSides.length === 0 && manualPoints.length < 2) || epqsLoading,
-              }, 'Done, review segments \u2192'),
-              React.createElement('button', {
-                className: 'mbx-toolbar-btn mbx-continue-btn primary',
-                onClick: function() {
-                  var data = buildDrawToolData();
-                  captureSnapshot().then(function(url) {
-                    data.mapboxSnapshotUrl = url;
-                    props.onComplete(data);
-                  });
-                },
-                disabled: segments.length === 0,
-              }, 'Continue to Quote \u2192'),
-              React.createElement('button', {
-                className: 'mbx-toolbar-btn mbx-mode-toggle ' + drawMode,
-                onClick: function() { setDrawMode(drawMode === 'navigate' ? 'draw' : 'navigate'); },
-              }, drawMode === 'navigate' ? '\u270B Navigate \u2192 tap to Draw' : '\u270F\uFE0F Draw \u2192 tap to Navigate'),
-              epqsLoading ? React.createElement('span', {
-                className: 'mbx-epqs-loading',
-              }, 'Analyzing slope...') : null
-            ),
-            React.createElement(MapScreen, {
-              location: location,
-              onParcelLoaded: handleParcelLoaded,
-              onParcelFallback: handleParcelFallback,
-              onSideClicked: handleSideClicked,
-              sides: sides,
-              selectedSides: selectedSides,
-              manualMode: manualMode,
-              manualPoints: manualPoints,
-              onManualVertex: handleManualVertex,
-              onVertexMoved: handleVertexMoved,
-              epqs: epqs,
-              segments: segments,
-              highlightedIdx: highlightedIdx,
-              mapInstanceRef: mapInstanceRef,
-              drawMode: drawMode,
-            })
-          ),
-          segments.length > 0 ?
-            React.createElement('div', {
-              className: 'mbx-sidebar ' + (sidebarOpen ? 'open' : ''),
-              onClick: function(e) {
-                // Toggle only when tapping the header region (h3) — not the body controls.
-                if (e.target && e.target.tagName === 'H3') {
-                  setSidebarOpen(function(prev) { return !prev; });
-                }
-              },
-            },
-              React.createElement('h3', { style: { cursor: 'pointer' } }, 'Your fence segments'),
-              React.createElement('p', null, 'I auto-detected slope from elevation data. Each segment\u2019s tier is pre-filled. Override any that look wrong.'),
-              segments.map(function(s) {
-                return React.createElement(SegmentCard, {
-                  key: s.index,
-                  segment: s,
-                  rackingTier: s.rackingTier,
-                  epqsClassification: s.epqsClassification,
-                  highlighted: highlightedIdx === s.index,
-                  onHover: setHighlightedIdx,
-                  onChange: function(idx, tier) {
-                    setSegments(function(prev) {
-                      return prev.map(function(x) {
-                        return x.index === idx ? Object.assign({}, x, { rackingTier: tier, customerOverrode: true }) : x;
-                      });
-                    });
-                  },
-                });
-              })
-            ) : null
-        )
+  function handleSaveForLater() {
+    try {
+      localStorage.setItem(AUTOSAVE_KEY + '_manual_save', JSON.stringify({
+        points: points, ts: Date.now(),
+      }));
+    } catch (e) {}
+    setSavedToast(true);
+    setTimeout(function() { setSavedToast(false); }, 2200);
+  }
+
+  // Cold start: no location → show address entry
+  if (!location) {
+    return React.createElement('div', { className: 'dy-container' },
+      React.createElement(AddressEntry, { onAddressEntered: handleAddress })
+    );
+  }
+
+  // Build segments array for the dock
+  var dockSegments = [];
+  for (var si = 0; si < points.length - 1; si++) {
+    dockSegments.push({ lengthFeet: distanceBetween(points[si], points[si + 1]) });
+  }
+
+  return React.createElement('div', { className: 'dy-container' },
+    // Top-overlay: address pill (always), save-for-later (when drawing)
+    React.createElement('div', { className: 'dy-top-overlay' },
+      React.createElement(AddressPill, { location: location, onChangeAddress: handleAddress }),
+      points.length > 0 && React.createElement('button', {
+        className: 'dy-save-btn',
+        onClick: handleSaveForLater,
+        type: 'button',
+        title: 'Save this drawing to resume later',
+      }, '\u{1F4BE} Save for later')
+    ),
+
+    // Map canvas
+    React.createElement(MapScreen, {
+      location: location,
+      points: points,
+      setPoints: setPoints,
+      hoverPoint: hoverPoint,
+      setHoverPoint: setHoverPoint,
+      mapInstanceRef: mapInstanceRef,
+    }),
+
+    // Empty-state hero text (only when zero points)
+    phase === 'empty' && React.createElement(EmptyStateOverlay, null),
+
+    // Dock
+    React.createElement(MorphingDock, {
+      phase: phase,
+      totalFt: totalFt,
+      corners: corners,
+      priceRange: priceRange,
+      segments: dockSegments,
+      onUndo: handleUndo,
+      onReset: handleReset,
+      onContinue: handleContinue,
+      onToggleBreakdown: handleToggleBreakdown,
+      onDeleteSegment: handleDeleteSegment,
+    }),
+
+    // Signed note (only when actively drawing)
+    points.length > 0 && React.createElement(SignedNote, null),
+
+    // Save confirmation toast
+    savedToast && React.createElement('div', { className: 'dy-toast' },
+      '\u2713 Saved. Your drawing will be here when you come back.'
+    )
   );
 }
 
