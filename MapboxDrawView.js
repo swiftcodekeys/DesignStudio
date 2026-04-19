@@ -10,7 +10,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import {
   Check, Pencil, MapPin, FloppyDisk, ArrowCounterClockwise,
-  X, CaretDown, CaretUp, ArrowRight, GlobeHemisphereWest,
+  X, CaretDown, CaretUp, ArrowRight,
 } from '@phosphor-icons/react';
 import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
@@ -95,54 +95,40 @@ export function epqsBadgeLabel(args) {
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
 }
 
-// ---------- Earth-view cinematic intro (first visit) ----------
-// 2.4s sequence: starfield fade-in → spinning globe rises → pin drops at
-// the user's address → crossfade into the satellite map. Uses Phosphor's
-// GlobeHemisphereWest icon (thin weight, white) for the Earth and MapPin
-// for the address pin — no emoji. Gated by dy_seen cookie and the
-// EARTH_INTRO_ENABLED build flag.
-function EarthIntro(props) {
-  var stageState = useState('starfield'); // 'starfield' | 'globe' | 'pin' | 'fading'
-  var stage = stageState[0];
-  var setStage = stageState[1];
+// ---------- Intro overlay (first visit — rides on top of the live map) ----------
+// No fake CSS globe. Mapbox already has a real satellite globe via
+// projection: 'globe'; we start the map at zoom 1, then flyTo zoom 20 over
+// 2.4s, with this thin overlay showing "Finding your home…" and the
+// resolved address as the camera descends. On subsequent visits (dy_seen
+// cookie set), the map mounts at zoom 18 and this overlay never renders.
+function IntroOverlay(props) {
+  var visibleState = useState(true);
+  var visible = visibleState[0];
+  var setVisible = visibleState[1];
 
   useEffect(function() {
-    var t1 = setTimeout(function() { setStage('globe'); }, 400);
-    var t2 = setTimeout(function() { setStage('pin'); }, 1400);
-    var t3 = setTimeout(function() { setStage('fading'); }, 2000);
-    var t4 = setTimeout(function() {
+    var fade = setTimeout(function() {
+      setVisible(false);
+    }, EARTH_INTRO_DURATION_MS - 300); // start fade ~300ms before arrival
+    var done = setTimeout(function() {
       markEarthIntroSeen();
-      props.onComplete();
+      if (props.onComplete) props.onComplete();
     }, EARTH_INTRO_DURATION_MS);
-    return function() {
-      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4);
-    };
+    return function() { clearTimeout(fade); clearTimeout(done); };
   }, []);
 
   function skip() {
     markEarthIntroSeen();
-    props.onComplete();
+    setVisible(false);
+    if (props.onComplete) props.onComplete();
   }
 
   var addrLine = props.location && props.location.address ? props.location.address : '';
 
   return React.createElement('div', {
-    className: 'dy-intro dy-intro-' + stage,
+    className: 'dy-intro-overlay' + (visible ? '' : ' dy-intro-overlay-hidden'),
     onClick: skip,
   },
-    React.createElement('div', { className: 'dy-intro-starfield' }),
-    React.createElement('div', { className: 'dy-intro-earth' },
-      React.createElement('div', { className: 'dy-intro-earth-glow' }),
-      React.createElement(GlobeHemisphereWest, {
-        size: 280,
-        weight: 'thin',
-        color: '#ffffff',
-        className: 'dy-intro-earth-icon',
-      }),
-      React.createElement('div', { className: 'dy-intro-earth-pin' },
-        React.createElement(MapPin, { size: 42, weight: 'fill', color: '#c2410c' })
-      )
-    ),
     React.createElement('div', { className: 'dy-intro-copy' },
       React.createElement('div', { className: 'dy-intro-finding' }, 'Finding your home\u2026'),
       addrLine && React.createElement('div', { className: 'dy-intro-address' }, addrLine)
@@ -601,11 +587,18 @@ function MapScreen(props) {
   useEffect(function() {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    // First-visit cinematic: start at zoom 1 (real Mapbox globe), fly down
+    // to zoom 20 over 2.4s. Return visits start already zoomed in.
+    var cinematic = !!props.cinematic;
+    var startZoom = cinematic ? 1 : 18;
+    var startCenter = cinematic ? [0, 20] : [props.location.lng || 0, props.location.lat || 20];
+
     var map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [props.location.lng || 0, props.location.lat || 20],
-      zoom: props.location.lat ? 18 : 1,
+      projection: 'globe',
+      center: startCenter,
+      zoom: startZoom,
       maxZoom: 22,
       pitch: 0,
       attributionControl: false,
@@ -615,12 +608,24 @@ function MapScreen(props) {
     if (props.mapInstanceRef) props.mapInstanceRef.current = map;
 
     map.on('load', function() {
+      // Render a subtle atmosphere + globe fog for a nicer cinematic look
+      try {
+        map.setFog({
+          color: 'rgb(186, 210, 235)',
+          'high-color': 'rgb(36, 92, 223)',
+          'horizon-blend': 0.02,
+          'space-color': 'rgb(11, 11, 25)',
+          'star-intensity': 0.6,
+        });
+      } catch (e) { /* setFog unavailable on older mapbox-gl */ }
+
       var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var duration = cinematic && !prefersReduced ? 2400 : (prefersReduced ? 0 : 800);
       map.flyTo({
         center: [props.location.lng, props.location.lat],
         zoom: 20,
         pitch: 0,
-        duration: prefersReduced ? 0 : 2400,
+        duration: duration,
         essential: true,
       });
     });
@@ -887,14 +892,14 @@ function MapboxDrawView(props) {
   var saveError = saveErrorState[0];
   var setSaveError = saveErrorState[1];
 
-  // Earth intro state — show on first visit when flag is on AND we have a
-  // location to center on. We wait for location so the "Finding your home" copy
-  // can name the actual address.
-  var introState = useState(function() {
+  // First-visit cinematic: ride the real Mapbox flyTo animation instead
+  // of a fake pre-map overlay. Gated by the dy_seen cookie and the
+  // EARTH_INTRO_ENABLED build flag.
+  var cinematicState = useState(function() {
     return EARTH_INTRO_ENABLED && !hasSeenEarthIntro();
   });
-  var introVisible = introState[0];
-  var setIntroVisible = introState[1];
+  var cinematic = cinematicState[0];
+  var setCinematic = cinematicState[1];
 
   var estOpenState = useState(false);
   var estOpen = estOpenState[0];
@@ -1075,16 +1080,6 @@ function MapboxDrawView(props) {
     );
   }
 
-  // Earth intro (first visit only, gated by cookie + flag)
-  if (introVisible) {
-    return React.createElement('div', { className: 'dy-container' },
-      React.createElement(EarthIntro, {
-        location: location,
-        onComplete: function() { setIntroVisible(false); },
-      })
-    );
-  }
-
   // Build segments array for the dock
   var dockSegments = [];
   for (var si = 0; si < points.length - 1; si++) {
@@ -1106,7 +1101,7 @@ function MapboxDrawView(props) {
       )
     ),
 
-    // Map canvas
+    // Map canvas — passes cinematic flag so first visit flies from globe
     React.createElement(MapScreen, {
       location: location,
       points: points,
@@ -1114,10 +1109,17 @@ function MapboxDrawView(props) {
       hoverPoint: hoverPoint,
       setHoverPoint: setHoverPoint,
       mapInstanceRef: mapInstanceRef,
+      cinematic: cinematic,
     }),
 
-    // Empty-state hero text (only when zero points)
-    phase === 'empty' && React.createElement(EmptyStateOverlay, null),
+    // Cinematic overlay rides on top of the live flyTo for first visits
+    cinematic && React.createElement(IntroOverlay, {
+      location: location,
+      onComplete: function() { setCinematic(false); },
+    }),
+
+    // Empty-state hero text (only when zero points + no cinematic running)
+    phase === 'empty' && !cinematic && React.createElement(EmptyStateOverlay, null),
 
     // Dock
     React.createElement(MorphingDock, {
