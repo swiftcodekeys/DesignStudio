@@ -8,10 +8,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
-import { geocodeAddress } from './mapboxGeocoder';
+import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
 import { computeSlopedPostCount, compassBearing } from './geometryUtils';
 import { estimatePerFootRange } from './retailPricing';
+import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 
 var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -30,6 +31,22 @@ var DEFAULT_ESTIMATE_INPUTS = {
 var MIN_DRAW_FT = 30;
 var AUTOSAVE_KEY = 'gv_draw_state';
 var AUTOSAVE_DEBOUNCE_MS = 2000;
+var EARTH_INTRO_ENABLED = process.env.EARTH_INTRO_ENABLED !== false && process.env.EARTH_INTRO_ENABLED !== 'false';
+var EARTH_INTRO_COOKIE = 'dy_seen';
+var EARTH_INTRO_DURATION_MS = 2400;
+
+function hasSeenEarthIntro() {
+  try {
+    return document.cookie.split('; ').some(function(c) { return c.indexOf(EARTH_INTRO_COOKIE + '=') === 0; });
+  } catch (e) { return false; }
+}
+
+function markEarthIntroSeen() {
+  try {
+    var oneYear = 60 * 60 * 24 * 365;
+    document.cookie = EARTH_INTRO_COOKIE + '=1; path=/; max-age=' + oneYear + '; SameSite=Lax';
+  } catch (e) {}
+}
 
 // ---------- Distance helpers ----------
 function distanceBetween(a, b) {
@@ -63,6 +80,59 @@ export function epqsBadgeLabel(args) {
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
 }
 
+// ---------- Earth-view cinematic intro (first visit) ----------
+// 2.4s sequence: starfield fade-in → spinning globe rises → pin drops at
+// the user's address → crossfade into the satellite map. Gated by the
+// dy_seen cookie and EARTH_INTRO_ENABLED build flag.
+function EarthIntro(props) {
+  var stageState = useState('starfield'); // 'starfield' | 'globe' | 'pin' | 'fading'
+  var stage = stageState[0];
+  var setStage = stageState[1];
+
+  useEffect(function() {
+    var t1 = setTimeout(function() { setStage('globe'); }, 400);
+    var t2 = setTimeout(function() { setStage('pin'); }, 1400);
+    var t3 = setTimeout(function() { setStage('fading'); }, 2000);
+    var t4 = setTimeout(function() {
+      markEarthIntroSeen();
+      props.onComplete();
+    }, EARTH_INTRO_DURATION_MS);
+    return function() {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4);
+    };
+  }, []);
+
+  function skip() {
+    markEarthIntroSeen();
+    props.onComplete();
+  }
+
+  var addrLine = props.location && props.location.address ? props.location.address : '';
+
+  return React.createElement('div', {
+    className: 'dy-intro dy-intro-' + stage,
+    onClick: skip,
+  },
+    React.createElement('div', { className: 'dy-intro-starfield' }),
+    React.createElement('div', { className: 'dy-intro-earth' },
+      React.createElement('div', { className: 'dy-intro-earth-sphere' }),
+      React.createElement('div', { className: 'dy-intro-earth-pin' },
+        React.createElement('span', { className: 'dy-intro-pin-head' }),
+        React.createElement('span', { className: 'dy-intro-pin-tail' })
+      )
+    ),
+    React.createElement('div', { className: 'dy-intro-copy' },
+      React.createElement('div', { className: 'dy-intro-finding' }, 'Finding your home\u2026'),
+      addrLine && React.createElement('div', { className: 'dy-intro-address' }, addrLine)
+    ),
+    React.createElement('button', {
+      className: 'dy-intro-skip',
+      onClick: function(e) { e.stopPropagation(); skip(); },
+      type: 'button',
+    }, 'Skip \u2192')
+  );
+}
+
 // ---------- AddressEntry (cold start, no localStorage location) ----------
 function AddressEntry(props) {
   var addressState = useState('');
@@ -74,11 +144,36 @@ function AddressEntry(props) {
   var loadingState = useState(false);
   var loading = loadingState[0];
   var setLoading = loadingState[1];
+  var suggestionsState = useState([]);
+  var suggestions = suggestionsState[0];
+  var setSuggestions = suggestionsState[1];
+  var debounceRef = useRef(null);
+
+  function onInput(val) {
+    setAddress(val);
+    setError('');
+    if (!val || val.length < 3 || !MAPBOX_TOKEN) { setSuggestions([]); return; }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(function() {
+      suggestAddresses(val, MAPBOX_TOKEN).then(function(results) {
+        setSuggestions(results);
+      }).catch(function() { setSuggestions([]); });
+    }, 250);
+  }
+
+  function pick(s) {
+    setAddress(s.placeName);
+    setSuggestions([]);
+    if (props.onAddressEntered) props.onAddressEntered({
+      address: s.placeName, lat: s.lat, lng: s.lng,
+    });
+  }
 
   async function submit() {
     if (!address) return;
     setError('');
     setLoading(true);
+    setSuggestions([]);
     try {
       var result = await geocodeAddress(address, MAPBOX_TOKEN);
       if (props.onAddressEntered) props.onAddressEntered({
@@ -94,15 +189,28 @@ function AddressEntry(props) {
   return React.createElement('div', { className: 'dy-address-entry' },
     React.createElement('h2', null, 'Where are we fencing?'),
     React.createElement('p', { className: 'dy-address-hint' }, 'Enter your property address so I can pull satellite imagery.'),
-    React.createElement('input', {
-      type: 'text',
-      placeholder: '123 Main St, Howell MI',
-      value: address,
-      onChange: function(e) { setAddress(e.target.value); },
-      className: 'dy-address-input',
-      disabled: loading,
-      onKeyDown: function(e) { if (e.key === 'Enter') submit(); },
-    }),
+    React.createElement('div', { className: 'dy-address-wrap' },
+      React.createElement('input', {
+        type: 'text',
+        placeholder: '123 Main St, Howell MI',
+        value: address,
+        onChange: function(e) { onInput(e.target.value); },
+        className: 'dy-address-input',
+        disabled: loading,
+        autoComplete: 'off',
+        onKeyDown: function(e) { if (e.key === 'Enter') submit(); },
+      }),
+      suggestions.length > 0 && React.createElement('div', { className: 'dy-address-suggestions' },
+        suggestions.map(function(s) {
+          return React.createElement('button', {
+            key: s.id,
+            type: 'button',
+            className: 'dy-address-suggestion',
+            onClick: function() { pick(s); },
+          }, s.placeName);
+        })
+      )
+    ),
     error ? React.createElement('div', { className: 'dy-address-error' }, error) : null,
     React.createElement('button', {
       onClick: submit,
@@ -112,7 +220,7 @@ function AddressEntry(props) {
   );
 }
 
-// ---------- Top-bar address pill (compact) ----------
+// ---------- Top-bar address pill (compact, with autocomplete) ----------
 function AddressPill(props) {
   var openState = useState(false);
   var open = openState[0];
@@ -126,12 +234,36 @@ function AddressPill(props) {
   var errorState = useState('');
   var error = errorState[0];
   var setError = errorState[1];
+  var suggestionsState = useState([]);
+  var suggestions = suggestionsState[0];
+  var setSuggestions = suggestionsState[1];
+  var debounceRef = useRef(null);
+
+  function onInput(val) {
+    setInput(val);
+    setError('');
+    if (!val || val.length < 3 || !MAPBOX_TOKEN) { setSuggestions([]); return; }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(function() {
+      suggestAddresses(val, MAPBOX_TOKEN).then(function(results) {
+        setSuggestions(results);
+      }).catch(function() { setSuggestions([]); });
+    }, 250);
+  }
+
+  function pick(s) {
+    setSuggestions([]);
+    setOpen(false);
+    setInput('');
+    props.onChangeAddress({ address: s.placeName, lat: s.lat, lng: s.lng });
+  }
 
   function onSubmit(e) {
     e.preventDefault();
     if (!input.trim()) return;
     setLoading(true);
     setError('');
+    setSuggestions([]);
     geocodeAddress(input, MAPBOX_TOKEN).then(function(res) {
       setLoading(false);
       setOpen(false);
@@ -163,10 +295,21 @@ function AddressPill(props) {
           type: 'text',
           placeholder: 'New address',
           value: input,
-          onChange: function(e) { setInput(e.target.value); },
+          onChange: function(e) { onInput(e.target.value); },
           autoFocus: true,
+          autoComplete: 'off',
           className: 'dy-pill-input',
         }),
+        suggestions.length > 0 && React.createElement('div', { className: 'dy-pill-suggestions' },
+          suggestions.map(function(s) {
+            return React.createElement('button', {
+              key: s.id,
+              type: 'button',
+              className: 'dy-pill-suggestion',
+              onClick: function() { pick(s); },
+            }, s.placeName);
+          })
+        ),
         React.createElement('div', { className: 'dy-pill-actions' },
           React.createElement('button', {
             type: 'button',
@@ -652,7 +795,44 @@ function MapboxDrawView(props) {
   var savedToast = savedToastState[0];
   var setSavedToast = savedToastState[1];
 
+  var saveDialogState = useState(false);
+  var saveDialogOpen = saveDialogState[0];
+  var setSaveDialogOpen = saveDialogState[1];
+
+  var saveEmailState = useState('');
+  var saveEmail = saveEmailState[0];
+  var setSaveEmail = saveEmailState[1];
+
+  var saveSendingState = useState(false);
+  var saveSending = saveSendingState[0];
+  var setSaveSending = saveSendingState[1];
+
+  var saveErrorState = useState('');
+  var saveError = saveErrorState[0];
+  var setSaveError = saveErrorState[1];
+
+  // Earth intro state — show on first visit when flag is on AND we have a
+  // location to center on. We wait for location so the "Finding your home" copy
+  // can name the actual address.
+  var introState = useState(function() {
+    return EARTH_INTRO_ENABLED && !hasSeenEarthIntro();
+  });
+  var introVisible = introState[0];
+  var setIntroVisible = introState[1];
+
   var mapInstanceRef = useRef(null);
+
+  // On mount: check URL hash for a resume link (#dy-resume=...)
+  useEffect(function() {
+    var resumed = checkForDrawResume();
+    if (resumed && resumed.points && Array.isArray(resumed.points)) {
+      setPoints(resumed.points);
+      if (resumed.location) {
+        try { localStorage.setItem('gv_bridge_location', JSON.stringify(resumed.location)); } catch (e) {}
+        setLocation(resumed.location);
+      }
+    }
+  }, []);
 
   // Derived values
   var totalFt = totalFeet(points);
@@ -779,19 +959,49 @@ function MapboxDrawView(props) {
   }
 
   function handleSaveForLater() {
-    try {
-      localStorage.setItem(AUTOSAVE_KEY + '_manual_save', JSON.stringify({
-        points: points, ts: Date.now(),
-      }));
-    } catch (e) {}
-    setSavedToast(true);
-    setTimeout(function() { setSavedToast(false); }, 2200);
+    setSaveEmail('');
+    setSaveError('');
+    setSaveDialogOpen(true);
+  }
+
+  function submitSaveForLater(e) {
+    if (e) e.preventDefault();
+    if (!saveEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(saveEmail)) {
+      setSaveError('Please enter a valid email.');
+      return;
+    }
+    setSaveSending(true);
+    setSaveError('');
+    emailDrawSaveLink(saveEmail, { points: points, location: location }).then(function(ok) {
+      setSaveSending(false);
+      if (ok) {
+        setSaveDialogOpen(false);
+        setSaveEmail('');
+        setSavedToast(true);
+        setTimeout(function() { setSavedToast(false); }, 3500);
+      } else {
+        setSaveError('Could not send. Please try again or email sales@grandviewfence.com.');
+      }
+    }).catch(function() {
+      setSaveSending(false);
+      setSaveError('Could not send. Please try again or email sales@grandviewfence.com.');
+    });
   }
 
   // Cold start: no location → show address entry
   if (!location) {
     return React.createElement('div', { className: 'dy-container' },
       React.createElement(AddressEntry, { onAddressEntered: handleAddress })
+    );
+  }
+
+  // Earth intro (first visit only, gated by cookie + flag)
+  if (introVisible) {
+    return React.createElement('div', { className: 'dy-container' },
+      React.createElement(EarthIntro, {
+        location: location,
+        onComplete: function() { setIntroVisible(false); },
+      })
     );
   }
 
@@ -845,7 +1055,50 @@ function MapboxDrawView(props) {
 
     // Save confirmation toast
     savedToast && React.createElement('div', { className: 'dy-toast' },
-      '\u2713 Saved. Your drawing will be here when you come back.'
+      '\u2713 Email sent. Click the link anytime to resume.'
+    ),
+
+    // Save-for-later dialog
+    saveDialogOpen && React.createElement('div', {
+      className: 'dy-save-overlay',
+      onClick: function(e) { if (e.target === e.currentTarget) setSaveDialogOpen(false); },
+    },
+      React.createElement('form', { className: 'dy-save-dialog', onSubmit: submitSaveForLater },
+        React.createElement('button', {
+          type: 'button',
+          className: 'dy-save-close',
+          onClick: function() { setSaveDialogOpen(false); },
+          'aria-label': 'Close',
+        }, '\u00D7'),
+        React.createElement('h3', null, 'Save your drawing'),
+        React.createElement('p', { className: 'dy-save-copy' },
+          'I\u2019ll email you a link so you can resume exactly where you left off, from any device.'
+        ),
+        React.createElement('input', {
+          type: 'email',
+          placeholder: 'you@example.com',
+          value: saveEmail,
+          onChange: function(e) { setSaveEmail(e.target.value); },
+          className: 'dy-save-input',
+          autoFocus: true,
+          disabled: saveSending,
+          required: true,
+        }),
+        saveError && React.createElement('div', { className: 'dy-save-error' }, saveError),
+        React.createElement('div', { className: 'dy-save-actions' },
+          React.createElement('button', {
+            type: 'button',
+            className: 'dy-save-btn-ghost',
+            onClick: function() { setSaveDialogOpen(false); },
+            disabled: saveSending,
+          }, 'Cancel'),
+          React.createElement('button', {
+            type: 'submit',
+            className: 'dy-save-btn-primary',
+            disabled: saveSending || !saveEmail,
+          }, saveSending ? 'Sending\u2026' : 'Email me the link')
+        )
+      )
     )
   );
 }

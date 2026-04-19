@@ -69,6 +69,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
+    // Mark the Earth-view intro as already seen so tests render the draw
+    // surface immediately, not the cinematic intro. Tests that want to
+    // verify the intro can clear this cookie explicitly.
+    document.cookie = 'dy_seen=1; path=/; max-age=31536000';
     vi.clearAllMocks();
   });
 

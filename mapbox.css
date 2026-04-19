@@ -92,6 +92,63 @@
   font-size: 13px;
 }
 
+/* Address suggestions (cold-start form) */
+.dy-address-wrap { position: relative; }
+.dy-address-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--dy-rule);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+  z-index: 40;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.dy-address-suggestion {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid var(--dy-rule);
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--dy-ink-2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dy-address-suggestion:last-child { border-bottom: none; }
+.dy-address-suggestion:hover { background: var(--dy-cream); color: var(--dy-ink); }
+
+/* Pill-dropdown suggestions */
+.dy-pill-suggestions {
+  background: var(--dy-cream);
+  border: 1px solid var(--dy-rule);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.dy-pill-suggestion {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--dy-rule);
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--dy-ink-2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dy-pill-suggestion:last-child { border-bottom: none; }
+.dy-pill-suggestion:hover { background: #fff; color: var(--dy-ink); }
+
 /* ===== Top overlay (address pill + save-for-later) ===== */
 .dy-top-overlay {
   position: absolute;
@@ -653,6 +710,110 @@
   opacity: 0.95;
 }
 
+/* ===== Save-for-later dialog ===== */
+.dy-save-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 25, 23, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: dy-fade-in 0.15s ease-out;
+}
+@keyframes dy-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dy-save-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: var(--dy-font-ui);
+}
+.dy-save-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: var(--dy-muted);
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 8px;
+  line-height: 1;
+}
+.dy-save-close:hover { background: var(--dy-cream); color: var(--dy-ink); }
+.dy-save-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dy-ink);
+  letter-spacing: -0.01em;
+}
+.dy-save-copy {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: var(--dy-ink-2);
+  line-height: 1.5;
+}
+.dy-save-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--dy-ink);
+  border: 1.5px solid var(--dy-rule);
+  border-radius: 10px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.dy-save-input:focus { border-color: var(--dy-accent); }
+.dy-save-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #fde7e7;
+  color: #b84233;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.dy-save-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.dy-save-btn-ghost,
+.dy-save-btn-primary {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, transform 0.15s;
+}
+.dy-save-btn-ghost {
+  background: transparent;
+  color: var(--dy-muted);
+}
+.dy-save-btn-ghost:hover:not(:disabled) { color: var(--dy-ink); background: var(--dy-cream); }
+.dy-save-btn-primary {
+  background: var(--dy-accent);
+  color: white;
+}
+.dy-save-btn-primary:hover:not(:disabled) { background: var(--dy-accent-2); transform: translateY(-1px); }
+.dy-save-btn-primary:disabled,
+.dy-save-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ===== Toast ===== */
 .dy-toast {
   position: absolute;
@@ -672,6 +833,203 @@
 @keyframes dy-toast-in {
   from { opacity: 0; transform: translate(-50%, -8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ===== Earth-view cinematic intro ===== */
+.dy-intro {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, #0a0e1a 0%, #02040a 70%);
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 1000;
+  font-family: var(--dy-font-ui);
+  transition: opacity 400ms ease-out;
+}
+.dy-intro-fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Starfield: tiny flickering dots scattered across the backdrop */
+.dy-intro-starfield {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1px 1px at 24% 72%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 38% 35%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1px 1px at 55% 82%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 68% 24%, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1px 1px at 73% 58%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 82% 44%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1px 1px at 91% 12%, rgba(255,255,255,0.75), transparent),
+    radial-gradient(2px 2px at 7% 61%, rgba(255,255,255,0.95), transparent),
+    radial-gradient(2px 2px at 47% 18%, rgba(194, 65, 12, 0.7), transparent),
+    radial-gradient(2px 2px at 84% 71%, rgba(255,255,255,0.9), transparent);
+  background-size: 100% 100%;
+  opacity: 0;
+  animation: dy-starfield-in 400ms ease-out forwards, dy-twinkle 3s ease-in-out infinite 400ms;
+}
+@keyframes dy-starfield-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dy-twinkle {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+/* Earth: a large blue sphere with a continents-like gradient that spins in */
+.dy-intro-earth {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 340px;
+  margin-left: -170px;
+  margin-top: -170px;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: opacity 700ms ease-out, transform 1000ms cubic-bezier(0.22, 0.9, 0.28, 1.1);
+}
+.dy-intro-earth .dy-intro-earth-sphere {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 32%, rgba(255,255,255,0.25) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, #1a4a72 0%, #0f2d4a 60%),
+    conic-gradient(from 180deg at 50% 50%, #2a6ea3 0deg, #1a4a72 90deg, #0f2d4a 180deg, #1a4a72 270deg, #2a6ea3 360deg);
+  box-shadow:
+    inset -20px -20px 60px rgba(0,0,0,0.5),
+    inset 10px 10px 30px rgba(255,255,255,0.1),
+    0 0 80px rgba(42, 110, 163, 0.4);
+  animation: dy-globe-spin 8s linear infinite;
+  position: relative;
+}
+.dy-intro-earth .dy-intro-earth-sphere::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image:
+    radial-gradient(ellipse 40px 20px at 30% 40%, rgba(34, 139, 34, 0.6), transparent),
+    radial-gradient(ellipse 60px 30px at 65% 45%, rgba(34, 139, 34, 0.5), transparent),
+    radial-gradient(ellipse 50px 25px at 45% 65%, rgba(34, 139, 34, 0.55), transparent),
+    radial-gradient(ellipse 30px 20px at 75% 70%, rgba(34, 139, 34, 0.5), transparent);
+  opacity: 0.7;
+}
+@keyframes dy-globe-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.dy-intro-earth .dy-intro-earth-pin {
+  position: absolute;
+  top: 30%;
+  left: 55%;
+  opacity: 0;
+  transform: translate(-50%, -100%) scale(0);
+}
+.dy-intro-pin-head {
+  width: 16px;
+  height: 16px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--dy-accent);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 12px rgba(194, 65, 12, 0.6);
+  transform: rotate(-45deg);
+  display: block;
+  position: relative;
+}
+.dy-intro-pin-head::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+}
+.dy-intro-pin-tail {
+  position: absolute;
+  top: 16px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle, rgba(194, 65, 12, 0.5) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* Copy stack */
+.dy-intro-copy {
+  position: absolute;
+  bottom: 22%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms ease-out;
+}
+.dy-intro-finding {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.dy-intro-address {
+  font-family: var(--dy-font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: -0.01em;
+}
+
+.dy-intro-skip {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s, border-color 0.15s;
+  z-index: 10;
+}
+.dy-intro-skip:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Stage-driven transitions (root gets .dy-intro-<stage>) */
+.dy-intro-starfield .dy-intro-earth { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+.dy-intro-globe .dy-intro-earth     { opacity: 1; transform: scale(1) rotate(0deg); }
+.dy-intro-pin .dy-intro-earth       { opacity: 1; transform: scale(1.05) rotate(0deg); }
+.dy-intro-fading .dy-intro-earth    { opacity: 0.85; transform: scale(2.6) rotate(4deg); transition: all 400ms ease-in; }
+
+.dy-intro-pin .dy-intro-earth-pin,
+.dy-intro-fading .dy-intro-earth-pin {
+  opacity: 1;
+  transform: translate(-50%, -100%) scale(1);
+  transition: opacity 400ms ease-out, transform 500ms cubic-bezier(0.22, 0.9, 0.28, 1.3);
+}
+
+.dy-intro-globe .dy-intro-copy,
+.dy-intro-pin .dy-intro-copy,
+.dy-intro-fading .dy-intro-copy {
+  opacity: 1;
 }
 
 /* ===== Responsive ===== */
