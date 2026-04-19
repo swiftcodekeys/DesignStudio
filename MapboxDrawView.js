@@ -137,8 +137,12 @@ function MapScreen(props) {
       zoom: props.location.lat ? 18 : 1,
       maxZoom: 22,
       pitch: 0,
-      attributionControl: true,
+      attributionControl: false,
     });
+
+    // Compact attribution collapses into a small "i" badge — less visual noise
+    // while remaining visible and legible (satisfies Mapbox ToS).
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }));
 
     mapRef.current = map;
     if (props.mapInstanceRef) props.mapInstanceRef.current = map;

@@ -116,6 +116,12 @@
   }
 }
 
+/* Compact attribution — still visible and legible (satisfies Mapbox ToS) */
+.mapboxgl-ctrl-attrib {
+  opacity: 0.75;
+  font-size: 10px;
+}
+
 .mbx-cya-banner {
   position: absolute; top: 0; left: 0; right: 0;
   background: #fff8e1; border-bottom: 2px solid #f59e0b;

@@ -22,6 +22,7 @@ function makeMockMapInstance() {
     getCanvas: vi.fn(() => ({ style: {} })),
     isStyleLoaded: vi.fn(() => false),
     setPaintProperty: vi.fn(),
+    addControl: vi.fn(),
     // Expose internal listeners so tests can fire synthetic events
     _listeners: listeners,
     _fire: function (event, arg) {
@@ -42,10 +43,13 @@ vi.mock('mapbox-gl', () => {
     this.on = vi.fn(function () { return this; }.bind(this));
   });
 
+  const MockAttributionControl = vi.fn(function () {});
+
   return {
     default: {
       Map: vi.fn(function () { return makeMockMapInstance(); }),
       Marker: MockMarker,
+      AttributionControl: MockAttributionControl,
       accessToken: '',
     },
   };
