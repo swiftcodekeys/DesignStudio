@@ -639,13 +639,17 @@ function MapScreen(props) {
       } catch (e) { /* setFog unavailable on older mapbox-gl */ }
 
       var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var duration = cinematic && !prefersReduced ? 2400 : (prefersReduced ? 0 : 800);
+      var duration = cinematic && !prefersReduced ? 4200 : (prefersReduced ? 0 : 900);
       map.flyTo({
         center: [props.location.lng, props.location.lat],
         zoom: 20,
         pitch: 0,
         duration: duration,
         essential: true,
+        // Cubic bezier imitating ease-out-quint — slow entry, fast middle,
+        // gentle settle onto the property. Default flyTo easing is ease-in-out
+        // which feels mechanical at high zoom deltas.
+        easing: function(t) { return 1 - Math.pow(1 - t, 5); },
       });
     });
 
