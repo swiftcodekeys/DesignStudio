@@ -388,14 +388,14 @@ function EstimatePopup(props) {
       }, React.createElement(X, { size: 18, weight: 'bold' })),
       React.createElement('h3', null, 'About this estimate'),
       React.createElement('p', null,
-        'The linear footage and price range on this screen come from the line you\u2019ve drawn on the satellite image. They\u2019re a solid starting point, but they\u2019re not a firm quote.'
+        'You\u2019ll mark your fence line on this map. The linear footage and price range come straight from the line you draw.'
       ),
       React.createElement('p', null,
-        React.createElement('strong', null, 'It\u2019s your responsibility to double-check the math '),
-        'and validate the measurements yourself. Grandview reviews every order before production and catches obvious red flags, but the linear feet you submit are what we build to.'
+        React.createElement('strong', null, 'It\u2019s your responsibility to double-check the math and validate your measurements yourself. '),
+        'Grandview will verify with you before production, but the measurements you enter are what we build to.'
       ),
       React.createElement('p', { className: 'dy-est-muted' },
-        'Satellite imagery can be a year or two old and tree canopy can hide features, so always walk the line once yourself before you order. Questions? Call (855) FENCE-30.'
+        'Satellite imagery can be a year or two old, and tree canopy can hide features. When in doubt, walk the line with a tape measure before you submit.'
       ),
       React.createElement('div', { className: 'dy-est-actions' },
         React.createElement('button', {

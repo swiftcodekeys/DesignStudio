@@ -209,6 +209,13 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(dialog.textContent).not.toMatch(/Sarah/i);
     // "Got it" acknowledge button exists
     expect(dialog.textContent).toMatch(/Got it/i);
+    // CYA language Sarah requires: customer is responsible for the math;
+    // Grandview verifies before production; the measurements they enter are
+    // what we build to. Do not soften.
+    expect(dialog.textContent).toMatch(/your responsibility/i);
+    expect(dialog.textContent).toMatch(/verify/i);
+    expect(dialog.textContent).toMatch(/before production/i);
+    expect(dialog.textContent).toMatch(/what (we|Grandview) build(s)? to/i);
   });
 
   it('vertex marker element has no inline position style (relies on Mapbox transform)', () => {
