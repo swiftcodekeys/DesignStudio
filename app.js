@@ -395,7 +395,13 @@ var DesignStudio = function() {
                         setView('studio');
                         setActiveTab('draw');
                     }}
-                    onNavigateToManual={function() {
+                    onNavigateToManual={function(payload) {
+                        if (payload && payload.totalFeet) {
+                            setDrawToolData({
+                                totalFeet: payload.totalFeet,
+                                manualEntry: true,
+                            });
+                        }
                         setView('quote-builder');
                     }}
                     onNavigateToStudio={function() {

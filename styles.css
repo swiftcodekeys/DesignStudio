@@ -3871,12 +3871,12 @@ html, body {
 .bridge-topbar-back:hover { color: #fff; }
 
 .bridge-content {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 32px;
 }
 .bridge-page--compact .bridge-content {
-  padding: 20px 24px;
+  padding: 20px 32px;
 }
 .bridge-header {
   text-align: center;
@@ -3919,11 +3919,78 @@ html, body {
 
 .bridge-columns {
   display: flex;
-  gap: 28px;
+  gap: 32px;
   align-items: flex-start;
 }
-.bridge-left { flex: 1.1; min-width: 0; }
-.bridge-right { flex: 1; min-width: 0; }
+.bridge-left { flex: 1; min-width: 0; }
+.bridge-right { flex: 1.15; min-width: 0; }
+
+/* Manual footage popup */
+.bridge-manual-popup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(27, 58, 92, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+.bridge-manual-popup {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 28px 24px;
+  width: min(440px, calc(100vw - 32px));
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.bridge-manual-popup h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1B3A5C;
+}
+.bridge-manual-popup p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #718096;
+  line-height: 1.5;
+}
+.bridge-manual-popup-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.bridge-manual-popup-input:focus {
+  outline: none;
+  border-color: #6BA3C2;
+}
+.bridge-manual-popup-actions {
+  display: flex; gap: 12px; margin-top: 18px;
+}
+.bridge-manual-popup-cancel,
+.bridge-manual-popup-go {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+}
+.bridge-manual-popup-cancel {
+  background: #f7fafc;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+}
+.bridge-manual-popup-go {
+  background: #1B3A5C;
+  color: #fff;
+}
+.bridge-manual-popup-go:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
 
 /* Snapshot */
 .bridge-snapshot {

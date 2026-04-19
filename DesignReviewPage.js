@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PoolCompliancePopup from './PoolCompliancePopup';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import { FENCE_STYLES as GATE_STYLES, POST_CAPS, FINIALS, ARCH_STYLES } from './configData';
@@ -6,6 +6,7 @@ import {
     STYLES as PRICING_STYLES, PANEL_PRICING, POST_PRICING, POST_LENGTH_MAP,
     DEFAULT_POST_SPEC, PANEL_LENGTH_FT, STYLE_ID_MAP,
 } from './retailPricing';
+import { suggestAddresses, geocodeAddress } from './mapboxGeocoder';
 
 // Human-readable label lookups
 var STYLE_NAMES = {};
@@ -18,8 +19,9 @@ var ARCH_NAMES = { e: 'Estate', a: 'Arched', r: 'Reverse', s: 'Standard' };
 var MOUNT_NAMES = { p: 'Post Mount', d: 'Direct Mount' };
 var LEAF_NAMES = { '1': 'Single', '2': 'Double' };
 
-// Pool-compliant styles
 var POOL_STYLES = ['uab_200', 'uaf_200', 'uaf_250'];
+
+var MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN || '';
 
 // Build per-linear-foot estimate from saved design
 function estimatePricing(saved) {
@@ -63,32 +65,6 @@ function loadSavedDesign() {
     return null;
 }
 
-// Google Maps loader (reuse from DrawYardView pattern)
-var GOOGLE_MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
-var mapsLoaded = false;
-var mapsCallbacks = [];
-
-function loadGoogleMaps(callback) {
-    if (window.google && window.google.maps) {
-        callback();
-        return;
-    }
-    mapsCallbacks.push(callback);
-    if (mapsLoaded) return;
-    mapsLoaded = true;
-
-    window.__initGoogleMaps = function() {
-        mapsCallbacks.forEach(function(cb) { cb(); });
-        mapsCallbacks = [];
-    };
-
-    var script = document.createElement('script');
-    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_KEY + '&libraries=places,geometry&callback=__initGoogleMaps';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-}
-
 var DesignReviewPage = function(props) {
     var onNavigateToDraw = props.onNavigateToDraw;
     var onNavigateToManual = props.onNavigateToManual;
@@ -115,78 +91,70 @@ var DesignReviewPage = function(props) {
     var suggestions = suggestionsState[0];
     var setSuggestions = suggestionsState[1];
 
-    var serviceRef = useRef(null);
     var debounceRef = useRef(null);
 
-    // Load Google Maps script on mount
-    useEffect(function() {
-        if (!GOOGLE_MAPS_KEY) return;
-        loadGoogleMaps(function() {
-            // Maps ready — AutocompleteService will be available for address input
-        });
-    }, []);
+    // Manual footage popup state
+    var manualOpenState = useState(false);
+    var manualOpen = manualOpenState[0];
+    var setManualOpen = manualOpenState[1];
 
-    // Address autocomplete
+    var footageState = useState('');
+    var footage = footageState[0];
+    var setFootage = footageState[1];
+
+    // Mapbox autocomplete (debounced)
     var handleAddressChange = function(e) {
         var val = e.target.value;
         setAddress(val);
         setError('');
         if (!val.trim() || val.length < 3) { setSuggestions([]); return; }
-        if (!window.google || !window.google.maps || !window.google.maps.places) return;
-        if (!serviceRef.current) {
-            serviceRef.current = new window.google.maps.places.AutocompleteService();
-        }
+        if (!MAPBOX_TOKEN) return;
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(function() {
-            serviceRef.current.getPlacePredictions(
-                { input: val, types: ['address'], componentRestrictions: { country: 'us' } },
-                function(predictions, status) {
-                    if (status === 'OK' && predictions) {
-                        setSuggestions(predictions.slice(0, 5));
-                    } else {
-                        setSuggestions([]);
-                    }
-                }
-            );
+            suggestAddresses(val, MAPBOX_TOKEN).then(function(results) {
+                setSuggestions(results);
+            }).catch(function() {
+                setSuggestions([]);
+            });
         }, 250);
     };
 
-    var selectSuggestion = function(prediction) {
-        setAddress(prediction.description);
+    var selectSuggestion = function(s) {
+        setAddress(s.placeName);
         setSuggestions([]);
-        geocodeAndGo(prediction.description);
-    };
-
-    var geocodeAndGo = function(addr) {
-        if (!window.google || !window.google.maps) {
-            setError('Google Maps is still loading.');
-            return;
-        }
-        setLoading(true);
-        var geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ address: addr }, function(results, status) {
-            setLoading(false);
-            if (status === 'OK' && results[0]) {
-                var loc = {
-                    address: results[0].formatted_address,
-                    lat: results[0].geometry.location.lat(),
-                    lng: results[0].geometry.location.lng(),
-                };
-                try {
-                    localStorage.setItem('gv_bridge_location', JSON.stringify(loc));
-                } catch (e) {}
-                onNavigateToDraw(loc);
-            } else {
-                setError('Could not find that address. Please try again.');
-            }
-        });
+        var loc = { address: s.placeName, lat: s.lat, lng: s.lng };
+        try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
+        onNavigateToDraw(loc);
     };
 
     var handleSubmitAddress = function(e) {
         e.preventDefault();
         if (!address.trim()) { setError('Please enter an address'); return; }
         setSuggestions([]);
-        geocodeAndGo(address);
+        if (!MAPBOX_TOKEN) { setError('Map service unavailable. Please refresh and try again.'); return; }
+        setLoading(true);
+        geocodeAddress(address, MAPBOX_TOKEN).then(function(result) {
+            setLoading(false);
+            var loc = { address: result.placeName, lat: result.lat, lng: result.lng };
+            try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
+            onNavigateToDraw(loc);
+        }).catch(function() {
+            setLoading(false);
+            setError('Could not find that address. Please try again.');
+        });
+    };
+
+    // Manual footage popup handlers
+    var openManualPopup = function() {
+        setFootage('');
+        setManualOpen(true);
+    };
+    var closeManualPopup = function() { setManualOpen(false); };
+    var submitManualFootage = function(e) {
+        if (e) e.preventDefault();
+        var ft = parseInt(footage, 10);
+        if (!ft || ft < 1) return;
+        onNavigateToManual({ totalFeet: ft, manualEntry: true });
     };
 
     // Build selections list from saved design
@@ -207,7 +175,6 @@ var DesignReviewPage = function(props) {
         if (saved.arch) selections.push({ label: 'Arch', value: ARCH_NAMES[saved.arch] || saved.arch });
         if (saved.mount) selections.push({ label: 'Mount', value: MOUNT_NAMES[saved.mount] || saved.mount });
         if (saved.leaf) selections.push({ label: 'Leaf', value: LEAF_NAMES[saved.leaf] || saved.leaf });
-        // Only show privacy fields for privacy styles
         var isPrivacy = saved.styleId && saved.styleId.indexOf('priv') >= 0;
         if (isPrivacy && saved.privacyPostColor) selections.push({ label: 'Privacy Post', value: saved.privacyPostColor });
         if (isPrivacy && saved.privacyPanelColor) selections.push({ label: 'Privacy Panel', value: saved.privacyPanelColor });
@@ -222,14 +189,13 @@ var DesignReviewPage = function(props) {
         <div className="bridge-page bridge-page--compact" style={{ overflowY: 'auto' }}>
 
             <div className="bridge-content">
-                {/* Header — compact, single line */}
                 <div className="bridge-header bridge-header--compact">
                     <h1 className="bridge-header-title">
                         {hasDesign ? 'Your Design is Saved' : 'Get Your Fence Quote'}
                     </h1>
                     <p className="bridge-header-subtitle">
                         {hasDesign
-                            ? "Review your selections below, then choose how to measure."
+                            ? "Review your selections, then choose how to measure."
                             : 'Enter your property address or measurements to get started.'}
                     </p>
                     {hasDesign && (
@@ -240,7 +206,7 @@ var DesignReviewPage = function(props) {
                 </div>
 
                 <div className="bridge-columns">
-                    {/* LEFT: Design Summary */}
+                    {/* LEFT: Saved image + current selections */}
                     <div className="bridge-left">
                         {hasDesign && saved.snapshotDataUrl ? (
                             <div className="bridge-snapshot">
@@ -276,18 +242,21 @@ var DesignReviewPage = function(props) {
                                 <button className="bridge-configure-btn" onClick={onNavigateToStudio}>
                                     Configure Your Fence
                                 </button>
-                                <button className="bridge-skip-link" onClick={onNavigateToManual}>
-                                    Skip to quote &mdash; choose options during the quote process
+                                <button className="bridge-skip-link" onClick={openManualPopup}>
+                                    Skip to quote. Choose options during the quote process.
                                 </button>
                             </div>
                         )}
+                    </div>
 
-                        {/* Itemized Price Estimate */}
+                    {/* RIGHT: Quote config — pricing + CTAs + address + manual */}
+                    <div className="bridge-right">
+                        {/* Price estimate (moved from left) */}
                         {pricing && (
                             <div className="bridge-pricing">
                                 <div className="bridge-pricing-title">PRICE ESTIMATE</div>
                                 <div className="bridge-pricing-subtitle">
-                                    Ultra retail &mdash; based on your selections
+                                    Ultra retail, based on your selections
                                 </div>
                                 <table className="bridge-pricing-table">
                                     <thead>
@@ -299,12 +268,12 @@ var DesignReviewPage = function(props) {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>{pricing.styleName} Panel &mdash; {pricing.height}" ({pricing.ultraModel})</td>
+                                            <td>{pricing.styleName} Panel | {pricing.height}" ({pricing.ultraModel})</td>
                                             <td style={{ textAlign: 'right' }}>{pricing.panelWidthFt}' section</td>
                                             <td style={{ textAlign: 'right' }}>{fmt(pricing.panelPrice)}</td>
                                         </tr>
                                         <tr>
-                                            <td>Residential Post &mdash; 2" sq</td>
+                                            <td>Residential Post | 2" sq</td>
                                             <td style={{ textAlign: 'right' }}>each</td>
                                             <td style={{ textAlign: 'right' }}>{fmt(pricing.postPrice)}</td>
                                         </tr>
@@ -322,14 +291,6 @@ var DesignReviewPage = function(props) {
                             </div>
                         )}
 
-                        {/* Primary CTA — Continue to Quote */}
-                        <button className="bridge-quote-cta" onClick={onNavigateToManual}>
-                            Continue to Full Quote &rarr;
-                        </button>
-                    </div>
-
-                    {/* RIGHT: Address + Actions */}
-                    <div className="bridge-right">
                         {/* Draw Your Yard card */}
                         <div className="bridge-address-card">
                             <div className="bridge-address-title">Draw Your Yard</div>
@@ -351,12 +312,12 @@ var DesignReviewPage = function(props) {
                                             {suggestions.map(function(s) {
                                                 return (
                                                     <button
-                                                        key={s.place_id}
+                                                        key={s.id}
                                                         type="button"
                                                         className="bridge-suggestion-item"
                                                         onClick={function() { selectSuggestion(s); }}
                                                     >
-                                                        {s.description}
+                                                        {s.placeName}
                                                     </button>
                                                 );
                                             })}
@@ -377,8 +338,8 @@ var DesignReviewPage = function(props) {
                             <span className="bridge-divider-line"></span>
                         </div>
 
-                        {/* Manual entry */}
-                        <button className="bridge-manual-card" onClick={onNavigateToManual}>
+                        {/* Manual entry — now opens a popup */}
+                        <button className="bridge-manual-card" onClick={openManualPopup}>
                             <div>
                                 <div className="bridge-manual-title">Enter Footage Manually</div>
                                 <div className="bridge-manual-desc">I already know my linear footage</div>
@@ -390,20 +351,50 @@ var DesignReviewPage = function(props) {
                         <div className="bridge-contact">
                             <div className="bridge-contact-title">Have questions?</div>
                             <button className="bridge-contact-link" onClick={onOpenContact}>
-                                Drop us a line and we'll walk you through it
+                                Drop me a line and I'll walk you through it
                             </button>
                             <div className="bridge-contact-phone">Or call (855) FENCE-30</div>
                         </div>
                     </div>
                 </div>
             </div>
-                {props.showPoolPopup && (
-                    <PoolCompliancePopup
-                        currentStyleId={hasDesign ? saved.styleId : ''}
-                        onComplete={props.onPoolComplete}
-                        onCancel={props.onPoolCancel}
-                    />
-                )}
+
+            {/* Manual footage popup */}
+            {manualOpen && (
+                <div className="bridge-manual-popup-overlay" onClick={function(e) {
+                    if (e.target === e.currentTarget) closeManualPopup();
+                }}>
+                    <form className="bridge-manual-popup" onSubmit={submitManualFootage}>
+                        <h3>Enter Your Linear Footage</h3>
+                        <p>Total feet of fence you need. You can adjust this in the next step.</p>
+                        <input
+                            type="number"
+                            className="bridge-manual-popup-input"
+                            placeholder="e.g. 150"
+                            min="1"
+                            value={footage}
+                            onChange={function(e) { setFootage(e.target.value); }}
+                            autoFocus
+                        />
+                        <div className="bridge-manual-popup-actions">
+                            <button type="button" className="bridge-manual-popup-cancel" onClick={closeManualPopup}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="bridge-manual-popup-go" disabled={!footage || parseInt(footage, 10) < 1}>
+                                Continue to Quote &rarr;
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {props.showPoolPopup && (
+                <PoolCompliancePopup
+                    currentStyleId={hasDesign ? saved.styleId : ''}
+                    onComplete={props.onPoolComplete}
+                    onCancel={props.onPoolCancel}
+                />
+            )}
         </div>
     );
 };
