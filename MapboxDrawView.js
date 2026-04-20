@@ -975,19 +975,45 @@ function MapboxDrawView(props) {
   var location = locationState[0];
   var setLocation = locationState[1];
 
-  // Hydrate points from last autosave (persistence)
-  var pointsState = useState(function() {
+  // Hydrate lines from last autosave (persistence). P4.1 introduces a
+  // multi-line state shape: `lines` is an array of point arrays. The loader
+  // accepts both the new `{ lines: [...] }` shape and the legacy
+  // `{ points: [...] }` flat shape so older saves keep working. Rendering
+  // and buildAndComplete still read the flat `points` shim below — multi-line
+  // rendering and UI land in later steps of the Task 5 migration.
+  var linesState = useState(function() {
     try {
       var raw = localStorage.getItem(AUTOSAVE_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.points)) return parsed.points;
+        if (parsed && Array.isArray(parsed.lines)) return parsed.lines;
+        if (parsed && Array.isArray(parsed.points)) return [parsed.points];
       }
     } catch (e) {}
-    return [];
+    return [[]];
   });
-  var points = pointsState[0];
-  var setPoints = pointsState[1];
+  var lines = linesState[0];
+  var setLines = linesState[1];
+
+  // Flat shim for legacy readers (rendering, buildAndComplete, autosave write,
+  // save-for-later email payload, etc.). Step 2 of Task 5 replaces the
+  // Mapbox source/layer iteration with per-line iteration; Step 3 ships the
+  // "Start new line" UI that actually uses the multi-line shape end-to-end.
+  var points = lines.reduce(function(acc, l) { return acc.concat(l); }, []);
+
+  // Mutation helper: any legacy `setPoints(updater)` call that targets the
+  // currently-active line (the last line in `lines`) delegates through this.
+  // Vertex click, drag, right-click-delete, undo, and segment-delete all
+  // operate on the active line — that's semantically unchanged from pre-P4.1.
+  function setActiveLinePoints(updater) {
+    setLines(function(prev) {
+      var next = prev.slice();
+      var last = next[next.length - 1] || [];
+      var updated = typeof updater === 'function' ? updater(last) : updater;
+      next[next.length - 1] = updated;
+      return next;
+    });
+  }
 
   var hoverPointState = useState(null);
   var hoverPoint = hoverPointState[0];
@@ -1089,7 +1115,8 @@ function MapboxDrawView(props) {
   useEffect(function() {
     var resumed = checkForDrawResume();
     if (resumed && resumed.points && Array.isArray(resumed.points)) {
-      setPoints(resumed.points);
+      // Resume payloads are legacy flat-points; seed the active (only) line.
+      setActiveLinePoints(resumed.points);
       if (resumed.location) {
         try { localStorage.setItem('gv_bridge_location', JSON.stringify(resumed.location)); } catch (e) {}
         setLocation(resumed.location);
@@ -1122,7 +1149,12 @@ function MapboxDrawView(props) {
   else if (showBreakdown) phase = 'expanded';
   else phase = 'ready';
 
-  // Autosave: debounced 2s after last change
+  // Autosave: debounced 2s after last change. P4.1 keeps the legacy flat
+  // `{ points, ts }` shape on write — the loader accepts both flat and
+  // `lines` shapes, so persistence stays backward-compatible with older
+  // builds of the app and with in-flight email-resume payloads. Step 3 of
+  // the Task 5 migration (when multiple lines actually diverge) is where
+  // the write format flips to `{ lines, ts }`.
   useEffect(function() {
     if (points.length === 0) {
       try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
@@ -1136,12 +1168,12 @@ function MapboxDrawView(props) {
     return function() { clearTimeout(t); };
   }, [points]);
 
-  // Keyboard undo (⌘Z / Ctrl+Z)
+  // Keyboard undo (⌘Z / Ctrl+Z) — pops the last vertex off the active line.
   useEffect(function() {
     function onKey(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
         e.preventDefault();
-        setPoints(function(prev) { return prev.slice(0, -1); });
+        setActiveLinePoints(function(prev) { return prev.slice(0, -1); });
       }
     }
     window.addEventListener('keydown', onKey);
@@ -1163,13 +1195,16 @@ function MapboxDrawView(props) {
   }
 
   function handleUndo() {
-    setPoints(function(prev) { return prev.slice(0, -1); });
+    setActiveLinePoints(function(prev) { return prev.slice(0, -1); });
   }
 
   function handleReset() {
     if (points.length === 0) return;
     if (!window.confirm('Clear your drawing?')) return;
-    setPoints([]);
+    // Reset fully clears multi-line state back to a single empty active line.
+    // Going through setLines directly (not setActiveLinePoints) avoids
+    // leaving behind any other lines when multi-line UI lands in Step 3.
+    setLines([[]]);
     setShowBreakdown(false);
     try { localStorage.removeItem('gv_slope_answer'); } catch (e) {}
     setSlopeAnswer(null);
@@ -1237,7 +1272,10 @@ function MapboxDrawView(props) {
   function handleDeleteSegment(i) {
     // Segment i spans points[i] → points[i+1]. Deleting removes the "end" of
     // that segment (the vertex that created it), which shifts later segments.
-    setPoints(function(prev) { return prev.filter(function(_, j) { return j !== i + 1; }); });
+    // P4.1: single-line today, so targeting the active line via the shim is
+    // correct. Step 3 may need to map segment index -> (lineIdx, localIdx)
+    // once multiple lines actually coexist.
+    setActiveLinePoints(function(prev) { return prev.filter(function(_, j) { return j !== i + 1; }); });
   }
 
   function handleSetTierOverride(i, value) {
@@ -1330,11 +1368,14 @@ function MapboxDrawView(props) {
       )
     ),
 
-    // Map canvas — passes cinematic flag so first visit flies from globe
+    // Map canvas — passes cinematic flag so first visit flies from globe.
+    // The `setPoints` prop is actually setActiveLinePoints from P4.1: the
+    // MapScreen internals (click/drag/contextmenu) all mutate the active
+    // line, and MapScreen still sees the flat `points` shim for rendering.
     React.createElement(MapScreen, {
       location: location,
       points: points,
-      setPoints: setPoints,
+      setPoints: setActiveLinePoints,
       hoverPoint: hoverPoint,
       setHoverPoint: setHoverPoint,
       mapInstanceRef: mapInstanceRef,

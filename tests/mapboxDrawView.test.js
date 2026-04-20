@@ -177,6 +177,26 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(container.querySelector('.dy-est-banner')).toBeTruthy();
   });
 
+  it('loads autosave from new multi-line shape into the lines array', async () => {
+    // P4.1 back-compat: the new localStorage shape persists `lines` (array of
+    // point arrays). The loader must accept this shape just like the legacy
+    // flat `points` shape. All points across all lines flatten into the shim
+    // that drives rendering, so the dock leaves the empty phase.
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      lines: [[[-83.9, 42.6], [-83.901, 42.601]]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    // 2 points across the active line -> no empty overlay, banner visible
+    expect(container.querySelector('.dy-empty-overlay')).toBeNull();
+    expect(container.querySelector('.dy-est-banner')).toBeTruthy();
+  });
+
   it('map click passes e.lngLat straight into setPoints (no pixel math)', async () => {
     // Contract: MapScreen's click handler reads Mapbox's already-computed
     // e.lngLat and hands it to setPoints verbatim. Production must never
