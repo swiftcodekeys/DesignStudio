@@ -577,6 +577,20 @@
 }
 .dy-segment-delete:hover { background: #fde7e7; color: #b84233; }
 
+.dy-segment-tier {
+  margin-left: auto;
+  margin-right: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--dy-rule);
+  background: white;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--dy-ink);
+  max-width: 140px;
+}
+.dy-segment-tier:focus { outline: 2px solid var(--dy-accent); outline-offset: 1px; }
+
 .dy-material-list {
   list-style: none;
   padding: 0;

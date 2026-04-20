@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts } from './geometryUtils';
+import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts, classificationToRackingTier } from './geometryUtils';
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 import { classifyDrawnLine } from './epqsClient';
@@ -546,6 +546,18 @@ function MorphingDock(props) {
           return React.createElement('li', { key: i, className: 'dy-segment-item' },
             React.createElement('span', { className: 'dy-segment-num' }, i + 1),
             React.createElement('span', { className: 'dy-segment-len' }, Math.round(s.lengthFeet) + ' ft'),
+            React.createElement('select', {
+              className: 'dy-segment-tier',
+              value: s.rackingSource === 'user' && s.rackingTier ? s.rackingTier : 'auto',
+              onChange: function(ev) { props.onSetTierOverride(i, ev.target.value); },
+              title: 'Racking tier for segment ' + (i + 1),
+            },
+              React.createElement('option', { value: 'auto' }, 'Auto' + (s.rackingSource === 'auto' && s.rackingTier ? ' (' + s.rackingTier + ')' : '')),
+              React.createElement('option', { value: 'standard' }, 'Standard'),
+              React.createElement('option', { value: 'rackable' }, 'Rackable'),
+              React.createElement('option', { value: 'heavy' }, 'Heavy rack'),
+              React.createElement('option', { value: 'steps' }, 'Stair-step')
+            ),
             React.createElement('button', {
               className: 'dy-segment-delete',
               onClick: function() { props.onDeleteSegment(i); },
@@ -938,6 +950,13 @@ function MapboxDrawView(props) {
   var estOpen = estOpenState[0];
   var setEstOpen = estOpenState[1];
 
+  // Per-segment racking-tier user overrides. Keyed by segment index; absence
+  // means "use auto-detected EPQS classification". Cleared when the user picks
+  // the "Auto" option from the dropdown.
+  var overrideState = useState({});
+  var segmentOverrides = overrideState[0];
+  var setSegmentOverrides = overrideState[1];
+
   var mapInstanceRef = useRef(null);
 
   // EPQS auto-detect: debounced classification of the drawn line against
@@ -1042,6 +1061,10 @@ function MapboxDrawView(props) {
     var segments = [];
     for (var i = 0; i < points.length - 1; i++) {
       var lengthFt = distanceBetween(points[i], points[i + 1]);
+      var epqsSeg = epqsResults.current && epqsResults.current.segmentClassifications
+        ? epqsResults.current.segmentClassifications[i] : null;
+      var autoTier = classificationToRackingTier(epqsSeg ? epqsSeg.classification : 'unknown');
+      var userTier = segmentOverrides[i] || null;
       segments.push({
         index: i,
         mapLayerIdx: null,
@@ -1051,8 +1074,10 @@ function MapboxDrawView(props) {
         panels: Math.ceil(lengthFt / 6),
         start: points[i],
         end: points[i + 1],
-        rackingTier: 'standard',
-        epqsClassification: 'unknown',
+        rackingTier: userTier || autoTier,
+        rackingSource: userTier ? 'user' : 'auto',
+        epqsClassification: epqsSeg ? epqsSeg.classification : 'unknown',
+        epqsDeltaInches: epqsSeg ? epqsSeg.deltaInches : 0,
       });
     }
     var slopedPostCount = computeSlopedPostCount(segments, 6);
@@ -1097,6 +1122,15 @@ function MapboxDrawView(props) {
     setPoints(function(prev) { return prev.filter(function(_, j) { return j !== i + 1; }); });
   }
 
+  function handleSetTierOverride(i, value) {
+    setSegmentOverrides(function(prev) {
+      var next = Object.assign({}, prev);
+      if (value === 'auto') delete next[i];
+      else next[i] = value;
+      return next;
+    });
+  }
+
   function handleSaveForLater() {
     setSaveEmail('');
     setSaveError('');
@@ -1134,10 +1168,20 @@ function MapboxDrawView(props) {
     );
   }
 
-  // Build segments array for the dock
+  // Build segments array for the dock, including auto-detected EPQS racking
+  // tier (if available) and any user override. The dock renders a dropdown
+  // per segment so customers can see and adjust the tier.
   var dockSegments = [];
   for (var si = 0; si < points.length - 1; si++) {
-    dockSegments.push({ lengthFeet: distanceBetween(points[si], points[si + 1]) });
+    var epqsSeg = epqsResults.current && epqsResults.current.segmentClassifications
+      ? epqsResults.current.segmentClassifications[si] : null;
+    var autoTier = classificationToRackingTier(epqsSeg ? epqsSeg.classification : 'unknown');
+    var userTier = segmentOverrides[si] || null;
+    dockSegments.push({
+      lengthFeet: distanceBetween(points[si], points[si + 1]),
+      rackingTier: userTier || autoTier,
+      rackingSource: userTier ? 'user' : 'auto',
+    });
   }
 
   return React.createElement('div', { className: 'dy-container' },
@@ -1189,6 +1233,7 @@ function MapboxDrawView(props) {
       onContinue: handleContinue,
       onToggleBreakdown: handleToggleBreakdown,
       onDeleteSegment: handleDeleteSegment,
+      onSetTierOverride: handleSetTierOverride,
     }),
 
     // Estimate banner (compact, always visible while drawing) + popup

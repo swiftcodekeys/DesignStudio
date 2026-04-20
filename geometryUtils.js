@@ -108,6 +108,20 @@ export function aggregateClassificationsForUserSegments(userSegments, segmentCla
   return out;
 }
 
+// --- Racking tier mapping ---
+// Maps an EPQS slope classification onto the racking tier the fence needs.
+// classifications: 'flat' | 'sloped' | 'steep' | 'steps' | 'unknown'
+// tiers: 'standard' | 'rackable' | 'heavy' | 'steps' | 'unknown'
+export function classificationToRackingTier(classification) {
+  switch (classification) {
+    case 'flat': return 'standard';
+    case 'sloped': return 'rackable';
+    case 'steep': return 'heavy';
+    case 'steps': return 'steps';
+    default: return 'unknown';
+  }
+}
+
 // --- Sloped post counting ---
 // Given per-user-segment rackingTier data, count how many physical posts sit
 // on a sloped (rackable / heavy-rackable) segment. Used to price the $4.75
