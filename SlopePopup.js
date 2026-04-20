@@ -1,5 +1,6 @@
 // SlopePopup.js — modal asking the customer about yard slope
 import React, { useState } from 'react';
+import { PlayCircle, FileText } from '@phosphor-icons/react';
 
 function SlopePopup(props) {
   var choiceState = useState(null);
@@ -36,10 +37,12 @@ function SlopePopup(props) {
       ),
       React.createElement('div', { className: 'mbx-slope-help' },
         React.createElement('h4', null, 'How to verify:'),
-        React.createElement('a', { href: 'https://youtube.com/TODO', target: '_blank', rel: 'noopener' },
-          '\u{1F4F9} Watch: How to measure your yard slope'),
-        React.createElement('a', { href: '/how-to-measure-your-yard', target: '_blank', rel: 'noopener' },
-          '\u{1F4C4} Read: Full slope measurement guide')
+        React.createElement('a', { href: 'https://youtu.be/nfrwyY4GttE', target: '_blank', rel: 'noopener noreferrer' },
+          React.createElement(PlayCircle, { size: 16, weight: 'fill' }),
+          ' Watch: How to measure your yard'),
+        React.createElement('a', { href: '/how-to-measure-your-yard', target: '_blank', rel: 'noopener noreferrer' },
+          React.createElement(FileText, { size: 16, weight: 'regular' }),
+          ' Read: Full slope measurement guide')
       ),
       React.createElement('div', { className: 'mbx-slope-footer' },
         React.createElement('button', { onClick: props.onClose }, 'Cancel'),
