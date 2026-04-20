@@ -1,6 +1,10 @@
 // epqsClient.js — USGS EPQS elevation + slope classification
+// Elevation queries go through the Cloudflare Worker at EPQS_PROXY_URL because
+// USGS does not send CORS headers. See workers/epqs-proxy/.
 
-var EPQS_URL = 'https://epqs.nationalmap.gov/v1/json';
+var EPQS_PROXY_URL = (typeof process !== 'undefined' && process.env && process.env.EPQS_PROXY_URL)
+  ? process.env.EPQS_PROXY_URL
+  : 'https://grandview-epqs-proxy.sarah-13a.workers.dev';
 
 export async function queryElevation(lat, lng, timeoutMs) {
   var timeout = timeoutMs || 5000;
@@ -8,14 +12,14 @@ export async function queryElevation(lat, lng, timeoutMs) {
   var timer = null;
   try {
     if (controller) timer = setTimeout(function() { controller.abort(); }, timeout);
-    var url = EPQS_URL + '?x=' + lng + '&y=' + lat + '&units=Feet&wkid=4326&includeDate=false';
+    var url = EPQS_PROXY_URL + '/api/epqs?lat=' + lat + '&lng=' + lng;
     var resp = await fetch(url, controller ? { signal: controller.signal } : {});
     if (!resp.ok) return null;
-    var data = await resp.json();
-    if (data == null || data.value == null) return null;
+    var body = await resp.json();
+    if (!body || !body.ok || !body.data || body.data.elevationFeet == null) return null;
     return {
-      elevationFeet: Number(data.value),
-      dataSource: data.dataSource || '3DEP 1m',
+      elevationFeet: Number(body.data.elevationFeet),
+      dataSource: body.data.dataSource || '3DEP 1m',
     };
   } catch (e) {
     return null;

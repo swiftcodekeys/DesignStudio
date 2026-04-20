@@ -56,6 +56,7 @@ module.exports = {
       'process.env.EARTH_INTRO_ENABLED': JSON.stringify(process.env.EARTH_INTRO_ENABLED !== 'false'),
       'process.env.MAPBOX_ACCESS_TOKEN': JSON.stringify(process.env.MAPBOX_ACCESS_TOKEN || ''),
       'process.env.PARCEL_PROXY_URL': JSON.stringify(process.env.PARCEL_PROXY_URL || 'https://grandview-parcel-proxy.sarah-13a.workers.dev'),
+      'process.env.EPQS_PROXY_URL': JSON.stringify(process.env.EPQS_PROXY_URL || 'https://grandview-epqs-proxy.sarah-13a.workers.dev'),
     })
   ],
   devServer: {

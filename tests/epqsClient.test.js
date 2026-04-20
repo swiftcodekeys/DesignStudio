@@ -4,10 +4,10 @@ import { queryElevation, classifyDrawnLine } from '../epqsClient.js';
 global.fetch = vi.fn();
 
 describe('queryElevation', () => {
-  it('returns elevation in feet from EPQS response', async () => {
+  it('returns elevation in feet from EPQS proxy response', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ value: 1000.5, location: { x: -83.9, y: 42.6 } }),
+      json: async () => ({ ok: true, data: { elevationFeet: 1000.5, dataSource: '3DEP 1m' } }),
     });
     const r = await queryElevation(42.6, -83.9);
     expect(r.elevationFeet).toBeCloseTo(1000.5);
@@ -35,7 +35,7 @@ describe('classifyDrawnLine', () => {
   it('classifies flat when all deltas < 3"', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
-      json: async () => ({ value: 100.0 }), // all same
+      json: async () => ({ ok: true, data: { elevationFeet: 100.0, dataSource: '3DEP 1m' } }), // all same
     });
     const r = await classifyDrawnLine([[-83.9,42.6],[-83.89,42.6]], 50);
     expect(r.overallClassification).toBe('flat');
@@ -46,7 +46,7 @@ describe('classifyDrawnLine', () => {
     let call = 0;
     global.fetch.mockImplementation(async () => ({
       ok: true,
-      json: async () => ({ value: call++ === 0 ? 100.0 : 102.5 }), // 2.5ft delta = 30"
+      json: async () => ({ ok: true, data: { elevationFeet: call++ === 0 ? 100.0 : 102.5, dataSource: '3DEP 1m' } }), // 2.5ft delta = 30"
     }));
     const r = await classifyDrawnLine([[-83.9,42.6],[-83.89,42.6]], 6);
     expect(r.overallClassification).toBe('steep');
