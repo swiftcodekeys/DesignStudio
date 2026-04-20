@@ -178,4 +178,44 @@ describe('QuoteBuilder hydration from gv_saved_design', function() {
     expect(styleVal).toBe('Horizon');
     expect(colorVal).toBe('Textured Bronze');
   });
+
+  // -------------------------------------------------------------------------
+  // gv_fence_config precedence + Post cap label mapping (live E2E bug fix)
+  //
+  // When the wizard color picker writes gv_fence_config with id=2 Textured
+  // Bronze, but the address-suggestion click into /studio then overwrites
+  // app.js fenceConfig.color via URL hash (#color=1 -> Bronze), the resulting
+  // gv_saved_design has the wrong color id. The QuoteBuilder must treat
+  // gv_fence_config.color.displayName as the user-intent source of truth.
+  // -------------------------------------------------------------------------
+  it('gv_fence_config color.displayName wins over gv_saved_design color id', function() {
+    window.localStorage.setItem('gv_fence_config', JSON.stringify({
+      styleId: 'uaf_200',
+      color: { id: 2, name: 'Textured Bronze', displayName: 'Textured Bronze', hex: '#5a4d3e' },
+      postCap: 'pcf',
+    }));
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'uaf_200',
+      color: { id: 1, displayName: 'Bronze', hex: '#42382c' },
+      postCap: 'pcf',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      zoneName: 'Front', zoneId: 'front', skipToStep: 0,
+    })).container;
+    // Sidebar Color row should show "Textured Bronze" (from gv_fence_config),
+    // not "Bronze" (which is what gv_saved_design would produce on its own).
+    expect(getSpecValue(container, 'Color')).toBe('Textured Bronze');
+  });
+
+  it('Post cap code pcf renders as "Flat Cap" in sidebar', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'uaf_200',
+      color: { id: 'textured-bronze', displayName: 'Textured Bronze' },
+      postCap: 'pcf',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      zoneName: 'Front', zoneId: 'front', skipToStep: 0,
+    })).container;
+    expect(getSpecValue(container, 'Post cap')).toBe('Flat Cap');
+  });
 });

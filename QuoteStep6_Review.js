@@ -42,6 +42,10 @@ var COLOR_LABELS = {
   'forest-green': 'Forest Green',
 };
 
+// Post cap code -> label. Mirrors POST_CAP_LABELS in QuoteBuilder.js.
+// configData.js POST_CAPS is the source of truth (pcf=Flat Cap, pcb=Ball Cap).
+var POST_CAP_LABELS = { pcf: 'Flat Cap', pcb: 'Ball Cap' };
+
 var INSTALL_LABELS = {
   'diy': 'DIY Install', 'contractor': 'Hire a Contractor', 'not-sure': 'Undecided',
 };
@@ -134,7 +138,7 @@ function QuoteStep6_Review(props) {
         ),
         el('div', { className: 'qb-review-row' },
           el('span', { className: 'qb-review-label' }, 'Post Caps'),
-          el('span', { className: 'qb-review-value' }, capitalize(data.postCap))
+          el('span', { className: 'qb-review-value' }, POST_CAP_LABELS[data.postCap] || capitalize(data.postCap))
         )
       )
     ),

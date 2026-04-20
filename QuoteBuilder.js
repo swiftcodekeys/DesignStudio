@@ -60,6 +60,12 @@ var ULTRA_ID_TO_STYLE_SLUG = {
   uas_150: 'savannah',
 };
 
+// Post cap code -> human-readable label. configData.js is the source of truth
+// (POST_CAPS array). The sidebar + Review step receive the raw code (e.g.
+// "pcf") from gv_saved_design; titleCase would render that as "Pcf" — use
+// this map instead.
+var POST_CAP_LABELS = { pcf: 'Flat Cap', pcb: 'Ball Cap' };
+
 // Hydrate a partial Quote Builder data object from gv_saved_design in
 // localStorage. Returns an empty object when nothing is saved or parsing
 // fails — the caller merges the result over DEFAULT_DATA, so empty is safe.
@@ -78,21 +84,46 @@ var ULTRA_ID_TO_STYLE_SLUG = {
 //                              poolCompliance useEffect so the sidebar shows
 //                              the right value on the very first render)
 function hydrateFromSavedDesign() {
+  var out = {};
+
+  // ---- gv_fence_config: wizard-authoritative color (E2E bug fix) ----
+  //
+  // The wizard color picker writes gv_fence_config with the user-picked
+  // color's displayName (e.g. "Textured Bronze"). If the buyer then clicks
+  // through to /studio via an address suggestion, app.js applies URL hash
+  // `#color=<n>` which can overwrite fenceConfig.color in React state to a
+  // DIFFERENT color (because the wizard and configurator use different
+  // color-id lists). buildSavedDesign then writes that wrong color id into
+  // gv_saved_design.
+  //
+  // Fix at the hydration layer: read gv_fence_config FIRST and use its
+  // displayName (slugified) as the color source of truth. The existing
+  // gv_saved_design fallback below only applies if gv_fence_config is absent
+  // or malformed, so legacy flows (no wizard) still work.
+  try {
+    var fcRaw = window.localStorage.getItem('gv_fence_config');
+    if (fcRaw) {
+      var fc = JSON.parse(fcRaw);
+      if (fc && fc.color && typeof fc.color === 'object' && typeof fc.color.displayName === 'string' && fc.color.displayName) {
+        out.color = fc.color.displayName.toLowerCase().replace(/\s+/g, '-');
+      }
+    }
+  } catch (_) { /* ignore parse errors, fall through to gv_saved_design */ }
+
   try {
     var raw = window.localStorage.getItem('gv_saved_design');
-    if (!raw) return {};
+    if (!raw) return out;
     var saved = JSON.parse(raw);
-    if (!saved || typeof saved !== 'object') return {};
-    var out = {};
+    if (!saved || typeof saved !== 'object') return out;
 
     // Style: Ultra id -> slug, else pass through if already a slug.
     if (typeof saved.styleId === 'string' && saved.styleId) {
       out.style = ULTRA_ID_TO_STYLE_SLUG[saved.styleId] || saved.styleId;
     }
 
-    // Color: saved.color.id is the slug (e.g. "textured-bronze"); use it as-is.
-    // Fall back to a slugified displayName if id is missing.
-    if (saved.color && typeof saved.color === 'object') {
+    // Color (fallback only): if gv_fence_config didn't already set a color,
+    // use saved.color.id (already slug format) or slugified displayName.
+    if (!out.color && saved.color && typeof saved.color === 'object') {
       if (typeof saved.color.id === 'string' && saved.color.id) {
         out.color = saved.color.id;
       } else if (typeof saved.color.displayName === 'string' && saved.color.displayName) {
@@ -121,7 +152,7 @@ function hydrateFromSavedDesign() {
 
     return out;
   } catch (_) {
-    return {};
+    return out;
   }
 }
 
@@ -163,7 +194,7 @@ function buildSidebarSpecs(data) {
   if (data.bottomRail === 'flush') specs.push({ label: 'Bottom rail', value: 'Flush (pool code)' });
   if (data.spacing && data.spacing !== 'standard') specs.push({ label: 'Spacing', value: titleCase(data.spacing) });
   if (data.puppyPickets) specs.push({ label: 'Puppy pickets', value: data.puppyStyle ? titleCase(data.puppyStyle) : 'Yes' });
-  if (data.postCap && data.postCap !== 'flat') specs.push({ label: 'Post cap', value: titleCase(data.postCap) });
+  if (data.postCap && data.postCap !== 'flat') specs.push({ label: 'Post cap', value: POST_CAP_LABELS[data.postCap] || titleCase(data.postCap) });
   if (data.finialType) specs.push({ label: 'Finials', value: titleCase(data.finialType) });
   if (data.privacyType) specs.push({ label: 'Privacy', value: titleCase(data.privacyType) });
   if (data.linearFeet) specs.push({ label: 'Linear feet', value: Math.round(data.linearFeet) + ' ft' });
