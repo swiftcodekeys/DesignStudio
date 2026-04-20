@@ -587,6 +587,36 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(count).toBeLessThanOrEqual(3);
   });
 
+  it('adds per-line dy-line-0 source + glow/stroke layer pair when lines has one 2+ point line (P4.2)', async () => {
+    // P4.2: the main polyline effect iterates `lines` and creates per-line
+    // source + layer pair. With a single 2-point line seeded in the multi-line
+    // autosave shape, the map must receive exactly one `dy-line-0` source and
+    // both the glow and solid stroke layers keyed on idx 0.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    // Fire style.load synchronously so the effect's apply() runs inline.
+    inst.once = vi.fn(function(event, handler) { handler(); });
+    // isStyleLoaded returns false so the effect takes the once('style.load') path.
+    inst.isStyleLoaded = vi.fn(() => false);
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      lines: [[[-83.9, 42.6], [-83.901, 42.601]]],
+      ts: Date.now(),
+    }));
+
+    render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+
+    const srcCalls = inst.addSource.mock.calls.map(function(c) { return c[0]; });
+    const layerCalls = inst.addLayer.mock.calls.map(function(c) { return (c[0] || {}).id; });
+
+    expect(srcCalls).toContain('dy-line-0');
+    expect(layerCalls).toContain('dy-line-0');
+    expect(layerCalls).toContain('dy-line-0-glow');
+  });
+
   it('renders every segment label when midpoints are well-separated in pixel space', async () => {
     // project() returns widely-separated pixel coordinates per midpoint, so
     // the pixel-gap guard never fires and all 3 labels render.

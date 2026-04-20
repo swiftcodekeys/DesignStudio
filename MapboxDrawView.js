@@ -783,32 +783,71 @@ function MapScreen(props) {
     mapRef.current.setPaintProperty('parcel-pulse', 'line-opacity', props.points.length === 0 ? 0.8 : 0);
   }, [props.points.length]);
 
-  // Main polyline (glow + solid orange)
+  // Main polyline (glow + solid orange) — per-line source/layers.
+  // Each entry in `props.lines` gets its own `dy-line-${idx}` source plus a
+  // `dy-line-${idx}-glow` + `dy-line-${idx}` layer pair (blurred wide glow
+  // underneath, solid narrow stroke on top). When `lines` shrinks (e.g.
+  // via a future delete-line action in P4.3), the now-removed indices are
+  // torn down so orphan sources/layers don't leak.
+  var prevLineCountRef = useRef(0);
   useEffect(function() {
     if (!mapRef.current) return;
-    var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: props.points } };
+    var linesArr = props.lines || [];
     function apply() {
-      if (!mapRef.current) return;
-      var src = mapRef.current.getSource && mapRef.current.getSource('dy-line');
-      if (src && src.setData) { src.setData(geoj); return; }
-      if (!mapRef.current.addSource) return;
-      mapRef.current.addSource('dy-line', { type: 'geojson', data: geoj });
-      mapRef.current.addLayer({
-        id: 'dy-line-glow',
-        type: 'line',
-        source: 'dy-line',
-        paint: { 'line-color': '#c2410c', 'line-width': 10, 'line-opacity': 0.25, 'line-blur': 2 },
+      var map = mapRef.current;
+      if (!map) return;
+      // Upsert each line: either update the existing source's data, or
+      // add the source + glow layer + solid layer fresh.
+      linesArr.forEach(function(linePoints, idx) {
+        var srcId = 'dy-line-' + idx;
+        var glowId = 'dy-line-' + idx + '-glow';
+        var strokeId = 'dy-line-' + idx;
+        if (!linePoints || linePoints.length < 2) {
+          // Tear down any existing source/layers for this index — a line
+          // that shrinks back below 2 points has no geometry to render.
+          if (map.getLayer && map.getLayer(strokeId) && map.removeLayer) map.removeLayer(strokeId);
+          if (map.getLayer && map.getLayer(glowId) && map.removeLayer) map.removeLayer(glowId);
+          if (map.getSource && map.getSource(srcId) && map.removeSource) map.removeSource(srcId);
+          return;
+        }
+        var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: linePoints } };
+        var src = map.getSource && map.getSource(srcId);
+        if (src && src.setData) { src.setData(geoj); return; }
+        if (!map.addSource) return;
+        map.addSource(srcId, { type: 'geojson', data: geoj });
+        map.addLayer({
+          id: glowId,
+          type: 'line',
+          source: srcId,
+          paint: { 'line-color': '#c2410c', 'line-width': 10, 'line-opacity': 0.25, 'line-blur': 2 },
+        });
+        map.addLayer({
+          id: strokeId,
+          type: 'line',
+          source: srcId,
+          paint: { 'line-color': '#c2410c', 'line-width': 4 },
+        });
       });
-      mapRef.current.addLayer({
-        id: 'dy-line',
-        type: 'line',
-        source: 'dy-line',
-        paint: { 'line-color': '#c2410c', 'line-width': 4 },
-      });
+      // Cleanup on shrink: if the array shortened since last render, remove
+      // every index from linesArr.length up to the previous max. Relevant
+      // once P4.3 ships "Start new line" / per-line delete — without this,
+      // each Start/delete cycle would leak a source + two layers.
+      var prev = prevLineCountRef.current || 0;
+      if (prev > linesArr.length) {
+        for (var k = linesArr.length; k < prev; k++) {
+          var oldSrc = 'dy-line-' + k;
+          var oldGlow = 'dy-line-' + k + '-glow';
+          var oldStroke = 'dy-line-' + k;
+          if (map.getLayer && map.getLayer(oldStroke) && map.removeLayer) map.removeLayer(oldStroke);
+          if (map.getLayer && map.getLayer(oldGlow) && map.removeLayer) map.removeLayer(oldGlow);
+          if (map.getSource && map.getSource(oldSrc) && map.removeSource) map.removeSource(oldSrc);
+        }
+      }
+      prevLineCountRef.current = linesArr.length;
     }
     if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
     else mapRef.current.once && mapRef.current.once('style.load', apply);
-  }, [props.points]);
+  }, [props.lines]);
 
   // Dashed ghost segment from last point to hover
   useEffect(function() {
@@ -878,6 +917,12 @@ function MapScreen(props) {
   // First and last segment labels are always kept as reference points.
   // Re-runs when zoom changes (zoomTick) so a user zooming in reveals labels
   // that were previously hidden.
+  // TODO(P4.3): this effect iterates the flat `props.points` shim, so when
+  // multiple lines exist it labels the implicit "bridge" segment between
+  // line N's last point and line N+1's first point as if it were real fence.
+  // Once the "Start new line" UI ships and `lines` actually contains more
+  // than one entry, switch this to iterate `props.lines` per-line and skip
+  // the bridge. For P4.2 there's still only one line, so this is harmless.
   var zoomTickState = useState(0);
   var zoomTick = zoomTickState[0];
   var setZoomTick = zoomTickState[1];
@@ -1375,6 +1420,7 @@ function MapboxDrawView(props) {
     React.createElement(MapScreen, {
       location: location,
       points: points,
+      lines: lines,
       setPoints: setActiveLinePoints,
       hoverPoint: hoverPoint,
       setHoverPoint: setHoverPoint,
