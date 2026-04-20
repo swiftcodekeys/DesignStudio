@@ -46,6 +46,11 @@ var DEFAULT_ESTIMATE_INPUTS = {
 };
 
 var MIN_DRAW_FT = 30;
+// Minimum pixel distance between two segment-label midpoints before we hide
+// the later one. Roughly the label's own width including padding (~50-80px
+// depending on digit count); 54 keeps the common "XX ft" labels from overlapping
+// while still allowing adjacent labels to show when there's room.
+var LABEL_MIN_PIXEL_GAP = 54;
 var AUTOSAVE_KEY = 'gv_draw_state';
 var AUTOSAVE_DEBOUNCE_MS = 2000;
 var EARTH_INTRO_ENABLED = process.env.EARTH_INTRO_ENABLED !== false && process.env.EARTH_INTRO_ENABLED !== 'false';
@@ -867,24 +872,71 @@ function MapScreen(props) {
     return function() { markers.forEach(function(m) { m.remove(); }); };
   }, [props.points]);
 
-  // Segment length labels at midpoints
+  // Segment length labels at midpoints. We hide labels whose pixel-space midpoint
+  // lands within LABEL_MIN_PIXEL_GAP of any already-kept label, so short runs
+  // (e.g. 4 ft + 8 ft) don't render "39 ft" and "6 ft" on top of each other.
+  // First and last segment labels are always kept as reference points.
+  // Re-runs when zoom changes (zoomTick) so a user zooming in reveals labels
+  // that were previously hidden.
+  var zoomTickState = useState(0);
+  var zoomTick = zoomTickState[0];
+  var setZoomTick = zoomTickState[1];
+  useEffect(function() {
+    if (!mapRef.current) return;
+    var map = mapRef.current;
+    var handler = function() { setZoomTick(function(n) { return n + 1; }); };
+    map.on('zoomend', handler);
+    return function() { if (map && map.off) map.off('zoomend', handler); };
+  }, []);
   useEffect(function() {
     if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
+    var map = mapRef.current;
+    var segCount = props.points.length - 1;
     var labels = [];
-    for (var i = 0; i < props.points.length - 1; i++) {
+    var keptPx = [];
+    // project() may be absent in some test mocks; fall back to keeping all
+    // labels (old behavior) so tests that don't mock the map projection keep
+    // the pre-fix invariant of at most one label per segment.
+    var canProject = typeof map.project === 'function';
+    for (var i = 0; i < segCount; i++) {
       var len = distanceBetween(props.points[i], props.points[i + 1]);
       var midLng = (props.points[i][0] + props.points[i + 1][0]) / 2;
       var midLat = (props.points[i][1] + props.points[i + 1][1]) / 2;
+      var isEndpoint = (i === 0) || (i === segCount - 1);
+      var shouldRender = true;
+      var px = null;
+      if (!isEndpoint && canProject) {
+        try {
+          px = map.project([midLng, midLat]);
+        } catch (err) { px = null; }
+        if (px && typeof px.x === 'number' && typeof px.y === 'number') {
+          for (var k = 0; k < keptPx.length; k++) {
+            var dx = px.x - keptPx[k].x;
+            var dy = px.y - keptPx[k].y;
+            if (Math.sqrt(dx * dx + dy * dy) < LABEL_MIN_PIXEL_GAP) {
+              shouldRender = false;
+              break;
+            }
+          }
+        }
+      }
+      if (!shouldRender) continue;
+      if (canProject && px == null && isEndpoint) {
+        try { px = map.project([midLng, midLat]); } catch (err2) { px = null; }
+      }
+      if (px && typeof px.x === 'number' && typeof px.y === 'number') {
+        keptPx.push({ x: px.x, y: px.y });
+      }
       var el = document.createElement('div');
       el.className = 'dy-seg-label';
       el.textContent = Math.round(len) + ' ft';
       var marker = new mapboxgl.Marker({ element: el })
         .setLngLat([midLng, midLat])
-        .addTo(mapRef.current);
+        .addTo(map);
       labels.push(marker);
     }
     return function() { labels.forEach(function(m) { m.remove(); }); };
-  }, [props.points]);
+  }, [props.points, zoomTick]);
 
   // Live ghost distance label ("+42 ft")
   useEffect(function() {

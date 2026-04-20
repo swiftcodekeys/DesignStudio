@@ -518,4 +518,81 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     act(() => { fireEvent.click(dismiss); });
     expect(container.querySelector('.dy-parcel-toast')).toBeNull();
   });
+
+  // --- Segment label overlap guard (P3.1) -------------------------------------
+  // Helper: count segment-length labels created by the component. The Marker
+  // mock stores opts.element; we filter by className. Ghost label carries the
+  // modifier class 'dy-seg-label-ghost' and must be excluded so we count only
+  // committed per-segment labels.
+  async function countSegLabelMarkers() {
+    const mapboxgl = (await import('mapbox-gl')).default;
+    const calls = mapboxgl.Marker.mock && mapboxgl.Marker.mock.calls ? mapboxgl.Marker.mock.calls : [];
+    let n = 0;
+    for (const call of calls) {
+      const opts = call[0];
+      if (!opts || !opts.element) continue;
+      const cls = (opts.element.className || '').toString();
+      if (cls.indexOf('dy-seg-label') !== -1 && cls.indexOf('dy-seg-label-ghost') === -1) n++;
+    }
+    return n;
+  }
+
+  it('hides overlapping segment labels on short runs (pixel-distance guard)', async () => {
+    // Four colinear points whose midpoints project to near-identical pixels.
+    // With project() returning the same x/y for every midpoint, the pixel-gap
+    // guard should drop middle labels and keep only the first + last segment
+    // labels (2 of 3 possible).
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.project = vi.fn(function() { return { x: 100, y: 100 }; });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [
+        [-83.9, 42.6],
+        [-83.9, 42.6001],
+        [-83.9, 42.6002],
+        [-83.9, 42.6003],
+      ],
+      ts: Date.now(),
+    }));
+    render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    // 4 points → 3 segments. With collision, expect exactly 2 labels
+    // (first + last always kept).
+    const count = await countSegLabelMarkers();
+    expect(count).toBe(2);
+    expect(count).toBeGreaterThanOrEqual(Math.min(2, 3));
+    expect(count).toBeLessThanOrEqual(3);
+  });
+
+  it('renders every segment label when midpoints are well-separated in pixel space', async () => {
+    // project() returns widely-separated pixel coordinates per midpoint, so
+    // the pixel-gap guard never fires and all 3 labels render.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    let i = 0;
+    inst.project = vi.fn(function() {
+      const out = { x: 100 + i * 200, y: 100 };
+      i += 1;
+      return out;
+    });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [
+        [-83.9, 42.6],
+        [-83.9, 42.605],
+        [-83.905, 42.605],
+        [-83.905, 42.6],
+      ],
+      ts: Date.now(),
+    }));
+    render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    const count = await countSegLabelMarkers();
+    expect(count).toBe(3);
+  });
 });
