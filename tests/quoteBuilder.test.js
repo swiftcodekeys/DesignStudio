@@ -82,3 +82,100 @@ describe('QuoteBuilder sidebar preview', () => {
     expect(placeholder.textContent).toMatch(/Design preview will appear here/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Hydration from gv_saved_design (P2.1 color drift + P2.2 empty Style row)
+//
+// When the configurator writes gv_saved_design, the Quote Builder must seed
+// its initial `data` state with the buyer's color + style choices so the
+// left sidebar "Your design" spec list and the Review step show what the
+// user actually picked — not the DEFAULT_DATA black/empty fallback.
+// ---------------------------------------------------------------------------
+describe('QuoteBuilder hydration from gv_saved_design', function() {
+  beforeEach(function() {
+    window.localStorage.clear();
+  });
+
+  function getSpecValue(container, label) {
+    var rows = container.querySelectorAll('.qb-sidebar-spec');
+    for (var i = 0; i < rows.length; i++) {
+      var l = rows[i].querySelector('.qb-sidebar-spec-label');
+      var v = rows[i].querySelector('.qb-sidebar-spec-value');
+      if (l && l.textContent === label) return v ? v.textContent : null;
+    }
+    return null;
+  }
+
+  it('maps saved.color.id (slug) into sidebar Color row', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'horizon',
+      color: { id: 'textured-bronze', displayName: 'Textured Bronze', hex: '#5a4d3e' },
+      height: '48',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {})).container;
+    expect(getSpecValue(container, 'Color')).toBe('Textured Bronze');
+  });
+
+  it('maps Ultra styleId uaf_200 to Horizon in sidebar Style row', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'uaf_200',
+      color: { id: 'textured-black', displayName: 'Textured Black' },
+      height: '48',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {})).container;
+    expect(getSpecValue(container, 'Style')).toBe('Horizon');
+  });
+
+  it('passes slug styleId horizon through unchanged', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'horizon',
+      color: { id: 'textured-black', displayName: 'Textured Black' },
+      height: '48',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {})).container;
+    expect(getSpecValue(container, 'Style')).toBe('Horizon');
+  });
+
+  it('applies DEFAULT_DATA when localStorage is empty (Textured Black, no Style row)', function() {
+    var container = render(React.createElement(QuoteBuilder, {})).container;
+    // DEFAULT_DATA.color is 'textured-black', so Color row renders with that slug.
+    expect(getSpecValue(container, 'Color')).toBe('Textured Black');
+    // DEFAULT_DATA.style is '' — the sidebar skips falsy fields, so no Style row.
+    expect(getSpecValue(container, 'Style')).toBeNull();
+  });
+
+  it('props.initialConfig overrides gv_saved_design hydration', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'uaf_200',
+      color: { id: 'textured-bronze', displayName: 'Textured Bronze' },
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      initialConfig: { style: 'charleston', color: 'satin-white' },
+    })).container;
+    expect(getSpecValue(container, 'Style')).toBe('Charleston');
+    expect(getSpecValue(container, 'Color')).toBe('Satin White');
+  });
+
+  it('Review step shows saved color + style (P2.2 acceptance)', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'uaf_200',
+      color: { id: 'textured-bronze', displayName: 'Textured Bronze' },
+      height: '48',
+    }));
+    // Skip to Review (step 5).
+    var container = render(React.createElement(QuoteBuilder, { skipToStep: 5 })).container;
+    // Find the Style & Config review section and check Style + Color values.
+    var rows = container.querySelectorAll('.qb-review-row');
+    var styleVal = null;
+    var colorVal = null;
+    for (var i = 0; i < rows.length; i++) {
+      var label = rows[i].querySelector('.qb-review-label');
+      var value = rows[i].querySelector('.qb-review-value');
+      if (!label || !value) continue;
+      if (label.textContent === 'Style') styleVal = value.textContent;
+      if (label.textContent === 'Color') colorVal = value.textContent;
+    }
+    expect(styleVal).toBe('Horizon');
+    expect(colorVal).toBe('Textured Bronze');
+  });
+});

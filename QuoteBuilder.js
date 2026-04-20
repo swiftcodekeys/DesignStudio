@@ -45,6 +45,86 @@ var STYLE_THUMBNAILS = {
   'defender':       'assets/ifence_previews/gate_styles/castile_36.png',
 };
 
+// Ultra id -> Quote Builder slug. The 3D configurator (app.js buildSavedDesign)
+// writes Ultra ids like "uaf_200" into gv_saved_design.styleId, but the
+// Quote Builder's left sidebar + Review step treat data.style as a slug
+// ("horizon", "charleston-pro", etc.). Keep this map inline and flat — same
+// pattern as STYLE_THUMBNAILS above. Verified against configData.js.
+var ULTRA_ID_TO_STYLE_SLUG = {
+  uaf_200: 'horizon',
+  uaf_201: 'horizon-pro',
+  uaf_250: 'vanguard',
+  uab_200: 'haven',
+  uas_100: 'charleston',
+  uas_101: 'charleston-pro',
+  uas_150: 'savannah',
+};
+
+// Hydrate a partial Quote Builder data object from gv_saved_design in
+// localStorage. Returns an empty object when nothing is saved or parsing
+// fails — the caller merges the result over DEFAULT_DATA, so empty is safe.
+//
+// Shape mapping (see app.js buildSavedDesign ~line 288-316 for the source):
+//   saved.styleId           -> data.style   (normalize Ultra id to slug)
+//   saved.color.id          -> data.color   (already slug format; use directly)
+//   saved.height            -> data.height  (coerce string "48" to number 48)
+//   saved.postCap           -> data.postCap
+//   saved.finialType        -> data.finialType
+//   saved.pupType           -> data.pupType
+//   saved.proSpacing        -> data.spacing ('pro' | 'standard')
+//   saved.privacyPostColor  -> data.privacyPostColor
+//   saved.privacyPanelColor -> data.privacyPanelColor
+//   saved.poolBarrier       -> data.bottomRail = 'flush' (mirrors the existing
+//                              poolCompliance useEffect so the sidebar shows
+//                              the right value on the very first render)
+function hydrateFromSavedDesign() {
+  try {
+    var raw = window.localStorage.getItem('gv_saved_design');
+    if (!raw) return {};
+    var saved = JSON.parse(raw);
+    if (!saved || typeof saved !== 'object') return {};
+    var out = {};
+
+    // Style: Ultra id -> slug, else pass through if already a slug.
+    if (typeof saved.styleId === 'string' && saved.styleId) {
+      out.style = ULTRA_ID_TO_STYLE_SLUG[saved.styleId] || saved.styleId;
+    }
+
+    // Color: saved.color.id is the slug (e.g. "textured-bronze"); use it as-is.
+    // Fall back to a slugified displayName if id is missing.
+    if (saved.color && typeof saved.color === 'object') {
+      if (typeof saved.color.id === 'string' && saved.color.id) {
+        out.color = saved.color.id;
+      } else if (typeof saved.color.displayName === 'string' && saved.color.displayName) {
+        out.color = saved.color.displayName.toLowerCase().replace(/\s+/g, '-');
+      }
+    }
+
+    // Height: saved as string, QB expects number.
+    if (saved.height != null && saved.height !== '') {
+      var h = Number(saved.height);
+      if (!isNaN(h)) out.height = h;
+    }
+
+    // 1:1 passthroughs when present.
+    if (typeof saved.postCap === 'string' && saved.postCap) out.postCap = saved.postCap;
+    if (typeof saved.finialType === 'string' && saved.finialType) out.finialType = saved.finialType;
+    if (typeof saved.pupType === 'string' && saved.pupType) out.pupType = saved.pupType;
+    if (typeof saved.privacyPostColor === 'string' && saved.privacyPostColor) out.privacyPostColor = saved.privacyPostColor;
+    if (typeof saved.privacyPanelColor === 'string' && saved.privacyPanelColor) out.privacyPanelColor = saved.privacyPanelColor;
+
+    // Pro spacing flag -> QB spacing enum.
+    if (saved.proSpacing === true) out.spacing = 'pro';
+
+    // Pool barrier -> flush bottom (matches the poolCompliance useEffect).
+    if (saved.poolBarrier === true) out.bottomRail = 'flush';
+
+    return out;
+  } catch (_) {
+    return {};
+  }
+}
+
 // Resolve the sidebar preview src from saved design state in localStorage.
 // Returns '' when neither a snapshot nor a thumbnail is available — callers
 // should render the "Design preview will appear here" placeholder in that
@@ -123,8 +203,16 @@ function QuoteBuilder(props) {
   var step = stepState[0];
   var setStep = stepState[1];
 
+  // Initial data priority (later overrides earlier):
+  //   1. DEFAULT_DATA (base defaults — black, empty style, etc.)
+  //   2. hydrateFromSavedDesign() (buyer's configurator picks from localStorage)
+  //   3. props.initialConfig (explicit caller-supplied config still wins)
+  //
+  // Without step 2 the QB always mounted with DEFAULT_DATA's "textured-black"
+  // color + empty style — causing the sidebar + Review to drift away from
+  // the buyer's actual selection (P2.1 color drift, P2.2 empty Style row).
   var dataState = useState(function() {
-    return Object.assign({}, DEFAULT_DATA, props.initialConfig || {});
+    return Object.assign({}, DEFAULT_DATA, hydrateFromSavedDesign(), props.initialConfig || {});
   });
   var data = dataState[0];
   var setData = dataState[1];
