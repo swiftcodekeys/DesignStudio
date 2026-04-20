@@ -30,6 +30,17 @@ describe('SlopePopup', () => {
     expect(container.querySelector('img[src*="measure-slope"]')).toBeTruthy();
   });
 
+  it('renders overlay and primary footer button with the expected class names', () => {
+    const { container } = render(
+      <SlopePopup open={true} onAnswer={()=>{}} onClose={()=>{}} />
+    );
+    // Overlay hook — the z-index rule targets this class name.
+    expect(container.querySelector('.mbx-slope-popup-overlay')).toBeTruthy();
+    // Card + footer primary button hooks — verify the classNames the CSS depends on.
+    expect(container.querySelector('.mbx-slope-popup')).toBeTruthy();
+    expect(container.querySelector('.mbx-slope-footer button.primary')).toBeTruthy();
+  });
+
   it('handles open=false then open=true without hook errors', () => {
     const { rerender, queryByText, getByText } = render(
       <SlopePopup open={false} onAnswer={()=>{}} onClose={()=>{}} />
