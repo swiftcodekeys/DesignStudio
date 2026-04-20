@@ -10,7 +10,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
 import {
   Check, Pencil, MapPin, FloppyDisk, ArrowCounterClockwise,
-  X, CaretDown, CaretUp, ArrowRight,
+  X, CaretDown, CaretUp, ArrowRight, Plus,
 } from '@phosphor-icons/react';
 import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
@@ -481,6 +481,11 @@ function MorphingDock(props) {
     )
   );
 
+  // "Start new line" appears only once the active line has a real segment
+  // (>=2 points). Clicking pushes a fresh empty line onto `lines` so the
+  // next click drops a vertex that begins a disconnected run.
+  var lines = props.lines || [];
+  var canStartNewLine = lines.length >= 1 && lines[lines.length - 1].length >= 2;
   var microActions = React.createElement('div', { className: 'dy-micro' },
     React.createElement('button', {
       className: 'dy-micro-btn',
@@ -495,7 +500,14 @@ function MorphingDock(props) {
       title: 'Clear all corners',
       type: 'button',
       'aria-label': 'Reset',
-    }, React.createElement(X, { size: 16, weight: 'regular' }))
+    }, React.createElement(X, { size: 16, weight: 'regular' })),
+    canStartNewLine && React.createElement('button', {
+      className: 'dy-micro-btn',
+      onClick: props.onStartNewLine,
+      title: 'Start new disconnected line',
+      type: 'button',
+      'aria-label': 'New line',
+    }, React.createElement(Plus, { size: 16, weight: 'regular' }))
   );
 
   var emptyContent = React.createElement(React.Fragment, null,
@@ -914,15 +926,14 @@ function MapScreen(props) {
   // Segment length labels at midpoints. We hide labels whose pixel-space midpoint
   // lands within LABEL_MIN_PIXEL_GAP of any already-kept label, so short runs
   // (e.g. 4 ft + 8 ft) don't render "39 ft" and "6 ft" on top of each other.
-  // First and last segment labels are always kept as reference points.
+  // First and last segment labels PER LINE are always kept as reference points.
   // Re-runs when zoom changes (zoomTick) so a user zooming in reveals labels
   // that were previously hidden.
-  // TODO(P4.3): this effect iterates the flat `props.points` shim, so when
-  // multiple lines exist it labels the implicit "bridge" segment between
-  // line N's last point and line N+1's first point as if it were real fence.
-  // Once the "Start new line" UI ships and `lines` actually contains more
-  // than one entry, switch this to iterate `props.lines` per-line and skip
-  // the bridge. For P4.2 there's still only one line, so this is harmless.
+  // P4.3: iterate `props.lines` per-line (not the flat `props.points` shim)
+  // so we never draw a label across the "bridge" gap between two
+  // disconnected fence runs. The pixel-gap guard still dedupes across
+  // lines — labels from different lines that happen to land near each
+  // other in screen space get suppressed too.
   var zoomTickState = useState(0);
   var zoomTick = zoomTickState[0];
   var setZoomTick = zoomTickState[1];
@@ -936,52 +947,57 @@ function MapScreen(props) {
   useEffect(function() {
     if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
     var map = mapRef.current;
-    var segCount = props.points.length - 1;
     var labels = [];
     var keptPx = [];
-    // project() may be absent in some test mocks; fall back to keeping all
-    // labels (old behavior) so tests that don't mock the map projection keep
-    // the pre-fix invariant of at most one label per segment.
     var canProject = typeof map.project === 'function';
-    for (var i = 0; i < segCount; i++) {
-      var len = distanceBetween(props.points[i], props.points[i + 1]);
-      var midLng = (props.points[i][0] + props.points[i + 1][0]) / 2;
-      var midLat = (props.points[i][1] + props.points[i + 1][1]) / 2;
-      var isEndpoint = (i === 0) || (i === segCount - 1);
-      var shouldRender = true;
-      var px = null;
-      if (!isEndpoint && canProject) {
-        try {
-          px = map.project([midLng, midLat]);
-        } catch (err) { px = null; }
-        if (px && typeof px.x === 'number' && typeof px.y === 'number') {
-          for (var k = 0; k < keptPx.length; k++) {
-            var dx = px.x - keptPx[k].x;
-            var dy = px.y - keptPx[k].y;
-            if (Math.sqrt(dx * dx + dy * dy) < LABEL_MIN_PIXEL_GAP) {
-              shouldRender = false;
-              break;
+    var linesArr = props.lines || [];
+    // Fallback: if `lines` wasn't provided (defensive — shouldn't happen in
+    // production, but keeps old tests that only pass `points` working),
+    // treat the flat `points` shim as a single line.
+    if (linesArr.length === 0 && props.points && props.points.length > 0) {
+      linesArr = [props.points];
+    }
+    for (var lineIdx = 0; lineIdx < linesArr.length; lineIdx++) {
+      var linePoints = linesArr[lineIdx] || [];
+      var segCount = linePoints.length - 1;
+      for (var i = 0; i < segCount; i++) {
+        var len = distanceBetween(linePoints[i], linePoints[i + 1]);
+        var midLng = (linePoints[i][0] + linePoints[i + 1][0]) / 2;
+        var midLat = (linePoints[i][1] + linePoints[i + 1][1]) / 2;
+        var isEndpoint = (i === 0) || (i === segCount - 1);
+        var shouldRender = true;
+        var px = null;
+        if (!isEndpoint && canProject) {
+          try { px = map.project([midLng, midLat]); } catch (err) { px = null; }
+          if (px && typeof px.x === 'number' && typeof px.y === 'number') {
+            for (var k = 0; k < keptPx.length; k++) {
+              var dx = px.x - keptPx[k].x;
+              var dy = px.y - keptPx[k].y;
+              if (Math.sqrt(dx * dx + dy * dy) < LABEL_MIN_PIXEL_GAP) {
+                shouldRender = false;
+                break;
+              }
             }
           }
         }
+        if (!shouldRender) continue;
+        if (canProject && px == null && isEndpoint) {
+          try { px = map.project([midLng, midLat]); } catch (err2) { px = null; }
+        }
+        if (px && typeof px.x === 'number' && typeof px.y === 'number') {
+          keptPx.push({ x: px.x, y: px.y });
+        }
+        var el = document.createElement('div');
+        el.className = 'dy-seg-label';
+        el.textContent = Math.round(len) + ' ft';
+        var marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([midLng, midLat])
+          .addTo(map);
+        labels.push(marker);
       }
-      if (!shouldRender) continue;
-      if (canProject && px == null && isEndpoint) {
-        try { px = map.project([midLng, midLat]); } catch (err2) { px = null; }
-      }
-      if (px && typeof px.x === 'number' && typeof px.y === 'number') {
-        keptPx.push({ x: px.x, y: px.y });
-      }
-      var el = document.createElement('div');
-      el.className = 'dy-seg-label';
-      el.textContent = Math.round(len) + ' ft';
-      var marker = new mapboxgl.Marker({ element: el })
-        .setLngLat([midLng, midLat])
-        .addTo(map);
-      labels.push(marker);
     }
     return function() { labels.forEach(function(m) { m.remove(); }); };
-  }, [props.points, zoomTick]);
+  }, [props.points, props.lines, zoomTick]);
 
   // Live ghost distance label ("+42 ft")
   useEffect(function() {
@@ -1171,9 +1187,18 @@ function MapboxDrawView(props) {
 
   // Derived values
   var totalFt = totalFeet(points);
-  var cornerStats = countCornersAndLinePosts(points, 6);
-  var corners = cornerStats.corners;
-  var linePosts = cornerStats.linePosts;
+  // P4.3: sum corners + linePosts per-line. Calling the helper once on the
+  // flat `points` shim would count each cross-line "bridge" vertex as a
+  // direction change (a corner it isn't) and would spread post estimation
+  // across the bridge gaps. Iterating per-line keeps each disconnected
+  // fence run counted as its own geometry.
+  var corners = 0;
+  var linePosts = 0;
+  for (var lineIdx_cs = 0; lineIdx_cs < lines.length; lineIdx_cs++) {
+    var lineStats = countCornersAndLinePosts(lines[lineIdx_cs], 6);
+    corners += lineStats.corners;
+    linePosts += lineStats.linePosts;
+  }
 
   var per = estimatePerFootRange(DEFAULT_ESTIMATE_INPUTS);
   var priceRange = null;
@@ -1255,40 +1280,80 @@ function MapboxDrawView(props) {
     setSlopeAnswer(null);
   }
 
+  // Push a fresh empty line onto `lines` so the next map click drops a
+  // vertex that begins a disconnected run. No-op if the active (last)
+  // line is already empty — prevents double-clicking "Start new line"
+  // from stacking empty lines.
+  function handleStartNewLine() {
+    setLines(function(prev) {
+      var last = prev[prev.length - 1] || [];
+      if (last.length === 0) return prev;
+      return prev.concat([[]]);
+    });
+  }
+
   function buildAndComplete(snapshotUrl) {
-    var segments = [];
-    for (var i = 0; i < points.length - 1; i++) {
-      var lengthFt = distanceBetween(points[i], points[i + 1]);
-      var epqsSeg = epqsResults.current && epqsResults.current.segmentClassifications
-        ? epqsResults.current.segmentClassifications[i] : null;
-      var autoTier = classificationToRackingTier(epqsSeg ? epqsSeg.classification : 'unknown');
-      var userTier = segmentOverrides[i] || null;
-      segments.push({
-        index: i,
-        mapLayerIdx: null,
-        lengthFeet: lengthFt,
+    // Per-line output shape (P4.3). The EPQS result's
+    // `segmentClassifications` array is indexed over flat segments — which
+    // includes implicit "bridge" segments sitting between line N's last
+    // point and line N+1's first point. To map those flat indices to
+    // per-line local segments without emitting bridge data, we walk each
+    // line's points independently and carry a `flatIdx` counter that:
+    //   - increments once per emitted segment (real fence segment), and
+    //   - increments once per bridge between lines (to skip the garbage
+    //     bridge entry in `segmentClassifications`).
+    // Similarly, `segmentOverrides` keys are in flat-segment space, so we
+    // use the same `flatIdx` for lookup.
+    var outLines = [];
+    var flatIdx = 0;
+    var allSegments = []; // combined list, used for computeSlopedPostCount
+    for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      var linePoints = lines[lineIdx];
+      var segs = [];
+      for (var i = 0; i < linePoints.length - 1; i++) {
+        var lengthFt = distanceBetween(linePoints[i], linePoints[i + 1]);
+        var epqsSeg = epqsResults.current && epqsResults.current.segmentClassifications
+          ? epqsResults.current.segmentClassifications[flatIdx] : null;
+        var autoTier = classificationToRackingTier(epqsSeg ? epqsSeg.classification : 'unknown');
+        var userTier = segmentOverrides[flatIdx] || null;
+        var seg = {
+          index: i,
+          mapLayerIdx: null,
+          lengthFeet: lengthFt,
+          color: '#c2410c',
+          compassLabel: compassBearing(linePoints[i], linePoints[i + 1]),
+          panels: Math.ceil(lengthFt / 6),
+          start: linePoints[i],
+          end: linePoints[i + 1],
+          rackingTier: userTier || autoTier,
+          rackingSource: userTier ? 'user' : 'auto',
+          epqsClassification: epqsSeg ? epqsSeg.classification : 'unknown',
+          epqsDeltaInches: epqsSeg ? epqsSeg.deltaInches : 0,
+        };
+        segs.push(seg);
+        allSegments.push(seg);
+        flatIdx++;
+      }
+      outLines.push({
+        id: 'line-' + lineIdx,
         color: '#c2410c',
-        compassLabel: compassBearing(points[i], points[i + 1]),
-        panels: Math.ceil(lengthFt / 6),
-        start: points[i],
-        end: points[i + 1],
-        rackingTier: userTier || autoTier,
-        rackingSource: userTier ? 'user' : 'auto',
-        epqsClassification: epqsSeg ? epqsSeg.classification : 'unknown',
-        epqsDeltaInches: epqsSeg ? epqsSeg.deltaInches : 0,
+        points: linePoints.slice(),
+        segments: segs,
       });
+      // Skip the bridge slot in the flat EPQS/override indexing for the
+      // boundary between this line and the next.
+      if (lineIdx < lines.length - 1) flatIdx++;
     }
-    var slopedPostCount = computeSlopedPostCount(segments, 6);
+    var slopedPostCount = computeSlopedPostCount(allSegments, 6);
+    // Each standalone drawn line (>=2 points) contributes 2 physical end
+    // posts. Lines that don't have enough points to render don't.
+    var emittedLines = outLines.filter(function(l) { return l.points.length >= 2; });
     var data = {
       totalFeet: totalFt,
       corners: corners,
-      ends: 2,
-      lines: [{
-        id: 'line-0',
-        color: '#c2410c',
-        points: points.slice(),
-        segments: segments,
-      }],
+      linePosts: linePosts,
+      ends: emittedLines.length * 2,
+      lines: outLines,
       slopeAnswer: slopeAnswer || null,
       slopedPostCount: slopedPostCount,
       epqsOverall: epqsResults.current ? epqsResults.current.overallClassification : 'unknown',
@@ -1448,8 +1513,10 @@ function MapboxDrawView(props) {
       priceRange: priceRange,
       segments: dockSegments,
       epqsLoading: epqsLoading,
+      lines: lines,
       onUndo: handleUndo,
       onReset: handleReset,
+      onStartNewLine: handleStartNewLine,
       onContinue: handleContinue,
       onToggleBreakdown: handleToggleBreakdown,
       onDeleteSegment: handleDeleteSegment,
