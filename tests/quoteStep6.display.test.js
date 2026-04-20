@@ -39,4 +39,34 @@ describe('QuoteStep6_Review display', () => {
     expect(value).toBeTruthy();
     expect(value.textContent).toBe('2');
   });
+
+  it('CYA card speaks as Grandview, not Sarah personally (P3.3)', () => {
+    // Per the customer-facing voice rule, the "Before you continue" card
+    // must not say "Sarah personally reviews every order" because that
+    // implies Sarah the owner reviews it herself. It should say "A
+    // Grandview rep personally reviews every order" instead.
+    const data = {
+      grade: 'residential',
+      style: 'uaf_200',
+      height: 48,
+      color: 'textured-black',
+      linearFeet: 150,
+      ends: 2,
+      corners: 0,
+      gates: [],
+    };
+    var container = render(
+      React.createElement(QuoteStep6_Review, {
+        data: data,
+        update: function () {},
+        onEditStep: function () {},
+        zoneName: 'Test',
+      })
+    ).container;
+
+    var cya = container.querySelector('.qs6-cya-card');
+    expect(cya).toBeTruthy();
+    expect(cya.textContent).toContain('A Grandview rep personally reviews every order');
+    expect(cya.textContent).not.toContain('Sarah personally');
+  });
 });

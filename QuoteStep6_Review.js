@@ -98,7 +98,7 @@ function QuoteStep6_Review(props) {
     React.createElement('div', { className: 'qs6-cya-card' },
       React.createElement('h4', null, 'Before you continue'),
       React.createElement('p', null,
-        'This quote assumes your measurements are accurate. Slope, obstacles, and utilities are yours to verify before install. Sarah personally reviews every order within 24 hours.')
+        'This quote assumes your measurements are accurate. Slope, obstacles, and utilities are yours to verify before install. A Grandview rep personally reviews every order within 24 hours.')
     ),
 
     // ======== Selections Summary ========
