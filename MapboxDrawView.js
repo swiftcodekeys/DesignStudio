@@ -17,6 +17,7 @@ import { fetchParcel } from './parcelClient';
 import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts } from './geometryUtils';
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
+import { classifyDrawnLine } from './epqsClient';
 
 // OS-aware modifier key display. Mac shows ⌘, everyone else shows Ctrl.
 // The keyboard handler itself listens for both metaKey and ctrlKey so the
@@ -430,7 +431,8 @@ function MorphingDock(props) {
   var isEmpty = phase === 'empty';
   var isReady = phase === 'ready';
   var isExpanded = phase === 'expanded';
-  var canContinue = isReady || isExpanded;
+  var epqsLoading = props.epqsLoading;
+  var canContinue = (isReady || isExpanded) && !epqsLoading;
 
   function formatMoney(n) {
     return '$' + Math.round(n).toLocaleString();
@@ -487,6 +489,29 @@ function MorphingDock(props) {
     }, 'Start drawing')
   );
 
+  // CTA label branches: EPQS-loading (ready phase only) > continue-ready > keep-going.
+  // epqsLoading gates canContinue above; when loading we still show the ready-phase
+  // stats row but swap the CTA label/disabled to signal slope calculation is in flight.
+  var showEpqsLoading = epqsLoading && (isReady || isExpanded);
+  var ctaLabel;
+  if (showEpqsLoading) {
+    ctaLabel = React.createElement('span', null, 'Calculating slope\u2026');
+  } else if (canContinue) {
+    var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
+    ctaLabel = React.createElement(React.Fragment, null,
+      React.createElement(Check, { size: 14, weight: 'bold' }),
+      React.createElement('span', null, 'Done. Continue'),
+      priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
+        '\u00B7 ~' + formatMoney(mid)
+      ),
+      React.createElement(ArrowRight, { size: 14, weight: 'bold' })
+    );
+  } else {
+    ctaLabel = React.createElement('span', null,
+      'Keep going \u00B7 ' + Math.max(0, MIN_DRAW_FT - Math.round(totalFt)) + '+ ft'
+    );
+  }
+
   var drawingOrReadyContent = React.createElement(React.Fragment, null,
     statsRow,
     microActions,
@@ -495,22 +520,8 @@ function MorphingDock(props) {
       onClick: canContinue ? props.onContinue : null,
       disabled: !canContinue,
       type: 'button',
-    },
-      canContinue ? (function() {
-        var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
-        return React.createElement(React.Fragment, null,
-          React.createElement(Check, { size: 14, weight: 'bold' }),
-          React.createElement('span', null, 'Done. Continue'),
-          priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
-            '\u00B7 ~' + formatMoney(mid)
-          ),
-          React.createElement(ArrowRight, { size: 14, weight: 'bold' })
-        );
-      })() : React.createElement('span', null,
-        'Keep going \u00B7 ' + Math.max(0, MIN_DRAW_FT - Math.round(totalFt)) + '+ ft'
-      )
-    ),
-    canContinue && React.createElement('button', {
+    }, ctaLabel),
+    (canContinue || showEpqsLoading) && React.createElement('button', {
       className: 'dy-breakdown-toggle',
       onClick: props.onToggleBreakdown,
       type: 'button',
@@ -929,6 +940,25 @@ function MapboxDrawView(props) {
 
   var mapInstanceRef = useRef(null);
 
+  // EPQS auto-detect: debounced classification of the drawn line against
+  // USGS 3DEP elevation. Result is read synchronously in buildAndComplete.
+  var epqsResults = useRef(null);
+  var epqsLoadingState = useState(false);
+  var epqsLoading = epqsLoadingState[0];
+  var setEpqsLoading = epqsLoadingState[1];
+
+  useEffect(function() {
+    if (!points || points.length < 2) { epqsResults.current = null; return; }
+    var timer = setTimeout(function() {
+      setEpqsLoading(true);
+      Promise.resolve().then(function() { return classifyDrawnLine(points, 6); })
+        .then(function(result) { epqsResults.current = result; })
+        .catch(function() { epqsResults.current = null; })
+        .then(function() { setEpqsLoading(false); });
+    }, 800);
+    return function() { clearTimeout(timer); };
+  }, [points]);
+
   // On mount: check URL hash for a resume link (#dy-resume=...)
   useEffect(function() {
     var resumed = checkForDrawResume();
@@ -1038,9 +1068,9 @@ function MapboxDrawView(props) {
       }],
       slopeAnswer: null,
       slopedPostCount: slopedPostCount,
-      epqsOverall: 'unknown',
-      epqsConfidence: 'low',
-      epqsMaxDeltaInches: 0,
+      epqsOverall: epqsResults.current ? epqsResults.current.overallClassification : 'unknown',
+      epqsConfidence: epqsResults.current ? epqsResults.current.confidence : 'low',
+      epqsMaxDeltaInches: epqsResults.current ? epqsResults.current.maxDeltaInches : 0,
       mapboxSnapshotUrl: snapshotUrl,
       source: 'auto',
       parcel: null,
@@ -1153,6 +1183,7 @@ function MapboxDrawView(props) {
       linePosts: linePosts,
       priceRange: priceRange,
       segments: dockSegments,
+      epqsLoading: epqsLoading,
       onUndo: handleUndo,
       onReset: handleReset,
       onContinue: handleContinue,

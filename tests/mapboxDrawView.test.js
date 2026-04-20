@@ -2,6 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 
+// Mock epqsClient BEFORE importing MapboxDrawView so the draw view picks up
+// the stubbed classifyDrawnLine instead of hitting the real USGS endpoint.
+vi.mock('../epqsClient', () => ({
+  classifyDrawnLine: vi.fn(() => Promise.resolve({
+    overallClassification: 'sloped',
+    confidence: 'high',
+    maxDeltaInches: 14,
+    segmentClassifications: [
+      { classification: 'flat', deltaInches: 1 },
+      { classification: 'sloped', deltaInches: 14 },
+    ],
+  })),
+  queryElevation: vi.fn(() => Promise.resolve({ elevationFeet: 100, dataSource: '3DEP 1m' })),
+}));
+
 // Stub global fetch so any incidental EPQS / parcel calls resolve cleanly.
 global.fetch = vi.fn(function () {
   return Promise.resolve({
@@ -312,5 +327,37 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     const L = [[0,0], [0.001,0], [0.001,0.001]];
     const result = countCornersAndLinePosts(L, 6);
     expect(result.corners).toBe(3);
+  });
+
+  it('EPQS classification flows into buildAndComplete output', async () => {
+    // Install a Map mock whose `once('render', fn)` fires synchronously so
+    // handleContinue's snapshot path actually reaches buildAndComplete.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.once = vi.fn(function(event, handler) { handler(); });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const onComplete = vi.fn();
+    const { container } = render(
+      <MapboxDrawView onComplete={onComplete} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    // Wait for 800ms debounce + promise resolution + state flush
+    await act(async () => {
+      await new Promise(function(r) { setTimeout(r, 900); });
+    });
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta).toBeTruthy();
+    // Loading finished → CTA should be enabled again
+    expect(cta.disabled).toBe(false);
+    act(() => { fireEvent.click(cta); });
+    expect(onComplete).toHaveBeenCalled();
+    const arg = onComplete.mock.calls[0][0];
+    expect(arg.epqsOverall).toBe('sloped');
+    expect(arg.epqsConfidence).toBe('high');
+    expect(arg.epqsMaxDeltaInches).toBe(14);
   });
 });
