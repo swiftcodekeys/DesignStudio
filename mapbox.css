@@ -1089,6 +1089,39 @@
   .dy-save-btn { padding: 8px 12px; font-size: 12px; }
 }
 
+/* ===== Parcel-error toast ===== */
+/* Non-blocking status toast that appears when parcel fetch fails. Auto-dismisses
+   after 6s; also manually dismissible via the X button. Positioned above the
+   dock so it doesn't compete with primary CTAs. */
+.dy-parcel-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: rgba(26, 25, 23, 0.95);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 40;
+  max-width: 90%;
+}
+.dy-parcel-toast-dismiss {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+}
+.dy-parcel-toast-dismiss:hover { color: #fff; }
+
 /* ===== Legacy .mbx-* classes (kept for test compatibility) ===== */
 /* MapboxDrawView tests and other consumers may still reference these names.
    They alias to the new .dy-* classes so nothing silently breaks. */

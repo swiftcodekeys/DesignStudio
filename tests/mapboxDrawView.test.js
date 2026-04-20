@@ -17,6 +17,19 @@ vi.mock('../epqsClient', () => ({
   queryElevation: vi.fn(() => Promise.resolve({ elevationFeet: 100, dataSource: '3DEP 1m' })),
 }));
 
+// Mock parcelClient so parcel fetch resolves deterministically. Individual
+// tests override the resolved value via vi.mocked(fetchParcel).mockResolvedValueOnce.
+vi.mock('../parcelClient', () => ({
+  fetchParcel: vi.fn(() => Promise.resolve({
+    ok: true,
+    data: {
+      boundary: { type: 'Polygon', coordinates: [[[-83.9,42.6],[-83.9,42.605],[-83.905,42.605],[-83.9,42.6]]] },
+      address: '123 Main',
+      parcelnumb: '42',
+    },
+  })),
+}));
+
 // Stub global fetch so any incidental EPQS / parcel calls resolve cleanly.
 global.fetch = vi.fn(function () {
   return Promise.resolve({
@@ -425,5 +438,84 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(arg.epqsOverall).toBe('sloped');
     expect(arg.epqsConfidence).toBe('high');
     expect(arg.epqsMaxDeltaInches).toBe(14);
+  });
+
+  it('parcel data flows into buildAndComplete output', async () => {
+    // Install a Map mock whose idle event fires synchronously, and whose
+    // once('render') also fires synchronously so Continue reaches buildAndComplete.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.once = vi.fn(function(event, handler) { handler(); });
+    // Fire 'idle' synchronously when a listener is registered for it
+    inst.on = vi.fn(function(event, handler) {
+      if (!inst._listeners[event]) inst._listeners[event] = [];
+      inst._listeners[event].push(handler);
+      if (event === 'idle') handler();
+    });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    const parcelClient = await import('../parcelClient');
+    parcelClient.fetchParcel.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        boundary: { type: 'Polygon', coordinates: [[[-83.9,42.6],[-83.9,42.605],[-83.905,42.605],[-83.9,42.6]]] },
+        address: '123 Main',
+        parcelnumb: '42',
+      },
+    });
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const onComplete = vi.fn();
+    const { container } = render(
+      <MapboxDrawView onComplete={onComplete} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    // Wait for the parcel promise + EPQS debounce to resolve and state to flush
+    await act(async () => {
+      await new Promise(function(r) { setTimeout(r, 900); });
+    });
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta).toBeTruthy();
+    act(() => { fireEvent.click(cta); });
+    expect(onComplete).toHaveBeenCalled();
+    const arg = onComplete.mock.calls[0][0];
+    expect(arg.parcel).toBeTruthy();
+    expect(arg.parcel.parcelnumb).toBe('42');
+  });
+
+  it('parcel fetch failure surfaces a dismissible toast', async () => {
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.once = vi.fn(function(event, handler) { handler(); });
+    inst.on = vi.fn(function(event, handler) {
+      if (!inst._listeners[event]) inst._listeners[event] = [];
+      inst._listeners[event].push(handler);
+      if (event === 'idle') handler();
+    });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    const parcelClient = await import('../parcelClient');
+    parcelClient.fetchParcel.mockResolvedValueOnce({
+      ok: false,
+      fallback: 'manual',
+      error: 'HTTP 500',
+    });
+
+    const { container } = render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    await act(async () => {
+      await new Promise(function(r) { setTimeout(r, 50); });
+    });
+    const toast = container.querySelector('.dy-parcel-toast');
+    expect(toast).toBeTruthy();
+    expect(toast.textContent).toMatch(/Couldn't load your property outline/);
+    // Manual dismiss
+    const dismiss = toast.querySelector('.dy-parcel-toast-dismiss');
+    expect(dismiss).toBeTruthy();
+    act(() => { fireEvent.click(dismiss); });
+    expect(container.querySelector('.dy-parcel-toast')).toBeNull();
   });
 });
