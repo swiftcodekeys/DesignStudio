@@ -14,6 +14,59 @@ import QuoteStep6_Review from './QuoteStep6_Review';
 
 var STEP_LABELS = ['Style & Config', 'Layout & Posts', 'Gates', 'Extras', 'Shipping', 'Review'];
 
+// styleId -> iFence gate preview thumbnail.
+//
+// We accept BOTH shapes of styleId because the saved design comes from
+// different entry points:
+//   - Ultra ids (e.g. 'uaf_200') are written by app.js buildSavedDesign from
+//     the 3D configurator state.
+//   - Slug ids (e.g. 'horizon') are written by the QuoteBuilder's own data
+//     and by the StyleTab fence-side.
+// Keep the map flat and inline — YAGNI, and the list is small and stable.
+var STYLE_THUMBNAILS = {
+  // Ultra ids
+  uaf_200: 'assets/ifence_previews/gate_styles/san_marino_15.png',
+  uaf_201: 'assets/ifence_previews/gate_styles/santa_monica_9.png',
+  uaf_250: 'assets/ifence_previews/gate_styles/sanibel_12.png',
+  uab_200: 'assets/ifence_previews/gate_styles/boca_grande_45.png',
+  uas_100: 'assets/ifence_previews/gate_styles/bella_vista_48.png',
+  uas_101: 'assets/ifence_previews/gate_styles/charleston_pro.png',
+  uas_150: 'assets/ifence_previews/gate_styles/bella_terra_51.png',
+  // Slug ids used elsewhere in the Quote flow
+  'horizon':        'assets/ifence_previews/gate_styles/san_marino_15.png',
+  'horizon-pro':    'assets/ifence_previews/gate_styles/santa_monica_9.png',
+  'vanguard':       'assets/ifence_previews/gate_styles/sanibel_12.png',
+  'haven':          'assets/ifence_previews/gate_styles/boca_grande_45.png',
+  'charleston':     'assets/ifence_previews/gate_styles/bella_vista_48.png',
+  'charleston-pro': 'assets/ifence_previews/gate_styles/charleston_pro.png',
+  'savannah':       'assets/ifence_previews/gate_styles/bella_terra_51.png',
+  'lexington':      'assets/ifence_previews/gate_styles/excelsior_30.png',
+  'eclipse':        'assets/ifence_previews/gate_styles/new_orleans_21.png',
+  'defender':       'assets/ifence_previews/gate_styles/castile_36.png',
+};
+
+// Resolve the sidebar preview src from saved design state in localStorage.
+// Returns '' when neither a snapshot nor a thumbnail is available — callers
+// should render the "Design preview will appear here" placeholder in that
+// case so fresh customers aren't shown a broken image.
+function resolveSidebarPreviewSrc() {
+  try {
+    var raw = window.localStorage.getItem('gv_saved_design');
+    if (!raw) return '';
+    var saved = JSON.parse(raw);
+    if (!saved || typeof saved !== 'object') return '';
+    if (typeof saved.snapshotDataUrl === 'string' && saved.snapshotDataUrl.length > 0) {
+      return saved.snapshotDataUrl;
+    }
+    // Some historical payloads nest under `config` — check both shapes.
+    var styleId = saved.styleId || (saved.config && saved.config.styleId) || '';
+    if (styleId && STYLE_THUMBNAILS[styleId]) return STYLE_THUMBNAILS[styleId];
+    return '';
+  } catch (_) {
+    return '';
+  }
+}
+
 function titleCase(s) {
   if (!s) return '';
   return String(s).replace(/[-_]/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -167,6 +220,13 @@ function QuoteBuilder(props) {
 
   var specs = buildSidebarSpecs(data);
 
+  // Sidebar preview src: explicit prop wins (back-compat for any caller that
+  // still passes snapshotDataUrl), otherwise fall back to the saved design
+  // in localStorage — snapshot first, style thumbnail second. We read on
+  // every render because the saved design is written by the 3D configurator
+  // outside React, and the QuoteBuilder may mount AFTER that write.
+  var previewSrc = props.snapshotDataUrl || resolveSidebarPreviewSrc();
+
   return React.createElement('div', { className: 'qb-container' },
 
     React.createElement('div', { className: 'qb-layout' },
@@ -174,11 +234,12 @@ function QuoteBuilder(props) {
       // ---- LEFT: Fixed sidebar with design snapshot + progressive spec list ----
       React.createElement('aside', { className: 'qb-sidebar' },
         React.createElement('div', { className: 'qb-sidebar-image-wrap' },
-          props.snapshotDataUrl
+          previewSrc
             ? React.createElement('img', {
-                src: props.snapshotDataUrl,
+                src: previewSrc,
                 className: 'qb-sidebar-img',
                 alt: 'Your fence design',
+                'data-test': 'quote-design-preview',
               })
             : React.createElement('div', { className: 'qb-sidebar-image-placeholder' },
                 'Design preview will appear here'
