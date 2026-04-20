@@ -155,6 +155,46 @@ export function computeSlopedPostCount(segments, panelLengthFt) {
   return count;
 }
 
+// --- Corner / line-post counting ---
+// Counts "corners" — vertices where the inbound and outbound bearings differ by
+// at least `minCornerDeg` (default 20). First and last vertex are always counted
+// as corners (they're the endpoints of the fence). Returns { corners, linePosts }
+// where linePosts is an estimate of how many auto-placed posts sit along the
+// straight runs between corners, assuming `panelLengthFt` spacing.
+export function countCornersAndLinePosts(points, panelLengthFt, minCornerDeg) {
+  if (!points || points.length < 2) return { corners: 0, linePosts: 0 };
+  var minDeg = minCornerDeg || 20;
+  var corners = 2; // start + end
+  for (var i = 1; i < points.length - 1; i++) {
+    var a = bearingDeg(points[i-1], points[i]);
+    var b = bearingDeg(points[i], points[i+1]);
+    var diff = Math.abs(((b - a + 540) % 360) - 180);
+    if (diff >= minDeg) corners++;
+  }
+  var totalFt = 0;
+  for (var j = 0; j < points.length - 1; j++) {
+    totalFt += haversineFeet(points[j], points[j+1]);
+  }
+  var posts = Math.max(0, Math.ceil(totalFt / (panelLengthFt || 6)) - corners);
+  return { corners: corners, linePosts: posts };
+}
+
+function bearingDeg(a, b) {
+  return Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI;
+}
+
+// Haversine distance in feet between two [lng, lat] points.
+function haversineFeet(a, b) {
+  var R = 20902231; // Earth radius in feet
+  var dLat = (b[1] - a[1]) * Math.PI / 180;
+  var dLng = (b[0] - a[0]) * Math.PI / 180;
+  var lat1 = a[1] * Math.PI / 180;
+  var lat2 = b[1] * Math.PI / 180;
+  var x = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
 // --- Densify ---
 // Insert interpolated points every approxFeetPerSample feet along the path.
 export function densifyPath(points, approxFeetPerSample) {

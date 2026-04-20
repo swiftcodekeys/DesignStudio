@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { computeSlopedPostCount, compassBearing } from './geometryUtils';
+import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts } from './geometryUtils';
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 
@@ -424,6 +424,7 @@ function MorphingDock(props) {
   var phase = props.phase;
   var totalFt = props.totalFt;
   var corners = props.corners;
+  var linePosts = props.linePosts;
   var priceRange = props.priceRange;
   var segments = props.segments;
   var isEmpty = phase === 'empty';
@@ -442,7 +443,8 @@ function MorphingDock(props) {
     ),
     React.createElement('div', { className: 'dy-stat' },
       React.createElement('div', { className: 'dy-stat-num' }, corners),
-      React.createElement('div', { className: 'dy-stat-label' }, 'corners')
+      React.createElement('div', { className: 'dy-stat-label' }, 'corners'),
+      linePosts > 0 && React.createElement('div', { className: 'dy-stat-sub' }, '+' + linePosts + ' line posts')
     ),
     priceRange && React.createElement('div', { className: 'dy-stat' },
       React.createElement('div', { className: 'dy-stat-num dy-stat-range' },
@@ -941,7 +943,9 @@ function MapboxDrawView(props) {
 
   // Derived values
   var totalFt = totalFeet(points);
-  var corners = points.length >= 2 ? Math.max(0, points.length - 2) : 0;
+  var cornerStats = countCornersAndLinePosts(points, 6);
+  var corners = cornerStats.corners;
+  var linePosts = cornerStats.linePosts;
 
   var per = estimatePerFootRange(DEFAULT_ESTIMATE_INPUTS);
   var priceRange = null;
@@ -1146,6 +1150,7 @@ function MapboxDrawView(props) {
       phase: phase,
       totalFt: totalFt,
       corners: corners,
+      linePosts: linePosts,
       priceRange: priceRange,
       segments: dockSegments,
       onUndo: handleUndo,

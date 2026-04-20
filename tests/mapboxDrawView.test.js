@@ -305,4 +305,12 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(pill).toBeTruthy();
     expect(pill.textContent).toContain('4820 Beacon Hill Rd');
   });
+
+  it('counts corners by direction change, not vertex count', () => {
+    // 4 points forming an L: only 1 interior direction change → 3 total corners (start + elbow + end)
+    const { countCornersAndLinePosts } = require('../geometryUtils');
+    const L = [[0,0], [0.001,0], [0.001,0.001]];
+    const result = countCornersAndLinePosts(L, 6);
+    expect(result.corners).toBe(3);
+  });
 });
