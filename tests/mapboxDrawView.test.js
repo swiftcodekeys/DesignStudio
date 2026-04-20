@@ -88,6 +88,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     // surface immediately, not the cinematic intro. Tests that want to
     // verify the intro can clear this cookie explicitly.
     document.cookie = 'dy_seen=1; path=/; max-age=31536000';
+    // Pre-answer the slope question by default so tests that exercise the
+    // map surface aren't blocked by the pre-draw slope popup. The popup
+    // gating is covered by its own dedicated test which clears this key.
+    localStorage.setItem('gv_slope_answer', 'flat');
     vi.clearAllMocks();
   });
 
@@ -343,6 +347,52 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(selects[0].value).toBe('auto');
     act(() => { fireEvent.change(selects[0], { target: { value: 'heavy' } }); });
     expect(selects[0].value).toBe('heavy');
+  });
+
+  it('pre-draw slope popup gates the map until answered', () => {
+    // Clear the default slope answer set in beforeEach so this test exercises
+    // the pre-draw gate. Address has already been entered via initialLocation,
+    // so we're past the cold-start screen.
+    localStorage.removeItem('gv_slope_answer');
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    expect(container.querySelector('.mbx-slope-popup-overlay')).toBeTruthy();
+    // Map should not render yet. The dock is part of the map view.
+    expect(container.querySelector('.dy-dock')).toBeNull();
+  });
+
+  it('pre-draw slope answer flows into buildAndComplete output', async () => {
+    // Pre-seed localStorage with an answered slope question so the map
+    // renders immediately. Then draw 3 points and click Continue.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.once = vi.fn(function(event, handler) { handler(); });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    localStorage.setItem('gv_slope_answer', 'some');
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const onComplete = vi.fn();
+    const { container } = render(
+      <MapboxDrawView onComplete={onComplete} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    // Map should render (not the slope popup)
+    expect(container.querySelector('.mbx-slope-popup-overlay')).toBeNull();
+    await act(async () => {
+      await new Promise(function(r) { setTimeout(r, 900); });
+    });
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta).toBeTruthy();
+    act(() => { fireEvent.click(cta); });
+    expect(onComplete).toHaveBeenCalled();
+    const arg = onComplete.mock.calls[0][0];
+    expect(arg.slopeAnswer).toBe('some');
   });
 
   it('EPQS classification flows into buildAndComplete output', async () => {

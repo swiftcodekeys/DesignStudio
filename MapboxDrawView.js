@@ -18,6 +18,7 @@ import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts, class
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 import { classifyDrawnLine } from './epqsClient';
+import SlopePopup from './SlopePopup';
 
 // OS-aware modifier key display. Mac shows ⌘, everyone else shows Ctrl.
 // The keyboard handler itself listens for both metaKey and ctrlKey so the
@@ -950,6 +951,22 @@ function MapboxDrawView(props) {
   var estOpen = estOpenState[0];
   var setEstOpen = estOpenState[1];
 
+  // Pre-draw slope answer: "flat" | "some" | "all" | "skip". Gates map entry
+  // until the customer answers (once per browser — persisted in localStorage
+  // under gv_slope_answer). Cleared when the user resets the drawing so the
+  // next session asks again.
+  var slopeAnswerState = useState(function() {
+    try { return localStorage.getItem('gv_slope_answer') || null; }
+    catch (e) { return null; }
+  });
+  var slopeAnswer = slopeAnswerState[0];
+  var setSlopeAnswer = slopeAnswerState[1];
+
+  function handleSlopeAnswer(ans) {
+    setSlopeAnswer(ans);
+    try { localStorage.setItem('gv_slope_answer', ans); } catch (e) {}
+  }
+
   // Per-segment racking-tier user overrides. Keyed by segment index; absence
   // means "use auto-detected EPQS classification". Cleared when the user picks
   // the "Auto" option from the dropdown.
@@ -1055,6 +1072,8 @@ function MapboxDrawView(props) {
     if (!window.confirm('Clear your drawing?')) return;
     setPoints([]);
     setShowBreakdown(false);
+    try { localStorage.removeItem('gv_slope_answer'); } catch (e) {}
+    setSlopeAnswer(null);
   }
 
   function buildAndComplete(snapshotUrl) {
@@ -1091,7 +1110,7 @@ function MapboxDrawView(props) {
         points: points.slice(),
         segments: segments,
       }],
-      slopeAnswer: null,
+      slopeAnswer: slopeAnswer || null,
       slopedPostCount: slopedPostCount,
       epqsOverall: epqsResults.current ? epqsResults.current.overallClassification : 'unknown',
       epqsConfidence: epqsResults.current ? epqsResults.current.confidence : 'low',
@@ -1165,6 +1184,19 @@ function MapboxDrawView(props) {
   if (!location) {
     return React.createElement('div', { className: 'dy-container' },
       React.createElement(AddressEntry, { onAddressEntered: handleAddress })
+    );
+  }
+
+  // Pre-draw slope question: gates the map until the customer answers.
+  // Order is address-entry → slope popup → map. "skip" is a valid answer
+  // meaning the user dismissed without picking a slope tier.
+  if (!slopeAnswer) {
+    return React.createElement('div', { className: 'dy-container' },
+      React.createElement(SlopePopup, {
+        open: true,
+        onAnswer: handleSlopeAnswer,
+        onClose: function() { handleSlopeAnswer('skip'); },
+      })
     );
   }
 
