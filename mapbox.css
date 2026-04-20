@@ -797,6 +797,24 @@
   transition: background 0.15s, transform 0.15s;
 }
 .dy-est-btn:hover { background: var(--dy-accent-2); transform: translateY(-1px); }
+.dy-est-subhead { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--dy-ink); }
+.dy-est-video-link { margin: 0 0 10px; }
+.dy-est-video-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--dy-brand, #6BA3C2);
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.dy-est-video-cta:hover { background: #5891b0; }
+.dy-est-tips { padding-left: 18px; margin: 0 0 10px; font-size: 13px; color: var(--dy-ink-2); line-height: 1.5; }
+.dy-est-tips li { margin-bottom: 4px; }
 
 /* ===== Map overlays (vertex markers, labels) ===== */
 .dy-vertex {

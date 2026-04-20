@@ -410,6 +410,25 @@ function EstimatePopup(props) {
         rel: 'noopener',
         className: 'dy-est-measure-link',
       }, 'Read: Full yard measurement guide \u2192'),
+      React.createElement('h4', { className: 'dy-est-subhead' }, 'How to measure'),
+      React.createElement('p', { className: 'dy-est-video-link' },
+        React.createElement('a', {
+          href: 'https://youtu.be/nfrwyY4GttE',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          className: 'dy-est-video-cta'
+        }, '\u25B6 Watch: How to measure your yard (2 min)')
+      ),
+      React.createElement('ul', { className: 'dy-est-tips' },
+        React.createElement('li', null, 'Walk each fence run with a tape measure, end to end.'),
+        React.createElement('li', null, 'Note every direction change (those are corner posts).'),
+        React.createElement('li', null, 'For slope, hold a 6\u2032 board level and measure the gap at the downhill end.')
+      ),
+      React.createElement('h4', { className: 'dy-est-subhead' }, 'What we auto-detect'),
+      React.createElement('p', null,
+        'Grandview pulls USGS elevation data for the line you draw and suggests whether each segment needs standard, rackable, or heavy-rack panels. ',
+        React.createElement('strong', null, 'Auto-detect is not always accurate, especially in dense tree canopy or recently graded lots. Please verify on the ground before you submit.')
+      ),
       React.createElement('div', { className: 'dy-est-actions' },
         React.createElement('button', {
           type: 'button',
