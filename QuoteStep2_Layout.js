@@ -52,7 +52,7 @@ function QuoteStep2_Layout(props) {
   var setAdvancedMode = advancedState[1];
 
   // Initialize layout defaults
-  var linearFeet = data.linearFeet || (drawToolData ? drawToolData.totalFeet : 100);
+  var linearFeet = data.linearFeet || (drawToolData ? Math.round(drawToolData.totalFeet) : 100);
   var terrain = data.terrain || 'flat';
   var slopeMethod = data.slopeMethod || 'racked';
   var rackingTier = data.rackingTier || 'standard';
@@ -97,7 +97,9 @@ function QuoteStep2_Layout(props) {
   useEffect(function() {
     if (drawToolData && data._source !== 'auto') {
       update({
-        linearFeet: drawToolData.totalFeet,
+        linearFeet: Math.round(drawToolData.totalFeet || 0),
+        corners: drawToolData.corners || 0,
+        ends: drawToolData.ends || 2,
         _source: 'auto',
         rackingTier: drawToolData.epqsOverall === 'sloped' ? 'rackable'
           : drawToolData.epqsOverall === 'steep' || drawToolData.epqsOverall === 'steps' ? 'heavy-rackable'
@@ -182,14 +184,18 @@ function QuoteStep2_Layout(props) {
   return el('div', { className: 'qs1-container' },
 
     // ---- Draw Tool Banner ----
-    drawToolData ? el('div', { className: 'qb-layout-draw-banner' },
-      el(Check, { size: 16, weight: 'bold' }),
-      ' Layout imported from your drawing. ',
-      el('strong', null, (drawToolData.totalFeet || 0) + ' ft'),
-      ' across ',
-      el('strong', null, (drawToolData.segments ? drawToolData.segments.length : 1) + ' runs'),
-      drawToolData.address ? el('span', null, ' from ' + drawToolData.address) : null
-    ) : null,
+    drawToolData ? (function(){
+      var runCount = drawToolData.segments ? drawToolData.segments.length : 1;
+      var feet = Math.round(drawToolData.totalFeet || 0);
+      return el('div', { className: 'qb-layout-draw-banner' },
+        el(Check, { size: 16, weight: 'bold' }),
+        ' Layout imported from your drawing. ',
+        el('strong', null, feet + ' ft'),
+        ' across ',
+        el('strong', null, runCount + (runCount === 1 ? ' run' : ' runs')),
+        drawToolData.address ? el('span', null, ' from ' + drawToolData.address) : null
+      );
+    })() : null,
 
     // ---- Total Linear Feet (simple mode) ----
     !advancedMode ? el('div', null,
