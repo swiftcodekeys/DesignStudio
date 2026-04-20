@@ -19,7 +19,7 @@ function SlopePopup(props) {
         ['flat', 'some', 'all'].map(function(val) {
           var label = {
             flat: 'Mostly flat. No panels need racking',
-            some: 'Some sections slope. I\u2019ll mark them',
+            some: 'Some sections slope. We can mark them',
             all:  'Very sloped throughout',
           }[val];
           return React.createElement('label', {
