@@ -652,6 +652,14 @@ In `EstimatePopup`, after the existing content and before `dy-est-actions`, add 
 
 ```javascript
       React.createElement('h4', { className: 'dy-est-subhead' }, 'How to measure'),
+      React.createElement('p', { className: 'dy-est-video-link' },
+        React.createElement('a', {
+          href: 'https://youtu.be/nfrwyY4GttE',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          className: 'dy-est-video-cta'
+        }, '\u25B6 Watch: How to measure your yard (2 min)')
+      ),
       React.createElement('ul', { className: 'dy-est-tips' },
         React.createElement('li', null, 'Walk each fence run with a tape measure, end to end.'),
         React.createElement('li', null, 'Note every direction change — those are corner posts.'),
@@ -669,6 +677,21 @@ Add to `mapbox.css`:
 
 ```css
 .dy-est-subhead { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--dy-ink); }
+.dy-est-video-link { margin: 0 0 10px; }
+.dy-est-video-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--dy-brand, #6BA3C2);
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.dy-est-video-cta:hover { background: #5891b0; }
 .dy-est-tips { padding-left: 18px; margin: 0 0 10px; font-size: 13px; color: var(--dy-ink-2); line-height: 1.5; }
 .dy-est-tips li { margin-bottom: 4px; }
 ```
@@ -774,6 +797,7 @@ fix(draw): parcel overlay — surface errors, flow data through buildAndComplete
   - [ ] EPQS status appears on the CTA during classification
   - [ ] Pre-draw slope popup gates the map entry
   - [ ] Estimate popup shows the expanded measurement + auto-detect copy
+  - [ ] "Watch: How to measure your yard" link opens https://youtu.be/nfrwyY4GttE in a new tab
   - [ ] Parcel dashed outline visible on a known-parcel address
   - [ ] `window.__DRAW_TOOL_DATA__` on Continue contains non-null `parcel` and real `epqsOverall`
 
