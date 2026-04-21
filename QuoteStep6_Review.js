@@ -106,10 +106,45 @@ function QuoteStep6_Review(props) {
     ),
 
     // ======== Selections Summary ========
+    // Order matches the QB step order (post-reorder 2026-04-21): Layout first,
+    // Style second. Edit-link indexes point at the new step indexes.
+    // ---- Layout & Posts (step 0) ----
+    el('div', { className: 'qb-review-section' },
+      el('div', { className: 'qb-review-section-header' },
+        el('h4', { className: 'qs1-section-title' }, 'Layout & Posts'),
+        editLink('Edit', 0, onEditStep)
+      ),
+      el('div', { className: 'qb-review-details' },
+        el('div', { className: 'qb-review-row' },
+          el('span', { className: 'qb-review-label' }, 'Linear Feet'),
+          el('span', { className: 'qb-review-value' }, (data.linearFeet || 0) + ' ft')
+        ),
+        el('div', { className: 'qb-review-row' },
+          el('span', { className: 'qb-review-label' }, 'Terrain'),
+          el('span', { className: 'qb-review-value' }, capitalize(data.terrain || 'flat'))
+        ),
+        el('div', { className: 'qb-review-row' },
+          el('span', { className: 'qb-review-label' }, 'Corners'),
+          el('span', { className: 'qb-review-value' }, data.corners || 0)
+        ),
+        el('div', { className: 'qb-review-row' },
+          el('span', { className: 'qb-review-label' }, 'End Posts'),
+          el('span', { className: 'qb-review-value' }, data.ends != null ? data.ends : 2)
+        ),
+        data.racking
+          ? el('div', { className: 'qb-review-row' },
+              el('span', { className: 'qb-review-label' }, 'Racking'),
+              el('span', { className: 'qb-review-value' }, 'Yes')
+            )
+          : null
+      )
+    ),
+
+    // ---- Style & Config (step 1) ----
     el('div', { className: 'qb-review-section' },
       el('div', { className: 'qb-review-section-header' },
         el('h4', { className: 'qs1-section-title' }, 'Style & Config'),
-        editLink('Edit', 0, onEditStep)
+        editLink('Edit', 1, onEditStep)
       ),
       el('div', { className: 'qb-review-details' },
         el('div', { className: 'qb-review-row' },
@@ -140,38 +175,6 @@ function QuoteStep6_Review(props) {
           el('span', { className: 'qb-review-label' }, 'Post Caps'),
           el('span', { className: 'qb-review-value' }, POST_CAP_LABELS[data.postCap] || capitalize(data.postCap))
         )
-      )
-    ),
-
-    // ---- Layout ----
-    el('div', { className: 'qb-review-section' },
-      el('div', { className: 'qb-review-section-header' },
-        el('h4', { className: 'qs1-section-title' }, 'Layout & Posts'),
-        editLink('Edit', 1, onEditStep)
-      ),
-      el('div', { className: 'qb-review-details' },
-        el('div', { className: 'qb-review-row' },
-          el('span', { className: 'qb-review-label' }, 'Linear Feet'),
-          el('span', { className: 'qb-review-value' }, (data.linearFeet || 0) + ' ft')
-        ),
-        el('div', { className: 'qb-review-row' },
-          el('span', { className: 'qb-review-label' }, 'Terrain'),
-          el('span', { className: 'qb-review-value' }, capitalize(data.terrain || 'flat'))
-        ),
-        el('div', { className: 'qb-review-row' },
-          el('span', { className: 'qb-review-label' }, 'Corners'),
-          el('span', { className: 'qb-review-value' }, data.corners || 0)
-        ),
-        el('div', { className: 'qb-review-row' },
-          el('span', { className: 'qb-review-label' }, 'End Posts'),
-          el('span', { className: 'qb-review-value' }, data.ends != null ? data.ends : 2)
-        ),
-        data.racking
-          ? el('div', { className: 'qb-review-row' },
-              el('span', { className: 'qb-review-label' }, 'Racking'),
-              el('span', { className: 'qb-review-value' }, 'Yes')
-            )
-          : null
       )
     ),
 

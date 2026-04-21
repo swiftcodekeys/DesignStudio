@@ -5265,6 +5265,15 @@ html, body {
    ============================================================ */
 
 /* Draw tool import banner */
+.qb-layout-intro {
+  margin-bottom: 14px;
+}
+.qb-layout-intro p {
+  margin: 0;
+  color: var(--text-secondary, #5a6270);
+  font-size: 14px;
+  line-height: 1.55;
+}
 .qb-layout-draw-banner {
   display: flex; align-items: center; gap: 6px;
   font-size: 13px; color: #276749; background: #f0fff4;

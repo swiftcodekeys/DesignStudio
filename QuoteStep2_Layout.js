@@ -183,6 +183,14 @@ function QuoteStep2_Layout(props) {
 
   return el('div', { className: 'qs1-container' },
 
+    // ---- Intro: reassure the buyer the drawing was captured ----
+    drawToolData ? el('div', { className: 'qb-layout-intro' },
+      el('p', null,
+        "Here's what we captured from your drawing. Please double-check each field. " +
+        "These measurements are exactly what we'll build to. You can adjust any value below if your sketch was rough."
+      )
+    ) : null,
+
     // ---- Draw Tool Banner ----
     drawToolData ? (function(){
       var runCount = drawToolData.segments ? drawToolData.segments.length : 1;

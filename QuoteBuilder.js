@@ -12,7 +12,7 @@ import QuoteStep4_Extras from './QuoteStep4_Extras';
 import QuoteStep5_Shipping from './QuoteStep5_Shipping';
 import QuoteStep6_Review from './QuoteStep6_Review';
 
-var STEP_LABELS = ['Style & Config', 'Layout & Posts', 'Gates', 'Extras', 'Shipping', 'Review'];
+var STEP_LABELS = ['Layout & Posts', 'Style & Config', 'Gates', 'Extras', 'Shipping', 'Review'];
 
 // styleId -> iFence gate preview thumbnail.
 //
@@ -294,20 +294,22 @@ function QuoteBuilder(props) {
     trackStepEnter(step, props.zoneId);
   }, [step]);
 
-  // Render active step
+  // Render active step. Post-reorder (2026-04-21): step 0 is Layout & Posts
+  // so the buyer confirms the measurements the draw tool just captured before
+  // picking style. Review step edit-links updated to match (see QuoteStep6).
   var stepContent = null;
   if (step === 0) {
-    stepContent = React.createElement(QuoteStep1_Style, {
-      data: data,
-      update: update,
-      poolCompliance: props.poolCompliance,
-    });
-  }
-  if (step === 1) {
     stepContent = React.createElement(QuoteStep2_Layout, {
       data: data,
       update: update,
       drawToolData: props.drawToolData,
+    });
+  }
+  if (step === 1) {
+    stepContent = React.createElement(QuoteStep1_Style, {
+      data: data,
+      update: update,
+      poolCompliance: props.poolCompliance,
     });
   }
   // step 2 — Gates
