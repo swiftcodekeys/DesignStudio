@@ -11,6 +11,15 @@ import QuoteStep3_Gates from './QuoteStep3_Gates';
 import QuoteStep4_Extras from './QuoteStep4_Extras';
 import QuoteStep5_Shipping from './QuoteStep5_Shipping';
 import QuoteStep6_Review from './QuoteStep6_Review';
+import {
+  POST_CAP_LABELS,
+  FINIAL_LABELS,
+  PUPPY_TYPE_LABELS,
+  ARCH_LABELS,
+  MOUNT_LABELS,
+  LEAF_LABELS,
+  SLOPE_LABELS,
+} from './optionLabels';
 
 var STEP_LABELS = ['Layout & Posts', 'Style & Config', 'Gates', 'Extras', 'Shipping', 'Review'];
 
@@ -60,11 +69,8 @@ var ULTRA_ID_TO_STYLE_SLUG = {
   uas_150: 'savannah',
 };
 
-// Post cap code -> human-readable label. configData.js is the source of truth
-// (POST_CAPS array). The sidebar + Review step receive the raw code (e.g.
-// "pcf") from gv_saved_design; titleCase would render that as "Pcf" — use
-// this map instead.
-var POST_CAP_LABELS = { pcf: 'Flat Cap', pcb: 'Ball Cap' };
+// POST_CAP_LABELS, FINIAL_LABELS, PUPPY_TYPE_LABELS, ARCH_LABELS, MOUNT_LABELS,
+// LEAF_LABELS, SLOPE_LABELS are imported from optionLabels.js above.
 
 // Hydrate a partial Quote Builder data object from gv_saved_design in
 // localStorage. Returns an empty object when nothing is saved or parsing
@@ -112,9 +118,8 @@ function hydrateFromSavedDesign() {
 
   try {
     var raw = window.localStorage.getItem('gv_saved_design');
-    if (!raw) return out;
-    var saved = JSON.parse(raw);
-    if (!saved || typeof saved !== 'object') return out;
+    var saved = raw ? JSON.parse(raw) : null;
+    if (saved && typeof saved === 'object') {
 
     // Style: Ultra id -> slug, else pass through if already a slug.
     if (typeof saved.styleId === 'string' && saved.styleId) {
@@ -140,9 +145,28 @@ function hydrateFromSavedDesign() {
     // 1:1 passthroughs when present.
     if (typeof saved.postCap === 'string' && saved.postCap) out.postCap = saved.postCap;
     if (typeof saved.finialType === 'string' && saved.finialType) out.finialType = saved.finialType;
-    if (typeof saved.pupType === 'string' && saved.pupType) out.pupType = saved.pupType;
+    if (typeof saved.pupType === 'string' && saved.pupType) {
+      out.pupType = saved.pupType;
+      // If a pupType is set, also set puppyPickets so sidebar/Review show the puppy row
+      out.puppyPickets = true;
+      // Carry the display-variant through as puppyStyle (set by _pupVariant in PuppyPicketsTab)
+      // gv_saved_design does not yet persist _pupVariant, so puppyStyle stays as pupType for now
+      out.puppyStyle = saved.pupType;
+    }
     if (typeof saved.privacyPostColor === 'string' && saved.privacyPostColor) out.privacyPostColor = saved.privacyPostColor;
     if (typeof saved.privacyPanelColor === 'string' && saved.privacyPanelColor) out.privacyPanelColor = saved.privacyPanelColor;
+
+    // Boolean accent / accessory flags
+    if (saved.circles === true)          out.circles = true;
+    if (saved.butterflies === true)      out.butterflies = true;
+    if (saved.scrolls === true)          out.scrolls = true;
+    if (saved.midRail === true)          out.midRail = true;
+    if (saved.upperFinialRail === true)  out.upperFinialRail = true;
+
+    // Gate-only fields (arch/mount/leaf) -- null for fence scenes, set for gate scenes
+    if (typeof saved.arch === 'string' && saved.arch)   out.arch = saved.arch;
+    if (typeof saved.mount === 'string' && saved.mount) out.mount = saved.mount;
+    if (saved.leaf != null && saved.leaf !== '')        out.leaf = saved.leaf;
 
     // Pro spacing flag -> QB spacing enum.
     if (saved.proSpacing === true) out.spacing = 'pro';
@@ -150,10 +174,17 @@ function hydrateFromSavedDesign() {
     // Pool barrier -> flush bottom (matches the poolCompliance useEffect).
     if (saved.poolBarrier === true) out.bottomRail = 'flush';
 
-    return out;
-  } catch (_) {
-    return out;
-  }
+    } // end: if (saved && typeof saved === 'object')
+  } catch (_) { /* ignore parse errors */ }
+
+  // ---- gv_slope_answer: written by MapboxDrawView, separate localStorage key ----
+  // Read independently so it augments the saved design without conflicting with it.
+  try {
+    var slopeRaw = window.localStorage.getItem('gv_slope_answer');
+    if (slopeRaw) out.slopeAnswer = slopeRaw;
+  } catch (_) {}
+
+  return out;
 }
 
 // Resolve the sidebar preview src from saved design state in localStorage.
@@ -193,13 +224,38 @@ function buildSidebarSpecs(data) {
   if (data.grade && data.grade !== 'residential') specs.push({ label: 'Grade', value: titleCase(data.grade) });
   if (data.bottomRail === 'flush') specs.push({ label: 'Bottom rail', value: 'Flush (pool code)' });
   if (data.spacing && data.spacing !== 'standard') specs.push({ label: 'Spacing', value: titleCase(data.spacing) });
-  if (data.puppyPickets) specs.push({ label: 'Puppy pickets', value: data.puppyStyle ? titleCase(data.puppyStyle) : 'Yes' });
+  if (data.puppyPickets) {
+    // Show the most descriptive label: prefer _pupVariant, then pupType, then puppyStyle
+    var pupDisplayId = data._pupVariant || data.pupType || data.puppyStyle;
+    var pupLabel = pupDisplayId
+      ? (PUPPY_TYPE_LABELS[pupDisplayId] || titleCase(pupDisplayId))
+      : 'Yes';
+    specs.push({ label: 'Puppy pickets', value: pupLabel });
+  }
   if (data.postCap && data.postCap !== 'flat') specs.push({ label: 'Post cap', value: POST_CAP_LABELS[data.postCap] || titleCase(data.postCap) });
-  if (data.finialType) specs.push({ label: 'Finials', value: titleCase(data.finialType) });
+  if (data.finialType && data.finialType !== 'none') {
+    specs.push({ label: 'Finials', value: FINIAL_LABELS[data.finialType] || titleCase(data.finialType) });
+  }
+  // Accent flags from 3D configurator (circles/butterflies/scrolls) and QB Extras
+  var accentParts = [];
+  if (data.circles)     accentParts.push('Circles');
+  if (data.butterflies) accentParts.push('Butterflies');
+  if (data.scrolls)     accentParts.push('Scrolls');
+  if (accentParts.length > 0) specs.push({ label: 'Accents', value: accentParts.join(', ') });
+  // Accessory rail flags from 3D configurator
+  var railParts = [];
+  if (data.midRail)         railParts.push('Mid Rail');
+  if (data.upperFinialRail) railParts.push('Upper Finial Rail');
+  if (railParts.length > 0) specs.push({ label: 'Rail add-ons', value: railParts.join(', ') });
+  // Gate-specific config
+  if (data.arch) specs.push({ label: 'Arch', value: ARCH_LABELS[data.arch] || titleCase(data.arch) });
+  if (data.mount) specs.push({ label: 'Mount', value: MOUNT_LABELS[data.mount] || titleCase(data.mount) });
+  if (data.leaf != null && data.leaf !== '') specs.push({ label: 'Leaf', value: LEAF_LABELS[data.leaf] || titleCase(String(data.leaf)) });
   if (data.privacyType) specs.push({ label: 'Privacy', value: titleCase(data.privacyType) });
   if (data.linearFeet) specs.push({ label: 'Linear feet', value: Math.round(data.linearFeet) + ' ft' });
   if (data.terrain) specs.push({ label: 'Terrain', value: titleCase(data.terrain) });
   if (data.rackingTier && data.rackingTier !== 'standard') specs.push({ label: 'Racking', value: titleCase(data.rackingTier) });
+  if (data.slopeAnswer) specs.push({ label: 'Slope', value: SLOPE_LABELS[data.slopeAnswer] || titleCase(data.slopeAnswer) });
   if (Array.isArray(data.gates) && data.gates.length > 0) {
     specs.push({ label: 'Gates', value: data.gates.length + ' gate' + (data.gates.length === 1 ? '' : 's') });
   } else if (typeof data.gates === 'number' && data.gates > 0) {

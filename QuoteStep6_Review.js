@@ -5,6 +5,15 @@ import React from 'react';
 import { PencilSimple, Warning, ShieldCheck, Package } from '@phosphor-icons/react';
 import { calculateZoneQuote } from './priceCalculator';
 import { estimatePerFootRange } from './retailPricing';
+import {
+  POST_CAP_LABELS,
+  FINIAL_LABELS,
+  PUPPY_TYPE_LABELS,
+  ARCH_LABELS,
+  MOUNT_LABELS,
+  LEAF_LABELS,
+  SLOPE_LABELS,
+} from './optionLabels';
 
 function fmtDollarsInt(n) {
   if (n == null || isNaN(n)) return '$0';
@@ -42,9 +51,7 @@ var COLOR_LABELS = {
   'forest-green': 'Forest Green',
 };
 
-// Post cap code -> label. Mirrors POST_CAP_LABELS in QuoteBuilder.js.
-// configData.js POST_CAPS is the source of truth (pcf=Flat Cap, pcb=Ball Cap).
-var POST_CAP_LABELS = { pcf: 'Flat Cap', pcb: 'Ball Cap' };
+// POST_CAP_LABELS and other option label maps are imported from optionLabels.js above.
 
 var INSTALL_LABELS = {
   'diy': 'DIY Install', 'contractor': 'Hire a Contractor', 'not-sure': 'Undecided',
@@ -78,10 +85,14 @@ function QuoteStep6_Review(props) {
 
   // ---- Extras summary ----
   var extraParts = [];
-  if (data.finialType && data.finialType !== 'none') extraParts.push('Finial: ' + capitalize(data.finialType));
+  if (data.finialType && data.finialType !== 'none') {
+    extraParts.push('Finial: ' + (FINIAL_LABELS[data.finialType] || capitalize(data.finialType)));
+  }
   if (data.butterflies) extraParts.push('Butterflies');
-  if (data.scrolls) extraParts.push('Scrolls');
-  if (data.circles) extraParts.push('Circles');
+  if (data.scrolls)     extraParts.push('Scrolls');
+  if (data.circles)     extraParts.push('Circles');
+  if (data.midRail)         extraParts.push('Mid Rail');
+  if (data.upperFinialRail) extraParts.push('Upper Finial Rail');
   if (data.butterflyCircles) extraParts.push('Butterfly Circles');
   if (data.postAccessories && data.postAccessories.length > 0) {
     extraParts.push(data.postAccessories.join(', '));
@@ -131,10 +142,21 @@ function QuoteStep6_Review(props) {
           el('span', { className: 'qb-review-label' }, 'End Posts'),
           el('span', { className: 'qb-review-value' }, data.ends != null ? data.ends : 2)
         ),
-        data.racking
+        data.rackingTier
           ? el('div', { className: 'qb-review-row' },
-              el('span', { className: 'qb-review-label' }, 'Racking'),
-              el('span', { className: 'qb-review-value' }, 'Yes')
+              el('span', { className: 'qb-review-label' }, 'Racking Tier'),
+              el('span', { className: 'qb-review-value' }, capitalize(data.rackingTier || 'standard'))
+            )
+          : (data.racking
+              ? el('div', { className: 'qb-review-row' },
+                  el('span', { className: 'qb-review-label' }, 'Racking'),
+                  el('span', { className: 'qb-review-value' }, 'Yes')
+                )
+              : null),
+        data.slopeAnswer
+          ? el('div', { className: 'qb-review-row' },
+              el('span', { className: 'qb-review-label' }, 'Slope'),
+              el('span', { className: 'qb-review-value' }, SLOPE_LABELS[data.slopeAnswer] || capitalize(data.slopeAnswer))
             )
           : null
       )
@@ -174,7 +196,36 @@ function QuoteStep6_Review(props) {
         el('div', { className: 'qb-review-row' },
           el('span', { className: 'qb-review-label' }, 'Post Caps'),
           el('span', { className: 'qb-review-value' }, POST_CAP_LABELS[data.postCap] || capitalize(data.postCap))
-        )
+        ),
+        data.puppyPickets
+          ? el('div', { className: 'qb-review-row' },
+              el('span', { className: 'qb-review-label' }, 'Puppy Pickets'),
+              el('span', { className: 'qb-review-value' },
+                (function() {
+                  var pupId = data._pupVariant || data.pupType || data.puppyStyle;
+                  return pupId ? (PUPPY_TYPE_LABELS[pupId] || capitalize(pupId)) : 'Yes';
+                })()
+              )
+            )
+          : null,
+        data.arch
+          ? el('div', { className: 'qb-review-row' },
+              el('span', { className: 'qb-review-label' }, 'Arch Style'),
+              el('span', { className: 'qb-review-value' }, ARCH_LABELS[data.arch] || capitalize(data.arch))
+            )
+          : null,
+        data.mount
+          ? el('div', { className: 'qb-review-row' },
+              el('span', { className: 'qb-review-label' }, 'Mount Type'),
+              el('span', { className: 'qb-review-value' }, MOUNT_LABELS[data.mount] || capitalize(data.mount))
+            )
+          : null,
+        data.leaf != null && data.leaf !== ''
+          ? el('div', { className: 'qb-review-row' },
+              el('span', { className: 'qb-review-label' }, 'Gate Leaf'),
+              el('span', { className: 'qb-review-value' }, LEAF_LABELS[data.leaf] || capitalize(String(data.leaf)))
+            )
+          : null
       )
     ),
 
