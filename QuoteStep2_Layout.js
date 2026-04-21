@@ -71,6 +71,133 @@ var RACKING_TIER_SUMMARY_LABELS = {
   'heavy-rackable': 'Heavy rack panels',
 };
 
+// Task 16: per-segment racking breakdown. Per-segment rackingTier values come
+// from geometryUtils.classificationToRackingTier via MapboxDrawView, producing
+// 'standard' | 'rackable' | 'heavy' | 'steps' | 'unknown'. We also tolerate
+// the alternate 'heavy-rack' / 'heavy-rackable' spellings that appear in
+// other parts of the codebase (legendOverlay, SegmentCard override dropdown)
+// so whatever shape lands here normalizes to one display bucket per tier.
+var BREAKDOWN_TIER_ORDER = ['standard', 'rackable', 'heavy', 'steps'];
+var BREAKDOWN_TIER_LABELS = {
+  'standard': 'Standard',
+  'rackable': 'Rackable',
+  'heavy':    'Heavy Rack',
+  'steps':    'Stair-Stepped',
+};
+
+function normalizeBreakdownTier(tier) {
+  if (!tier) return 'standard';
+  if (tier === 'heavy-rack' || tier === 'heavy-rackable') return 'heavy';
+  if (tier === 'stair-step' || tier === 'stair-stepped') return 'steps';
+  if (tier === 'unknown') return 'standard';
+  return tier;
+}
+
+// Walk drawToolData.lines[].segments[] and return a per-tier breakdown.
+// Shape: { totalSegments, byTier: { standard: { count, lengths: [..] }, ... } }
+// Segments are tolerated from either drawToolData.lines[].segments[] (the
+// current shape) or a flat drawToolData.segments[] fallback. Returns null
+// when no segments with a rackingTier field are present.
+function buildRackingBreakdown(drawToolData) {
+  if (!drawToolData) return null;
+  var flat = [];
+  if (Array.isArray(drawToolData.lines)) {
+    for (var li = 0; li < drawToolData.lines.length; li++) {
+      var line = drawToolData.lines[li];
+      var segs = (line && Array.isArray(line.segments)) ? line.segments : [];
+      for (var si = 0; si < segs.length; si++) flat.push(segs[si]);
+    }
+  }
+  if (flat.length === 0 && Array.isArray(drawToolData.segments)) {
+    for (var fi = 0; fi < drawToolData.segments.length; fi++) {
+      flat.push(drawToolData.segments[fi]);
+    }
+  }
+  var rackableSegs = flat.filter(function(s) { return s && typeof s.rackingTier === 'string'; });
+  if (rackableSegs.length === 0) return null;
+
+  var byTier = {};
+  rackableSegs.forEach(function(s) {
+    var tier = normalizeBreakdownTier(s.rackingTier);
+    if (!byTier[tier]) byTier[tier] = { count: 0, lengths: [] };
+    byTier[tier].count += 1;
+    // segments use .lengthFeet (MapboxDrawView buildAndComplete) but be
+    // defensive against .length / .lengthFt shapes seen elsewhere.
+    var lenFt = 0;
+    if (typeof s.lengthFeet === 'number') lenFt = s.lengthFeet;
+    else if (typeof s.length === 'number') lenFt = s.length;
+    else if (typeof s.lengthFt === 'number') lenFt = s.lengthFt;
+    byTier[tier].lengths.push(Math.round(lenFt));
+  });
+
+  return { totalSegments: rackableSegs.length, byTier: byTier };
+}
+
+// Scroll target: the sidebar annotated-drawing image. Using querySelector
+// on the known [data-test] attribute keeps this uncoupled from QuoteBuilder's
+// ref wiring and survives re-renders / step changes.
+function scrollToAnnotatedDrawing() {
+  if (typeof document === 'undefined') return;
+  var img = document.querySelector('[data-test="quote-design-preview"]');
+  if (!img) return;
+  try {
+    img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (_) {
+    // Older browsers / jsdom: best effort.
+    if (typeof img.scrollIntoView === 'function') img.scrollIntoView();
+  }
+}
+
+function rackingBreakdownSection(breakdown) {
+  if (!breakdown) return null;
+  var tiers = BREAKDOWN_TIER_ORDER.filter(function(t) {
+    return breakdown.byTier[t] && breakdown.byTier[t].count > 0;
+  });
+  // Nothing to summarize when only one tier is present and it's standard --
+  // the whole point of the card is to surface the mix.
+  if (tiers.length === 0) return null;
+  if (tiers.length === 1 && tiers[0] === 'standard') return null;
+
+  return el('div', {
+    className: 'qb-rack-breakdown',
+    'data-test': 'qb-rack-breakdown',
+  },
+    sectionHeader('Racking breakdown'),
+    el('ul', { className: 'qb-rack-breakdown-list' },
+      tiers.map(function(tier) {
+        var bucket = breakdown.byTier[tier];
+        var label = BREAKDOWN_TIER_LABELS[tier] || tier;
+        var countWord = bucket.count === 1 ? 'segment' : 'segments';
+        var lens = bucket.lengths.map(function(n) { return n + ' ft'; }).join(', ');
+        return el('li', {
+          key: tier,
+          className: 'qb-rack-breakdown-row',
+          'data-test': 'qb-rack-breakdown-row-' + tier,
+        },
+          el('span', { className: 'qb-rack-breakdown-dot qb-rack-breakdown-dot-' + tier, 'aria-hidden': 'true' }),
+          el('span', { className: 'qb-rack-breakdown-count' },
+            bucket.count + ' ' + countWord + ' at '
+          ),
+          el('span', { className: 'qb-rack-breakdown-tier' }, label),
+          el('span', { className: 'qb-rack-breakdown-lengths' }, ' (' + lens + ')')
+        );
+      })
+    ),
+    el('p', { className: 'qb-rack-breakdown-legend' },
+      'Yellow = standard. Blue = rackable. Red = heavy rack. ',
+      'Look at your drawing to see which run is which.'
+    ),
+    el('button', {
+      type: 'button',
+      className: 'qb-rack-breakdown-link',
+      onClick: scrollToAnnotatedDrawing,
+      'data-test': 'qb-rack-breakdown-scroll',
+    },
+      'See color-coded runs on your annotated drawing →'
+    )
+  );
+}
+
 var POST_SIZES = {
   residential: '2" x 2"',
   commercial:  '2.5" x 2.5"',
@@ -187,6 +314,11 @@ function QuoteStep2_Layout(props) {
 
   // Racking warning check
   var hasRackingConflict = !!(data.puppyPickets && (data.butterflies || data.scrolls));
+
+  // Task 16: per-segment racking breakdown from drawToolData. Null when the
+  // buyer didn't come through the draw flow (instant-quote) or when segments
+  // carry no rackingTier data.
+  var rackingBreakdown = buildRackingBreakdown(drawToolData);
 
   // Update parent on change
   function syncLayout(changes) {
@@ -463,6 +595,14 @@ function QuoteStep2_Layout(props) {
               })
             )
       ) : null,
+
+      // Task 16: per-segment racking breakdown. Renders alongside the overall
+      // Racking Tier picker so the buyer sees the mix ("4 at Standard, 2 at
+      // Rackable, 1 at Heavy Rack") and can cross-reference the color-coded
+      // annotated drawing in the sidebar. Only renders when drawToolData
+      // carries per-segment rackingTier data and there is more than one tier
+      // (or any non-standard tier) represented.
+      rackingBreakdownSection(rackingBreakdown),
 
       // Racking conflict warning
       hasRackingConflict ? el('div', { className: 'qb-layout-warning' },
