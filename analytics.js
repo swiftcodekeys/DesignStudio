@@ -1,7 +1,9 @@
 // analytics.js — Lightweight funnel tracking
-// Sends events to GAS via the email worker for Google Sheets logging
+// Sends events to GAS via the email worker for Google Sheets logging.
+// Non-prod hosts (localhost, preview, tests) are blocked by
+// emailWorkerClient.isProductionEmailHost() so test runs can't burn quota.
 
-var WORKER_URL = 'https://grandview-email-worker.sarah-13a.workers.dev';
+import { sendBeaconToEmailWorker, postToEmailWorker } from './emailWorkerClient';
 
 function trackEvent(event, data) {
   var payload = {
@@ -12,15 +14,9 @@ function trackEvent(event, data) {
     data: data || {},
   };
 
-  try {
-    navigator.sendBeacon(WORKER_URL, JSON.stringify(payload));
-  } catch (e) {
-    fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch(function() {});
+  var beaconOk = sendBeaconToEmailWorker(payload);
+  if (!beaconOk) {
+    postToEmailWorker(payload).catch(function() {});
   }
 }
 

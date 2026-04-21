@@ -1,7 +1,10 @@
 // quoteSaver.js — Save & resume quote via URL
-// Encodes wizard state into a compact URL hash, emails link to buyer
+// Encodes wizard state into a compact URL hash, emails link to buyer.
+// All real email sends route through emailWorkerClient so non-prod hosts
+// (localhost, preview, tests) resolve to a fake-success without hitting GAS.
 
 import { loadWizardState, saveWizardState } from './wizardState';
+import { postToEmailWorker } from './emailWorkerClient';
 
 function encodeState(state) {
   var slim = Object.assign({}, state);
@@ -47,16 +50,12 @@ export function emailSaveLink(email, quoteId) {
   var link = getSaveLink();
   if (!link) return Promise.resolve(false);
 
-  return fetch('https://grandview-email-worker.sarah-13a.workers.dev', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      source: 'save-quote-link',
-      email: email,
-      quoteId: quoteId || 'draft',
-      resumeUrl: link,
-    }),
-  }).then(function(r) { return r.ok; }).catch(function() { return false; });
+  return postToEmailWorker({
+    source: 'save-quote-link',
+    email: email,
+    quoteId: quoteId || 'draft',
+    resumeUrl: link,
+  }).then(function(r) { return r.ok; });
 }
 
 // Draw-tool specific encode/resume. The draw state (points + location) is
@@ -94,14 +93,10 @@ export function emailDrawSaveLink(email, drawState) {
   var link = getDrawSaveLink(drawState);
   if (!link) return Promise.resolve(false);
 
-  return fetch('https://grandview-email-worker.sarah-13a.workers.dev', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      source: 'save-quote-link',
-      email: email,
-      quoteId: 'draw-' + Date.now(),
-      resumeUrl: link,
-    }),
-  }).then(function(r) { return r.ok; }).catch(function() { return false; });
+  return postToEmailWorker({
+    source: 'save-quote-link',
+    email: email,
+    quoteId: 'draw-' + Date.now(),
+    resumeUrl: link,
+  }).then(function(r) { return r.ok; });
 }

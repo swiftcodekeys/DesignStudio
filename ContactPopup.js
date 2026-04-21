@@ -5,8 +5,7 @@
 // ============================================================================
 
 import React, { useState } from 'react';
-
-var GAS_ENDPOINT = 'https://grandview-email-worker.sarah-13a.workers.dev';
+import { postToEmailWorker } from './emailWorkerClient';
 
 var TOPICS = [
   { value: '', label: 'Select a topic...', disabled: true },
@@ -84,11 +83,7 @@ var ContactPopup = function(props) {
       pageUrl: window.location.href,
     };
 
-    fetch(GAS_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+    postToEmailWorker(payload)
       .then(function() {
         setStatus('success');
         setCooldown(true);

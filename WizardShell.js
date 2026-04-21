@@ -17,6 +17,7 @@ import EscapeHatchModal from './EscapeHatchModal';
 import useEscapeHatchTriggers from './useEscapeHatchTriggers';
 import ZoneTransitionPage from './ZoneTransitionPage';
 import ZoneQuoteSummary from './ZoneQuoteSummary';
+import { isProductionEmailHost } from './emailWorkerClient';
 import {
     loadWizardState, saveWizardState, getZoneOrder, getZoneQuote,
     updateZoneQuote, getCurrentZoneId, getGrandTotal,
@@ -700,6 +701,15 @@ var WizardShell = function() {
         var payload = buildQuotePayload(orderingIntent);
         payload.submitAction = orderingIntent; // 'quote' | 'order'
 
+        // Guard against non-prod hosts (dev, preview, Playwright) posting to
+        // the real CRM worker. The CRM worker fans out to GAS which sends
+        // email, and that's what burned Sarah's 100/day quota during an
+        // unguarded E2E run. See emailWorkerClient.js for the allowlist.
+        if (!isProductionEmailHost()) {
+            console.info('[WizardShell] BLOCKED CRM submit on non-prod host; returning synthetic success');
+            return Promise.resolve({ ok: true, quoteId: payload.quoteId, data: { blocked: true } });
+        }
+
         return fetch(CRM_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -773,6 +783,12 @@ var WizardShell = function() {
             helpUploadDataUrl: formPayload.helpUploadDataUrl || null,
             helpUploadKind: formPayload.helpUploadKind || null,
         });
+
+        if (!isProductionEmailHost()) {
+            console.info('[WizardShell] BLOCKED escape-hatch submit on non-prod host');
+            trackEscapeHatchSubmit(!!formPayload.helpUploadDataUrl, !!formPayload.helpNote, step);
+            return Promise.resolve({ ok: true, blocked: true });
+        }
 
         return fetch(CRM_ENDPOINT, {
             method: 'POST',
