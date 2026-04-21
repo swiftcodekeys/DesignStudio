@@ -625,7 +625,12 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(arg.parcel.parcelnumb).toBe('42');
   });
 
-  it('parcel fetch failure surfaces a dismissible toast', async () => {
+  it('parcel fetch failure is silent: no toast, no error copy, draw still works', async () => {
+    // Sarah's requirement: the "couldn't load your property" banner made
+    // buyers think the whole tool was broken when in fact the parcel outline
+    // is optional. A 500 from the Regrid proxy must be logged to the console
+    // for debugging but render NO user-visible error, and the draw flow must
+    // still complete normally.
     const mapboxgl = await import('mapbox-gl');
     const inst = makeMockMapInstance();
     inst.once = vi.fn(function(event, handler) { handler(); });
@@ -643,20 +648,36 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
       error: 'HTTP 500',
     });
 
+    // Seed a drawn line so the Continue CTA is actionable, proving the
+    // failure did not block the draw flow.
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+
+    const onComplete = vi.fn();
     const { container } = render(
-      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+      <MapboxDrawView onComplete={onComplete} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
     );
     await act(async () => {
-      await new Promise(function(r) { setTimeout(r, 50); });
+      await new Promise(function(r) { setTimeout(r, 900); });
     });
-    const toast = container.querySelector('.dy-parcel-toast');
-    expect(toast).toBeTruthy();
-    expect(toast.textContent).toMatch(/Couldn't load your property outline/);
-    // Manual dismiss
-    const dismiss = toast.querySelector('.dy-parcel-toast-dismiss');
-    expect(dismiss).toBeTruthy();
-    act(() => { fireEvent.click(dismiss); });
+
+    // No toast element.
     expect(container.querySelector('.dy-parcel-toast')).toBeNull();
+    // No user-visible copy about the property / outline failure anywhere.
+    expect(container.textContent).not.toMatch(/Couldn't load your property/i);
+    expect(container.textContent).not.toMatch(/couldn.?t load/i);
+    expect(container.textContent).not.toMatch(/could not load/i);
+
+    // Draw flow still completes: Continue CTA present and clickable.
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(cta);
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
+    expect(onComplete).toHaveBeenCalled();
   });
 
   // --- Segment label overlap guard (P3.1) -------------------------------------

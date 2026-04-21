@@ -802,14 +802,15 @@ function MapScreen(props) {
             });
           }
           if (props.setParcelData) props.setParcelData(result.data);
-          if (props.setParcelError) props.setParcelError(null);
         } else if (result && !result.ok) {
+          // Parcel overlay is a nice-to-have. A fallback result (Regrid outside
+          // trial coverage, HTTP 4xx/5xx) is logged for debugging but never
+          // surfaced to the buyer. The draw tool works fine without the outline.
           console.warn('[parcel] fetch returned fallback', result.error);
-          if (props.setParcelError) props.setParcelError(result.error || 'unknown');
         }
       } catch (e) {
+        // Same non-blocking posture for network / unexpected errors.
         console.warn('[parcel] fetch failed', e);
-        if (props.setParcelError) props.setParcelError(e && e.message ? e.message : 'unknown');
       }
     });
 
@@ -1175,15 +1176,11 @@ function MapboxDrawView(props) {
   var setSegmentOverrides = overrideState[1];
 
   // Parcel fetch state. parcelData holds the { boundary, address, ... } payload
-  // from the proxy on success; parcelError holds a user-visible error string
-  // when the fetch fails. Both default null.
+  // from the proxy on success. Fetch failures are logged to the console but
+  // never surfaced to the buyer: the overlay is a nice-to-have, not a blocker.
   var parcelState = useState(null);
   var parcelData = parcelState[0];
   var setParcelData = parcelState[1];
-
-  var parcelErrorState = useState(null);
-  var parcelError = parcelErrorState[0];
-  var setParcelError = parcelErrorState[1];
 
   var mapInstanceRef = useRef(null);
 
@@ -1302,15 +1299,6 @@ function MapboxDrawView(props) {
     window.addEventListener('keydown', onKey);
     return function() { window.removeEventListener('keydown', onKey); };
   }, []);
-
-  // Auto-dismiss the parcel-error toast after 6 seconds. Manual dismiss via
-  // the toast's close button clears parcelError immediately; this effect is
-  // the passive fallback.
-  useEffect(function() {
-    if (!parcelError) return;
-    var t = setTimeout(function() { setParcelError(null); }, 6000);
-    return function() { clearTimeout(t); };
-  }, [parcelError]);
 
   function handleAddress(loc) {
     try { localStorage.setItem('gv_bridge_location', JSON.stringify(loc)); } catch (e) {}
@@ -1574,7 +1562,6 @@ function MapboxDrawView(props) {
       mapInstanceRef: mapInstanceRef,
       cinematic: cinematic,
       setParcelData: setParcelData,
-      setParcelError: setParcelError,
     }),
 
     // Cinematic overlay rides on top of the live flyTo for first visits
@@ -1617,23 +1604,6 @@ function MapboxDrawView(props) {
     savedToast && React.createElement('div', { className: 'dy-toast' },
       React.createElement(Check, { size: 14, weight: 'bold' }),
       React.createElement('span', null, 'Email sent. Click the link anytime to resume.')
-    ),
-
-    // Parcel-error toast: renders on fetch failure, auto-dismisses after 6s,
-    // and can be dismissed manually. Non-blocking — the customer can still draw.
-    parcelError && React.createElement('div', {
-      className: 'dy-parcel-toast',
-      role: 'status',
-      'aria-live': 'polite',
-    },
-      React.createElement('span', { className: 'dy-parcel-toast-msg' },
-        "Couldn't load your property outline. You can still draw."),
-      React.createElement('button', {
-        className: 'dy-parcel-toast-dismiss',
-        onClick: function() { setParcelError(null); },
-        type: 'button',
-        'aria-label': 'Dismiss',
-      }, React.createElement(X, { size: 14, weight: 'bold' }))
     ),
 
     // Save-for-later dialog
