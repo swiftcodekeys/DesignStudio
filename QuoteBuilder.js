@@ -312,10 +312,6 @@ function QuoteBuilder(props) {
   }
 
   // Save for Later state
-  var showSaveFormState = useState(false);
-  var showSaveForm = showSaveFormState[0];
-  var setShowSaveForm = showSaveFormState[1];
-
   var saveEmailState = useState('');
   var saveEmail = saveEmailState[0];
   var setSaveEmail = saveEmailState[1];
@@ -330,7 +326,6 @@ function QuoteBuilder(props) {
         setSaveSent(true);
         setTimeout(function() {
           setSaveSent(false);
-          setShowSaveForm(false);
           setSaveEmail('');
         }, 3000);
       }
@@ -519,30 +514,30 @@ function QuoteBuilder(props) {
         ' Back'
       ) : React.createElement('span', null)),
 
-      // ---- Save for Later ----
-      React.createElement('div', { className: 'qb-save-wrap' },
-        !showSaveForm ? React.createElement('button', {
-          className: 'qb-save-link',
-          onClick: function() { setShowSaveForm(true); },
-        }, 'Save for Later') : null,
-        showSaveForm ? React.createElement('div', { className: 'qb-save-form' },
-          saveSent
-            ? React.createElement('span', { className: 'qb-save-sent' }, 'Link sent!')
-            : React.createElement(React.Fragment, null,
-                React.createElement('input', {
-                  className: 'qb-save-input',
-                  type: 'email',
-                  placeholder: 'your@email.com',
-                  value: saveEmail,
-                  onChange: function(e) { setSaveEmail(e.target.value); },
-                }),
-                React.createElement('button', {
-                  className: 'qb-save-send-btn',
-                  onClick: handleSendLink,
-                  disabled: !saveEmail,
-                }, 'Send Link')
-              )
-        ) : null
+      // ---- Save for Later (persistent, always visible) ----
+      // Persistent email capture so a buyer who stops partway can still be
+      // followed up with. The input lives in the footer between Back and Next
+      // so it's present on every step without blocking the scroll area.
+      // Sends a transactional resume link; the emailWorkerClient guard blocks
+      // non-prod hosts from firing real email.
+      React.createElement('div', { className: 'qb-save-wrap qb-save-wrap-persistent' },
+        saveSent
+          ? React.createElement('span', { className: 'qb-save-sent' }, 'Link sent!')
+          : React.createElement(React.Fragment, null,
+              React.createElement('span', { className: 'qb-save-label' }, 'Save for Later:'),
+              React.createElement('input', {
+                className: 'qb-save-input',
+                type: 'email',
+                placeholder: 'your@email.com',
+                value: saveEmail,
+                onChange: function(e) { setSaveEmail(e.target.value); },
+              }),
+              React.createElement('button', {
+                className: 'qb-save-send-btn',
+                onClick: handleSendLink,
+                disabled: !saveEmail,
+              }, 'Email me the link')
+            )
       ),
 
       React.createElement('button', {

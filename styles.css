@@ -6549,6 +6549,25 @@ html, body {
   align-items: center;
   justify-content: center;
   flex: 1;
+  gap: 8px;
+}
+/* Persistent variant: inline label + input + send button visible on every step */
+.qb-save-wrap-persistent {
+  flex-wrap: wrap;
+}
+.qb-save-label {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-hint, #8e95a0);
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  /* On narrow viewports, let the save form take a full row below Back/Next so
+     the input isn't pinched. */
+  .qb-save-wrap-persistent {
+    flex-basis: 100%; order: 3;
+    margin-top: 8px;
+  }
 }
 
 .qb-save-link {
