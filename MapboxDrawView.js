@@ -779,10 +779,31 @@ function MorphingDock(props) {
           React.createElement('span', null, 'Posts (corner + end + line)'),
           React.createElement('span', { className: 'dy-material-price' }, 'included')
         ),
-        React.createElement('li', null,
-          React.createElement('span', null, 'Concrete (2 bags / post)'),
-          React.createElement('span', { className: 'dy-material-price' }, 'quoted on call')
-        ),
+        (function() {
+          // Residential estimate: 3 bags of 60-lb fast-set concrete per post
+          // hole (10" diameter, 24-30" deep). Grandview does not supply
+          // concrete. Rounded to nearest 5 because buyers round up at the
+          // store anyway. If a post-grade flag (commercial/industrial) lands
+          // in the dock context, bump the multiplier to 4.
+          var totalPosts = corners + linePosts;
+          var concreteBags = Math.max(5, Math.round((totalPosts * 3) / 5) * 5);
+          var concreteTooltip = 'Rough estimate. 3 bags of 60-lb fast-set '
+            + 'concrete per post hole (10" diameter, 24-30" deep). Grandview '
+            + 'does not supply concrete. Most buyers pick it up at Home Depot '
+            + 'or Lowes.';
+          return React.createElement('li', null,
+            React.createElement('span', null,
+              'Concrete: ~' + concreteBags + ' bags estimated ',
+              React.createElement('span', {
+                className: 'dy-material-info',
+                title: concreteTooltip,
+                'aria-label': 'Concrete estimate details',
+              }, 'ⓘ')
+            ),
+            React.createElement('span', { className: 'dy-material-price' },
+              'Grandview does not supply')
+          );
+        })(),
         React.createElement('li', { className: 'dy-material-total' },
           React.createElement('span', null, 'Estimated total range'),
           React.createElement('span', { className: 'dy-material-price' },

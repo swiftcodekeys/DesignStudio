@@ -678,6 +678,19 @@
   color: var(--dy-muted);
   line-height: 1.4;
 }
+.dy-material-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  font-size: 12px;
+  color: var(--dy-muted);
+  cursor: help;
+  vertical-align: baseline;
+}
+.dy-material-info:hover { color: var(--dy-ink); }
 
 /* Keyboard hints (empty only) */
 .dy-keyboard-hints {
