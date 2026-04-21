@@ -38,6 +38,7 @@ function readOnlySummary(opts) {
       className: 'qs1-collapsible-toggle',
       onClick: opts.onChange,
       'aria-expanded': 'false',
+      'aria-label': opts.changeLabel || 'Change answer',
     }, opts.changeLabel || 'Change')
   );
 }
