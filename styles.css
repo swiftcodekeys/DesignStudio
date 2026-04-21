@@ -5170,6 +5170,15 @@ html, body {
   outline: 2px solid var(--brand, #6BA3C2); outline-offset: 2px;
 }
 
+/* Task 15: Eyebrow text on the read-only Terrain / Racking summary rows
+   ("Your answer from the draw step:" / "Grandview detected:"). Light,
+   small, paired with the value text to match the collapsible-header rhythm. */
+.qb-readonly-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-hint, #8e95a0); margin-right: 6px;
+  white-space: nowrap;
+}
+
 /* Generic selector card row */
 .qs1-card-row {
   display: flex; gap: 10px; flex-wrap: wrap;

@@ -20,6 +20,28 @@ function sectionHeader(title, infoProps) {
   );
 }
 
+// Read-only summary row used by Task 15 when the buyer already answered
+// terrain/slope during the draw flow. Matches the qs1-collapsible-* styling
+// from QuoteStep1_Style so the visual language is consistent across steps.
+function readOnlySummary(opts) {
+  // opts: { title, eyebrow, valueLabel, onChange, changeLabel, testId }
+  return el('div', { className: 'qs1-collapsible-header', 'data-test': opts.testId || null },
+    el('div', { className: 'qs1-collapsible-label-row' },
+      el('h4', { className: 'qs1-section-title' }, opts.title),
+      el('div', { className: 'qs1-collapsible-value' },
+        opts.eyebrow ? el('span', { className: 'qb-readonly-eyebrow' }, opts.eyebrow) : null,
+        el('span', { className: 'qs1-collapsible-value-text' }, opts.valueLabel)
+      )
+    ),
+    el('button', {
+      type: 'button',
+      className: 'qs1-collapsible-toggle',
+      onClick: opts.onChange,
+      'aria-expanded': 'false',
+    }, opts.changeLabel || 'Change')
+  );
+}
+
 var TERRAIN_OPTIONS = [
   { id: 'flat',   name: 'Flat',   desc: 'Level ground, no grade changes', icon: Minus },
   { id: 'sloped', name: 'Sloped', desc: 'Consistent uphill or downhill grade', icon: Mountains },
@@ -31,6 +53,23 @@ var RACKING_TIERS = [
   { id: 'rackable',       name: 'Rackable',         desc: 'Follow slopes up to 20 inches per panel. Requires double-punched rails' },
   { id: 'heavy-rackable', name: 'Heavy Rackable',   desc: 'Follow slopes up to 36 inches per panel. Requires double-punched rails' },
 ];
+
+// Friendly labels matching the SlopePopup copy (SlopePopup.js) so the Terrain
+// read-only summary uses the same phrasing the buyer saw in the draw step.
+// Values correspond to gv_slope_answer written by MapboxDrawView.
+var SLOPE_ANSWER_LABELS = {
+  flat: 'Flat yard',
+  some: 'Some sections sloped',
+  all:  'Mostly sloped yard',
+};
+
+// Labels for the auto-detected racking tier summary. Mirrors RACKING_TIERS
+// with copy tuned for the read-only "Grandview detected this" pattern.
+var RACKING_TIER_SUMMARY_LABELS = {
+  'standard':       'Standard panels (no racking needed)',
+  'rackable':       'Rackable panels',
+  'heavy-rackable': 'Heavy rack panels',
+};
 
 var POST_SIZES = {
   residential: '2" x 2"',
@@ -50,6 +89,23 @@ function QuoteStep2_Layout(props) {
   var advancedState = useState(false);
   var advancedMode = advancedState[0];
   var setAdvancedMode = advancedState[1];
+
+  // Task 15: Terrain section collapses to a read-only summary when the
+  // SlopePopup already captured the buyer's terrain answer during the draw
+  // flow. Clicking Change reveals the original 3-card pick UI. Initial state
+  // is "expanded" when no slopeAnswer exists so direct-quote buyers (no
+  // drawToolData, no slopeAnswer) still see the full picker on first render.
+  var terrainExpandedState = useState(!props.data.slopeAnswer);
+  var terrainExpanded = terrainExpandedState[0];
+  var setTerrainExpanded = terrainExpandedState[1];
+
+  // Task 15: Racking Tier collapses to a read-only summary when drawToolData
+  // pre-filled the tier from EPQS classification, or when slopeAnswer signals
+  // non-flat terrain. Buyers can still expand to override.
+  var rackingTierDetected = !!(props.drawToolData || (props.data.slopeAnswer && props.data.slopeAnswer !== 'flat'));
+  var rackingExpandedState = useState(!rackingTierDetected);
+  var rackingExpanded = rackingExpandedState[0];
+  var setRackingExpanded = rackingExpandedState[1];
 
   // Initialize layout defaults
   var linearFeet = data.linearFeet || (drawToolData ? Math.round(drawToolData.totalFeet) : 100);
@@ -227,24 +283,39 @@ function QuoteStep2_Layout(props) {
     ) : null,
 
     // ---- Terrain (simple mode) ----
-    !advancedMode ? el('div', null,
-      sectionHeader('Terrain', {
-        title: 'Terrain Type',
-        text: 'Flat terrain means no grade change along the fence line. Sloped means the ground rises or falls consistently. Mixed means some sections are flat and others are sloped.',
-      }),
-      el('div', { className: 'qb-layout-terrain-grid' },
-        TERRAIN_OPTIONS.map(function(t) {
-          return el('button', {
-            key: t.id,
-            className: 'qb-layout-terrain-card' + (terrain === t.id ? ' selected' : ''),
-            onClick: function() { syncLayout({ terrain: t.id }); },
-          },
-            React.createElement(t.icon, { size: 24, weight: 'duotone' }),
-            el('div', { className: 'qb-layout-terrain-name' }, t.name),
-            el('div', { className: 'qb-layout-terrain-desc' }, t.desc)
-          );
-        })
-      )
+    // Task 15: if SlopePopup already captured the buyer's terrain answer
+    // (data.slopeAnswer) AND the buyer hasn't asked to change it, render a
+    // read-only summary instead of re-presenting the 3-card pick grid.
+    // Direct-quote buyers (no slopeAnswer) still see the full picker.
+    !advancedMode ? el('div', { 'data-test': 'qb-terrain-section' },
+      (data.slopeAnswer && !terrainExpanded)
+        ? readOnlySummary({
+            title: 'Terrain',
+            eyebrow: 'Your answer from the draw step:',
+            valueLabel: SLOPE_ANSWER_LABELS[data.slopeAnswer] || data.slopeAnswer,
+            onChange: function() { setTerrainExpanded(true); },
+            changeLabel: 'Change',
+            testId: 'qb-terrain-readonly',
+          })
+        : el('div', null,
+            sectionHeader('Terrain', {
+              title: 'Terrain Type',
+              text: 'Flat terrain means no grade change along the fence line. Sloped means the ground rises or falls consistently. Mixed means some sections are flat and others are sloped.',
+            }),
+            el('div', { className: 'qb-layout-terrain-grid' },
+              TERRAIN_OPTIONS.map(function(t) {
+                return el('button', {
+                  key: t.id,
+                  className: 'qb-layout-terrain-card' + (terrain === t.id ? ' selected' : ''),
+                  onClick: function() { syncLayout({ terrain: t.id }); },
+                },
+                  React.createElement(t.icon, { size: 24, weight: 'duotone' }),
+                  el('div', { className: 'qb-layout-terrain-name' }, t.name),
+                  el('div', { className: 'qb-layout-terrain-desc' }, t.desc)
+                );
+              })
+            )
+          )
     ) : null,
 
     // ---- Advanced Mode Toggle ----
@@ -359,22 +430,38 @@ function QuoteStep2_Layout(props) {
       ),
 
       // Racking tier (only if racked)
-      slopeMethod === 'racked' ? el('div', { className: 'qb-rack-tiers' },
-        sectionHeader('Racking Tier', {
-          title: 'Racking Tier',
-          text: 'Racking tier is how much slope each panel can absorb without needing a step. Standard racking handles up to 6" of rise per 6-foot panel, rackable handles up to 20", and heavy-rackable up to 36". Higher tiers need double-punched rails and cost a little more per foot.',
-        }),
-        RACKING_TIERS.map(function(tier) {
-          return el('button', {
-            key: tier.id,
-            className: 'qb-rack-tier' + (rackingTier === tier.id ? ' selected' : ''),
-            onClick: function() { syncLayout({ rackingTier: tier.id }); },
-          },
-            el('div', { className: 'qb-rack-tier-name' }, tier.name),
-            el('div', { className: 'qb-rack-tier-desc' }, tier.desc),
-            rackingTier === tier.id ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 12, weight: 'bold' })) : null
-          );
-        })
+      // Task 15: when the draw flow already detected the tier (via EPQS
+      // classification in drawToolData) or slopeAnswer signals non-flat
+      // terrain, render a read-only summary with a "Change racking tier"
+      // affordance instead of the full tier picker. Expanded picker is still
+      // one click away for buyers who want to override.
+      slopeMethod === 'racked' ? el('div', { className: 'qb-rack-tiers', 'data-test': 'qb-racking-section' },
+        (rackingTierDetected && !rackingExpanded)
+          ? readOnlySummary({
+              title: 'Racking Tier',
+              eyebrow: 'Grandview detected:',
+              valueLabel: RACKING_TIER_SUMMARY_LABELS[rackingTier] || RACKING_TIER_SUMMARY_LABELS.standard,
+              onChange: function() { setRackingExpanded(true); },
+              changeLabel: 'Change racking tier',
+              testId: 'qb-racking-readonly',
+            })
+          : el('div', null,
+              sectionHeader('Racking Tier', {
+                title: 'Racking Tier',
+                text: 'Racking tier is how much slope each panel can absorb without needing a step. Standard racking handles up to 6" of rise per 6-foot panel, rackable handles up to 20", and heavy-rackable up to 36". Higher tiers need double-punched rails and cost a little more per foot.',
+              }),
+              RACKING_TIERS.map(function(tier) {
+                return el('button', {
+                  key: tier.id,
+                  className: 'qb-rack-tier' + (rackingTier === tier.id ? ' selected' : ''),
+                  onClick: function() { syncLayout({ rackingTier: tier.id }); },
+                },
+                  el('div', { className: 'qb-rack-tier-name' }, tier.name),
+                  el('div', { className: 'qb-rack-tier-desc' }, tier.desc),
+                  rackingTier === tier.id ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 12, weight: 'bold' })) : null
+                );
+              })
+            )
       ) : null,
 
       // Racking conflict warning
