@@ -4,7 +4,7 @@
 // hover ghost, ⌘Z undo), parcel overlay with pulsing orange while empty,
 // signed-note reassurance, real pricing via estimatePerFootRange.
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './mapbox.css';
@@ -1286,7 +1286,13 @@ function MapboxDrawView(props) {
   // save-for-later email payload, etc.). Step 2 of Task 5 replaces the
   // Mapbox source/layer iteration with per-line iteration; Step 3 ships the
   // "Start new line" UI that actually uses the multi-line shape end-to-end.
-  var points = lines.reduce(function(acc, l) { return acc.concat(l); }, []);
+  // Memoized on `lines` so the array identity is stable across unrelated
+  // parent re-renders. Without this, effects with `[points]` in their dep
+  // array (notably the EPQS classify effect) re-fire on every render and
+  // thrash the USGS proxy.
+  var points = useMemo(function() {
+    return lines.reduce(function(acc, l) { return acc.concat(l); }, []);
+  }, [lines]);
 
   // Mutation helper: any legacy `setPoints(updater)` call that targets the
   // currently-active line (the last line in `lines`) delegates through this.
