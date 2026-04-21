@@ -2123,6 +2123,40 @@ html, body {
 .qb-action-secondary:hover { background: rgba(107,163,194,0.08); }
 
 /* Footer */
+/* ---- Breadcrumb: back-to-design-review link at top of QB.
+   Small, unobtrusive. Only renders when onBackToDesignReview prop is wired. */
+.qb-breadcrumb {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: transparent; border: none; padding: 6px 0;
+  margin-bottom: 8px;
+  font-size: 13px; font-weight: 600;
+  color: var(--brand, #6BA3C2);
+  cursor: pointer; border-radius: 6px;
+}
+.qb-breadcrumb:hover { text-decoration: underline; }
+.qb-breadcrumb:focus-visible {
+  outline: 2px solid var(--brand, #6BA3C2); outline-offset: 2px;
+}
+
+/* ---- Phone support ribbon: persistent at the bottom of the QB container.
+   Grandview is D2C with phone-only support, so the phone number should be
+   reachable at every step without scrolling to the footer. */
+.qb-phone-ribbon {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 16px;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, #f4fafe 0%, #ebf5fb 100%);
+  border: 1px solid #cfe3f0; border-radius: 10px;
+  font-size: 14px; color: var(--text-primary, #1a1a2e);
+}
+.qb-phone-ribbon-icon { color: var(--brand, #6BA3C2); flex-shrink: 0; }
+.qb-phone-ribbon-text { line-height: 1.5; }
+.qb-phone-ribbon-num {
+  font-weight: 700; color: var(--brand, #6BA3C2);
+  text-decoration: none; letter-spacing: 0.2px;
+}
+.qb-phone-ribbon-num:hover { text-decoration: underline; }
+
 .qb-footer {
   display: flex;
   align-items: center;

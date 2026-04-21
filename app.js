@@ -488,7 +488,11 @@ var DesignStudio = function() {
     if (view === 'quote-builder') {
         return (
             <div className="app-shell">
-                <QuoteBuilder drawToolData={drawToolData} onClose={function() { setView('studio'); }} />
+                <QuoteBuilder
+                    drawToolData={drawToolData}
+                    onClose={function() { setView('studio'); }}
+                    onBackToDesignReview={function() { setView('design-review'); }}
+                />
             </div>
         );
     }

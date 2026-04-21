@@ -2,7 +2,7 @@
 // React.createElement, var, function declarations, vanilla CSS
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, Phone } from '@phosphor-icons/react';
 import { emailSaveLink } from './quoteSaver';
 import { trackStepEnter, trackStepComplete } from './analytics';
 import QuoteStep1_Style, { POOL_MIN_HEIGHT_BY_STYLE } from './QuoteStep1_Style';
@@ -427,6 +427,18 @@ function QuoteBuilder(props) {
 
   return React.createElement('div', { className: 'qb-container' },
 
+    // ---- Breadcrumb back to Design Review (only when the caller wires it) ----
+    // Lets a buyer who already landed in QB step back to re-draw their yard or
+    // tweak the 3D design without clicking through the step-by-step Back button.
+    props.onBackToDesignReview ? React.createElement('button', {
+      className: 'qb-breadcrumb',
+      onClick: props.onBackToDesignReview,
+      type: 'button',
+    },
+      React.createElement(ArrowLeft, { size: 12 }),
+      ' Back to Design Review'
+    ) : null,
+
     React.createElement('div', { className: 'qb-layout' },
 
       // ---- LEFT: Fixed sidebar with design snapshot + progressive spec list ----
@@ -544,6 +556,19 @@ function QuoteBuilder(props) {
         step < 5 ? 'Next' : 'Get Quote',
         ' ',
         React.createElement(ArrowRight, { size: 16 })
+      )
+    ),
+
+    // ---- Phone support ribbon (persistent, D2C phone-support positioning) ----
+    React.createElement('div', { className: 'qb-phone-ribbon' },
+      React.createElement(Phone, { size: 16, weight: 'fill', className: 'qb-phone-ribbon-icon' }),
+      React.createElement('span', { className: 'qb-phone-ribbon-text' },
+        'Need help? Call ',
+        React.createElement('a', {
+          href: 'tel:+18553362330',
+          className: 'qb-phone-ribbon-num',
+        }, '(855) FENCE-30'),
+        ' to talk to a Grandview rep.'
       )
     )
   );
