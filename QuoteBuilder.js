@@ -188,11 +188,25 @@ function hydrateFromSavedDesign() {
   return out;
 }
 
-// Resolve the sidebar preview src from saved design state in localStorage.
-// Returns '' when neither a snapshot nor a thumbnail is available — callers
-// should render the "Design preview will appear here" placeholder in that
-// case so fresh customers aren't shown a broken image.
-function resolveSidebarPreviewSrc() {
+// Resolve the sidebar preview src. Priority chain (first match wins):
+//   1. drawToolData.annotatedSnapshotUrl  (yard drawing with legend overlay)
+//   2. drawToolData.mapboxSnapshotUrl     (raw aerial with line, no legend)
+//   3. saved.annotatedSnapshotUrl         (persisted yard annotation)
+//   4. saved.mapboxSnapshotUrl            (persisted raw aerial)
+//   5. saved.snapshotDataUrl              (3D fence configurator render)
+//   6. STYLE_THUMBNAILS[styleId]          (absolute last resort, generic)
+// Returns '' when nothing is available. Fresh buyers see the placeholder.
+// Drew-flow buyers see their yard; instant-quote buyers see the 3D fence
+// or style thumbnail.
+function resolveSidebarPreviewSrc(drawToolData) {
+  if (drawToolData && typeof drawToolData === 'object') {
+    if (typeof drawToolData.annotatedSnapshotUrl === 'string' && drawToolData.annotatedSnapshotUrl.length > 0) {
+      return drawToolData.annotatedSnapshotUrl;
+    }
+    if (typeof drawToolData.mapboxSnapshotUrl === 'string' && drawToolData.mapboxSnapshotUrl.length > 0) {
+      return drawToolData.mapboxSnapshotUrl;
+    }
+  }
   try {
     var raw = window.localStorage.getItem('gv_saved_design');
     if (!raw) return '';
@@ -200,6 +214,9 @@ function resolveSidebarPreviewSrc() {
     if (!saved || typeof saved !== 'object') return '';
     if (typeof saved.annotatedSnapshotUrl === 'string' && saved.annotatedSnapshotUrl.length > 0) {
       return saved.annotatedSnapshotUrl;
+    }
+    if (typeof saved.mapboxSnapshotUrl === 'string' && saved.mapboxSnapshotUrl.length > 0) {
+      return saved.mapboxSnapshotUrl;
     }
     if (typeof saved.snapshotDataUrl === 'string' && saved.snapshotDataUrl.length > 0) {
       return saved.snapshotDataUrl;
@@ -450,7 +467,7 @@ function QuoteBuilder(props) {
   // in localStorage — snapshot first, style thumbnail second. We read on
   // every render because the saved design is written by the 3D configurator
   // outside React, and the QuoteBuilder may mount AFTER that write.
-  var previewSrc = props.snapshotDataUrl || resolveSidebarPreviewSrc();
+  var previewSrc = props.snapshotDataUrl || resolveSidebarPreviewSrc(props.drawToolData);
 
   return React.createElement('div', { className: 'qb-container' },
 

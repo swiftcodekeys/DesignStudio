@@ -81,6 +81,74 @@ describe('QuoteBuilder sidebar preview', () => {
     expect(placeholder).toBeTruthy();
     expect(placeholder.textContent).toMatch(/Design preview will appear here/);
   });
+
+  // Priority chain for drew-flow buyers: the yard sketch beats everything else.
+  // Drew-flow passes drawToolData (with annotatedSnapshotUrl + mapboxSnapshotUrl)
+  // in as a prop, and those must take precedence over any 3D fence snapshot or
+  // style thumbnail already sitting in localStorage.
+  it('prefers drawToolData.annotatedSnapshotUrl over a saved 3D fence snapshot', function() {
+    var annotated = 'data:image/jpeg;base64,ANNOT';
+    var mapboxRaw = 'data:image/jpeg;base64,MAPRAW';
+    var savedFence = 'data:image/jpeg;base64,FENCE3D';
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      snapshotDataUrl: savedFence,
+      styleId: 'horizon',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      drawToolData: {
+        annotatedSnapshotUrl: annotated,
+        mapboxSnapshotUrl: mapboxRaw,
+      },
+    })).container;
+    var img = container.querySelector('[data-test="quote-design-preview"]');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe(annotated);
+  });
+
+  it('falls through annotated to drawToolData.mapboxSnapshotUrl when annotated is empty', function() {
+    var mapboxRaw = 'data:image/jpeg;base64,MAPRAW';
+    var savedFence = 'data:image/jpeg;base64,FENCE3D';
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      snapshotDataUrl: savedFence,
+      styleId: 'horizon',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      drawToolData: {
+        annotatedSnapshotUrl: '',
+        mapboxSnapshotUrl: mapboxRaw,
+      },
+    })).container;
+    var img = container.querySelector('[data-test="quote-design-preview"]');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe(mapboxRaw);
+  });
+
+  it('falls through to saved.mapboxSnapshotUrl when drawToolData is absent but the saved design has a map snapshot', function() {
+    // Instant-quote or second-session buyer: drawToolData is null but a prior
+    // draw wrote its mapboxSnapshotUrl into the saved design.
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      mapboxSnapshotUrl: 'data:image/jpeg;base64,SAVEDMAP',
+      snapshotDataUrl: 'data:image/jpeg;base64,FENCE3D',
+      styleId: 'horizon',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {})).container;
+    var img = container.querySelector('[data-test="quote-design-preview"]');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe('data:image/jpeg;base64,SAVEDMAP');
+  });
+
+  it('last resort is STYLE_THUMBNAILS when nothing else is available', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      annotatedSnapshotUrl: '',
+      mapboxSnapshotUrl: '',
+      snapshotDataUrl: '',
+      styleId: 'horizon',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {})).container;
+    var img = container.querySelector('[data-test="quote-design-preview"]');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe('assets/ifence_previews/gate_styles/san_marino_15.png');
+  });
 });
 
 // ---------------------------------------------------------------------------
