@@ -321,10 +321,19 @@ function QuoteBuilder(props) {
   var saveSent = saveSentState[0];
   var setSaveSent = saveSentState[1];
 
+  // Auto-save draft tracking (UX-8). Fires once per session when the buyer
+  // advances past step 3 (Extras) AND has voluntarily entered an email in the
+  // persistent Save-for-Later field or elsewhere in `data`. The emailWorkerClient
+  // guard blocks the call on non-prod hosts so tests can't fire real emails.
+  var autoSavedState = useState(false);
+  var autoSaved = autoSavedState[0];
+  var setAutoSaved = autoSavedState[1];
+
   function handleSendLink() {
     emailSaveLink(saveEmail, null).then(function(ok) {
       if (ok) {
         setSaveSent(true);
+        setAutoSaved(true); // buyer explicitly sent already, skip auto-send
         setTimeout(function() {
           setSaveSent(false);
           setSaveEmail('');
@@ -332,6 +341,28 @@ function QuoteBuilder(props) {
       }
     });
   }
+
+  // Resolve the best email the buyer has voluntarily entered so far.
+  // Priority: persistent save-for-later input > shippingEmail > data.email.
+  function resolveAutoSaveEmail() {
+    if (saveEmail && saveEmail.indexOf('@') > 0) return saveEmail;
+    if (data.shippingEmail && data.shippingEmail.indexOf('@') > 0) return data.shippingEmail;
+    if (data.email && data.email.indexOf('@') > 0) return data.email;
+    return null;
+  }
+
+  // Auto-save draft quote to email once, when the buyer advances past Extras
+  // (step 3) into Shipping (step 4). Transactional: only fires if the buyer
+  // already entered an email. CAN-SPAM-safe because the address was voluntarily
+  // provided earlier in the flow (save-for-later or a prior step).
+  useEffect(function() {
+    if (autoSaved) return;
+    if (step < 4) return; // gate fires on Shipping entry, not earlier
+    var addr = resolveAutoSaveEmail();
+    if (!addr) return;
+    setAutoSaved(true);
+    emailSaveLink(addr, null).catch(function() { /* guarded; non-fatal */ });
+  }, [step]);
 
   // Pool compliance smart defaults (warn, don't wall):
   //   Auto-select flush bottom rail. Height is NOT auto-bumped — the user
