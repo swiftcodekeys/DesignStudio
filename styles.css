@@ -4009,8 +4009,9 @@ html, body {
   display: block;
   border-radius: 12px;
   aspect-ratio: 16 / 9;
-  object-fit: cover;
+  object-fit: contain;
   min-height: 280px;
+  background: #0f1a2c;
 }
 .bridge-snapshot-badge {
   position: absolute;
@@ -4896,7 +4897,7 @@ html, body {
   flex-shrink: 0;
 }
 .qb-sidebar-img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
+  width: 100%; height: 100%; object-fit: contain; display: block;
 }
 .qb-sidebar-image-placeholder {
   width: 100%; height: 100%;
