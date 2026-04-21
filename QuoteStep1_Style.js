@@ -1,7 +1,7 @@
 // QuoteStep1_Style.js — Style & Config step for QuoteBuilder
 // React.createElement, var, function declarations, vanilla CSS
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Check, Info, SwimmingPool, ShieldCheck } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
 import { PRIVACY_STYLES } from './configData';
@@ -113,6 +113,30 @@ function sectionHeader(title, infoProps) {
   );
 }
 
+// Collapsible section header used by Grade / Fence Type / Style so the buyer
+// isn't re-asked to re-pick things the wizard already captured. When expanded
+// it looks like a normal section; when collapsed it shows the current
+// selection with a Change affordance.
+function collapsibleHeader(opts) {
+  // opts: { title, valueLabel, valueThumb, expanded, onToggle, changeLabel }
+  var changeLabel = opts.changeLabel || 'Change';
+  return el('div', { className: 'qs1-collapsible-header' + (opts.expanded ? ' expanded' : '') },
+    el('div', { className: 'qs1-collapsible-label-row' },
+      el('h4', { className: 'qs1-section-title' }, opts.title),
+      !opts.expanded && opts.valueLabel ? el('div', { className: 'qs1-collapsible-value' },
+        opts.valueThumb ? el('img', { src: opts.valueThumb, alt: '', className: 'qs1-collapsible-thumb' }) : null,
+        el('span', { className: 'qs1-collapsible-value-text' }, opts.valueLabel)
+      ) : null
+    ),
+    el('button', {
+      type: 'button',
+      className: 'qs1-collapsible-toggle',
+      onClick: opts.onToggle,
+      'aria-expanded': opts.expanded ? 'true' : 'false',
+    }, opts.expanded ? 'Collapse' : changeLabel)
+  );
+}
+
 function selCard(selected, onClick, children, className, key) {
   return el('button', {
     key: key,
@@ -131,6 +155,21 @@ function QuoteStep1_Style(props) {
 
   var grade = data.grade || 'residential';
   var availableHeights = HEIGHTS_BY_GRADE[grade] || HEIGHTS_BY_GRADE.residential;
+
+  // Collapsed-by-default for already-selected sections so the buyer doesn't
+  // re-encounter the full pick grid for things the wizard captured. Start
+  // expanded only when nothing's picked yet.
+  var gradeExpandedState = useState(!data.grade);
+  var gradeExpanded = gradeExpandedState[0];
+  var setGradeExpanded = gradeExpandedState[1];
+
+  var fenceTypeExpandedState = useState(!data.fenceType);
+  var fenceTypeExpanded = fenceTypeExpandedState[0];
+  var setFenceTypeExpanded = fenceTypeExpandedState[1];
+
+  var styleExpandedState = useState(!data.style);
+  var styleExpanded = styleExpandedState[0];
+  var setStyleExpanded = styleExpandedState[1];
 
   // Pool compliance: lock flush bottom, filter styles
   var poolLocked = !!(poolCompliance && poolCompliance.poolBarrier);
@@ -180,12 +219,15 @@ function QuoteStep1_Style(props) {
 
   return el('div', { className: 'qs1-container' },
 
-    // ---- Grade ----
-    sectionHeader('Grade', {
-      title: 'Fence Grade',
-      text: 'Residential is for homes. Commercial uses heavier gauge aluminum for business properties. Industrial is the heaviest duty for high-security applications.',
+    // ---- Grade (collapsible — defaults to Residential, rarely changed) ----
+    collapsibleHeader({
+      title: 'Grade',
+      valueLabel: (GRADES.find(function(g){ return g.id === grade; }) || {}).name || 'Residential',
+      expanded: gradeExpanded,
+      onToggle: function() { setGradeExpanded(!gradeExpanded); },
+      changeLabel: 'Change grade',
     }),
-    el('div', { className: 'qs1-card-row' },
+    gradeExpanded ? el('div', { className: 'qs1-card-row' },
       GRADES.map(function(g) {
         return selCard(grade === g.id, function() { update({ grade: g.id }); },
           el('div', null,
@@ -196,11 +238,17 @@ function QuoteStep1_Style(props) {
           g.id
         );
       })
-    ),
+    ) : null,
 
-    // ---- Fence Type ----
-    sectionHeader('Fence Type'),
-    el('div', { className: 'qs1-toggle-row' },
+    // ---- Fence Type (collapsible) ----
+    collapsibleHeader({
+      title: 'Fence Type',
+      valueLabel: data.fenceType === 'privacy' ? 'Privacy' : 'Ornamental',
+      expanded: fenceTypeExpanded,
+      onToggle: function() { setFenceTypeExpanded(!fenceTypeExpanded); },
+      changeLabel: 'Change type',
+    }),
+    fenceTypeExpanded ? el('div', { className: 'qs1-toggle-row' },
       el('button', {
         className: 'qs1-toggle' + (data.fenceType === 'ornamental' ? ' active' : ''),
         onClick: function() { update({ fenceType: 'ornamental' }); },
@@ -209,7 +257,7 @@ function QuoteStep1_Style(props) {
         className: 'qs1-toggle' + (data.fenceType === 'privacy' ? ' active' : ''),
         onClick: function() { update({ fenceType: 'privacy' }); },
       }, 'Privacy')
-    ),
+    ) : null,
 
     // ---- Privacy Sub-Type Picker (only when fenceType === 'privacy') ----
     data.fenceType === 'privacy' ? el('div', { className: 'qs1-privacy-section' },
@@ -265,14 +313,21 @@ function QuoteStep1_Style(props) {
       )
     ) : null,
 
-    // ---- Style ----
-    data.fenceType !== 'privacy' ? sectionHeader('Style', {
-      title: 'Fence Styles',
-      text: 'Each style has a distinct look. Horizon is a classic flat-top. Charleston features decorative spear-top pickets. Haven is specifically designed for pool code compliance. Any flat-top style can be made pool-safe with a flush bottom rail.',
+    // ---- Style (collapsible — so a buyer who already picked one isn't re-asked) ----
+    data.fenceType !== 'privacy' ? collapsibleHeader({
+      title: 'Style',
+      valueLabel: (function() {
+        var s = ALL_STYLES.find(function(st){ return st.id === data.style; });
+        return s ? s.name : null;
+      })(),
+      valueThumb: STYLE_IMAGES[data.style] || null,
+      expanded: styleExpanded,
+      onToggle: function() { setStyleExpanded(!styleExpanded); },
+      changeLabel: 'Change style',
     }) : null,
 
     // Pool info banner — keep all styles visible; guide with per-card badges below
-    data.fenceType !== 'privacy' && poolLocked ? el('div', { className: 'qs1-pool-banner' },
+    data.fenceType !== 'privacy' && poolLocked && styleExpanded ? el('div', { className: 'qs1-pool-banner' },
       React.createElement(SwimmingPool, { size: 18, weight: 'fill', style: { flexShrink: 0 } }),
       el('div', null,
         el('strong', null, 'Pool code compliance auto-configured'),
@@ -282,8 +337,8 @@ function QuoteStep1_Style(props) {
       )
     ) : null,
 
-    // Style grid (ornamental only)
-    data.fenceType !== 'privacy' ? el('div', { className: 'qs1-style-grid' },
+    // Style grid (ornamental only, and only when expanded — collapsed shows summary via collapsibleHeader)
+    data.fenceType !== 'privacy' && styleExpanded ? el('div', { className: 'qs1-style-grid' },
       availableStyles.map(function(style) {
         var imgSrc = STYLE_IMAGES[style.id] || '';
         var isSelected = data.style === style.id;

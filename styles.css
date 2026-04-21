@@ -5055,6 +5055,43 @@ html, body {
   font-size: 15px; font-weight: 700; color: #1a1a2e; margin: 0;
 }
 
+/* Collapsible section header (Grade / Fence Type / Style).
+   When collapsed: summary chip + "Change X" button on the right.
+   When expanded: normal title + "Collapse" button. */
+.qs1-collapsible-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px;
+  padding: 8px 12px; border-radius: 10px;
+  background: #f8fafc; border: 1px solid var(--border, #e8eaed);
+}
+.qs1-collapsible-header.expanded {
+  background: transparent; border-color: transparent; padding: 0; margin-bottom: 10px;
+}
+.qs1-collapsible-label-row {
+  display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;
+}
+.qs1-collapsible-value {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+}
+.qs1-collapsible-thumb {
+  width: 40px; height: 30px; object-fit: cover;
+  border-radius: 6px; border: 1px solid var(--border, #e8eaed);
+  background: #fff;
+}
+.qs1-collapsible-value-text {
+  font-size: 14px; font-weight: 600; color: var(--text-primary, #1a1a2e);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.qs1-collapsible-toggle {
+  background: transparent; border: none; padding: 6px 10px;
+  font-size: 13px; font-weight: 600; color: var(--brand, #6BA3C2);
+  cursor: pointer; border-radius: 6px; flex-shrink: 0;
+}
+.qs1-collapsible-toggle:hover { background: rgba(107, 163, 194, 0.1); }
+.qs1-collapsible-toggle:focus-visible {
+  outline: 2px solid var(--brand, #6BA3C2); outline-offset: 2px;
+}
+
 /* Generic selector card row */
 .qs1-card-row {
   display: flex; gap: 10px; flex-wrap: wrap;
