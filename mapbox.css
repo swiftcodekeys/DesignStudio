@@ -987,7 +987,7 @@
   white-space: nowrap;
   pointer-events: none;
   letter-spacing: -0.02em;
-  transform: translateY(-18px);
+  transform: translate(12px, -22px);
 }
 .dy-seg-label-ghost {
   background: rgba(194, 65, 12, 0.92);
