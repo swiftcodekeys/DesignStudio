@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 
@@ -165,5 +165,112 @@ describe('MorphingDock — Finish button (Task 2.3)', () => {
     act(() => { fireEvent.click(container.querySelector('.dy-dock-cta')); });
 
     expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MorphingDock Task 5: slope-calculated acknowledgment', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('while epqsLoading=true the CTA shows "Calculating slope"', () => {
+    const { container } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: true, epqsOverall: null })
+    ));
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta).toBeTruthy();
+    expect(cta.textContent).toMatch(/Calculating slope/);
+  });
+
+  it('when epqsLoading flips false with "rackable" classification, CTA shows "Slope detected: rackable"', () => {
+    const { container, rerender } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: true, epqsOverall: null })
+    ));
+    // Initial CTA is the loading label.
+    expect(container.querySelector('.dy-dock-cta').textContent).toMatch(/Calculating slope/);
+
+    // EPQS resolves: loading false, overall becomes rackable. The effect runs
+    // synchronously on render and sets slopeAck.
+    act(() => {
+      rerender(React.createElement(
+        MorphingDock,
+        makeReadyProps({ epqsLoading: false, epqsOverall: 'rackable' })
+      ));
+    });
+
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta.textContent).toMatch(/Slope detected: rackable/);
+  });
+
+  it('after ~2s the acknowledgment clears and CTA returns to "Done. Continue"', () => {
+    const { container, rerender } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: true, epqsOverall: null })
+    ));
+    act(() => {
+      rerender(React.createElement(
+        MorphingDock,
+        makeReadyProps({ epqsLoading: false, epqsOverall: 'rackable' })
+      ));
+    });
+    expect(container.querySelector('.dy-dock-cta').textContent).toMatch(/Slope detected: rackable/);
+
+    // Advance past the 2s timeout and let React flush the state update.
+    act(() => { vi.advanceTimersByTime(2100); });
+
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta.textContent).toMatch(/Done\. Continue/);
+    expect(cta.textContent).not.toMatch(/Slope detected/);
+  });
+
+  it('unknown classification shows the "Slope unknown, you can still continue" label', () => {
+    const { container, rerender } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: true, epqsOverall: null })
+    ));
+    act(() => {
+      rerender(React.createElement(
+        MorphingDock,
+        makeReadyProps({ epqsLoading: false, epqsOverall: 'unknown' })
+      ));
+    });
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta.textContent).toMatch(/Slope unknown, you can still continue/);
+  });
+
+  it('persistent slope chip renders "Slope: rackable" when epqsOverall="rackable"', () => {
+    const { container } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: false, epqsOverall: 'rackable' })
+    ));
+    const chip = container.querySelector('.dy-slope-chip');
+    expect(chip).toBeTruthy();
+    expect(chip.textContent).toMatch(/Slope: rackable/);
+    expect(chip.className).toMatch(/dy-slope-chip-rackable/);
+  });
+
+  it('persistent slope chip renders "Slope: heavy rack" with the heavy-rack modifier class', () => {
+    const { container } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: false, epqsOverall: 'heavy-rack' })
+    ));
+    const chip = container.querySelector('.dy-slope-chip');
+    expect(chip).toBeTruthy();
+    expect(chip.textContent).toMatch(/Slope: heavy rack/);
+    expect(chip.className).toMatch(/dy-slope-chip-heavy-rack/);
+  });
+
+  it('no slope chip when epqsOverall is null (line not yet classified)', () => {
+    const { container } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({ epqsLoading: false, epqsOverall: null })
+    ));
+    expect(container.querySelector('.dy-slope-chip')).toBeNull();
   });
 });

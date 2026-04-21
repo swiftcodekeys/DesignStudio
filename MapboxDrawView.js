@@ -525,6 +525,25 @@ function MorphingDock(props) {
   var isFinished = isFinishedState[0];
   var setIsFinished = isFinishedState[1];
 
+  // Task 5: transient "Slope detected" acknowledgment. When epqsLoading falls
+  // from true to false and we have a classification, briefly swap the CTA
+  // label to show the result so the buyer knows the analysis completed.
+  // After ~2s we clear slopeAck so the CTA reverts to the normal
+  // Done.Continue / Continue to Quote branch.
+  var prevLoadingRef = useRef(epqsLoading);
+  var slopeAckState = useState(null);
+  var slopeAck = slopeAckState[0];
+  var setSlopeAck = slopeAckState[1];
+  useEffect(function() {
+    var wasLoading = prevLoadingRef.current;
+    prevLoadingRef.current = epqsLoading;
+    if (wasLoading && !epqsLoading && props.epqsOverall) {
+      setSlopeAck(props.epqsOverall);
+      var t = setTimeout(function() { setSlopeAck(null); }, 2000);
+      return function() { clearTimeout(t); };
+    }
+  }, [epqsLoading, props.epqsOverall]);
+
   function formatMoney(n) {
     return '$' + Math.round(n).toLocaleString();
   }
@@ -546,6 +565,15 @@ function MorphingDock(props) {
       React.createElement('div', { className: 'dy-stat-label' }, 'est. range')
     )
   );
+
+  // Task 5: persistent slope chip. Renders whenever the parent has published
+  // an overall EPQS classification. Unlike the transient CTA acknowledgment,
+  // the chip stays visible so the buyer always has a running indication of
+  // what slope tier was detected on the drawn line. Null when no line yet.
+  var slopeChipLabel = props.epqsOverall === 'heavy-rack' ? 'heavy rack' : props.epqsOverall;
+  var slopeChip = props.epqsOverall && React.createElement('div', {
+    className: 'dy-slope-chip dy-slope-chip-' + props.epqsOverall,
+  }, 'Slope: ' + slopeChipLabel);
 
   // "Start new line" appears only once the active line has a real segment
   // (>=2 points). Clicking pushes a fresh empty line onto `lines` so the
@@ -637,13 +665,22 @@ function MorphingDock(props) {
     }, 'Start Drawing')
   );
 
-  // CTA label branches: EPQS-loading (ready phase only) > continue-ready > keep-going.
-  // epqsLoading gates canContinue above; when loading we still show the ready-phase
-  // stats row but swap the CTA label/disabled to signal slope calculation is in flight.
+  // CTA label branches: EPQS-loading (ready phase only) > slope-ack (Task 5) >
+  // continue-ready > keep-going. epqsLoading gates canContinue above; when
+  // loading we still show the ready-phase stats row but swap the CTA
+  // label/disabled to signal slope calculation is in flight. After the promise
+  // resolves we briefly show a "Slope detected: ..." acknowledgment so the
+  // buyer knows the analysis completed.
   var showEpqsLoading = epqsLoading && (isReady || isExpanded);
+  var showSlopeAck = !showEpqsLoading && slopeAck && (isReady || isExpanded);
   var ctaLabel;
   if (showEpqsLoading) {
     ctaLabel = React.createElement('span', null, 'Calculating slope\u2026');
+  } else if (showSlopeAck && slopeAck === 'unknown') {
+    ctaLabel = React.createElement('span', null, 'Slope unknown, you can still continue');
+  } else if (showSlopeAck) {
+    var friendly = slopeAck === 'flat' ? 'flat' : (slopeAck === 'heavy-rack' ? 'heavy rack' : 'rackable');
+    ctaLabel = React.createElement('span', null, 'Slope detected: ' + friendly);
   } else if (canContinue && isFinished) {
     var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
     ctaLabel = React.createElement(React.Fragment, null,
@@ -672,6 +709,7 @@ function MorphingDock(props) {
 
   var drawingOrReadyContent = React.createElement(React.Fragment, null,
     statsRow,
+    slopeChip,
     isFinished ? editDrawingLink : microActions,
     React.createElement('button', {
       className: 'dy-dock-cta ' + (canContinue ? 'dy-dock-cta-ready' : 'dy-dock-cta-disabled'),
@@ -1358,9 +1396,20 @@ function MapboxDrawView(props) {
   var epqsLoadingState = useState(false);
   var epqsLoading = epqsLoadingState[0];
   var setEpqsLoading = epqsLoadingState[1];
+  // Task 5: epqsOverall is the reactive mirror of epqsResults.current.overallClassification.
+  // Lives as state (not just a ref) so the MorphingDock re-renders when classification
+  // completes, powering both the transient "Slope detected" acknowledgment and the
+  // persistent chip in the stats row.
+  var epqsOverallState = useState(null);
+  var epqsOverall = epqsOverallState[0];
+  var setEpqsOverall = epqsOverallState[1];
 
   useEffect(function() {
-    if (!points || points.length < 2) { epqsResults.current = null; return; }
+    if (!points || points.length < 2) {
+      epqsResults.current = null;
+      setEpqsOverall(null);
+      return;
+    }
     var cancelled = false;
     var ceilingTimer = null;
     var timer = setTimeout(function() {
@@ -1375,12 +1424,37 @@ function MapboxDrawView(props) {
           resolve({ segmentClassifications: [], overallClassification: 'unknown', confidence: 'low', maxDeltaInches: 0 });
         }, 12000);
       });
+      // Stash the classification in a closure-local so the finalize step below
+      // can publish both the result ref and the reactive overall-state in the
+      // same React batch as setEpqsLoading(false). If we published epqsOverall
+      // from inside the first `.then`, React would flush that state update
+      // synchronously, the `points` ref identity would change on the rerender,
+      // the effect cleanup would fire (cancelled=true), and the finalize
+      // `.then` below would see cancelled and skip setEpqsLoading(false),
+      // leaving the CTA stuck in "Calculating slope…".
+      var pendingOverall = null;
+      var pendingResult = null;
+      var pendingError = false;
       Promise.race([classifyPromise, ceiling])
-        .then(function(result) { if (!cancelled) epqsResults.current = result; })
-        .catch(function() { if (!cancelled) epqsResults.current = null; })
+        .then(function(result) {
+          pendingResult = result;
+          pendingOverall = (result && result.overallClassification) || 'unknown';
+        })
+        .catch(function() {
+          pendingError = true;
+          // Treat thrown errors the same as an 'unknown' classification so
+          // the chip/acknowledgment still surface something rather than
+          // silently disappearing.
+          pendingOverall = 'unknown';
+        })
         .then(function() {
           if (ceilingTimer) clearTimeout(ceilingTimer);
-          if (!cancelled) setEpqsLoading(false);
+          if (cancelled) return;
+          epqsResults.current = pendingError ? null : pendingResult;
+          // Batch both state updates with setEpqsLoading(false) so React
+          // flushes one rerender, not three.
+          setEpqsOverall(pendingOverall);
+          setEpqsLoading(false);
         });
     }, 800);
     return function() {
@@ -1772,6 +1846,7 @@ function MapboxDrawView(props) {
       priceRange: priceRange,
       segments: dockSegments,
       epqsLoading: epqsLoading,
+      epqsOverall: epqsOverall,
       lines: lines,
       onUndo: handleUndo,
       onReset: handleReset,

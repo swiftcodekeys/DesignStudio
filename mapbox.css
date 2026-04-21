@@ -407,6 +407,30 @@
 }
 .dy-stat-sub { font-size: 10px; color: var(--dy-muted); margin-top: 2px; }
 
+/* Task 5: persistent slope chip. Sits between the stats row and the
+   micro-actions so it's always visible once EPQS has classified the drawn
+   line. Colors match existing intent: rackable/flat = positive (green),
+   heavy-rack = caution (amber), unknown = neutral (gray). */
+.dy-slope-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: center;
+  margin: 2px auto 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #eef1f4;
+  color: #5a6270;
+}
+.dy-slope-chip-flat,
+.dy-slope-chip-rackable { background: #e8f5ec; color: #15803d; }
+.dy-slope-chip-heavy-rack { background: #fff4e6; color: #b45309; }
+.dy-slope-chip-unknown { background: #f0f0f0; color: #6b7280; }
+
 /* Micro actions (undo / reset) */
 .dy-micro {
   display: flex;
