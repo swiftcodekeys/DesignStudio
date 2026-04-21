@@ -208,9 +208,9 @@ var DesignReviewPage = function(props) {
                 <div className="bridge-columns">
                     {/* LEFT: Saved image + current selections */}
                     <div className="bridge-left">
-                        {hasDesign && saved.snapshotDataUrl ? (
+                        {hasDesign && (saved.annotatedSnapshotUrl || saved.snapshotDataUrl) ? (
                             <div className="bridge-snapshot">
-                                <img className="bridge-snapshot-img" src={saved.snapshotDataUrl} alt="Your fence design" />
+                                <img className="bridge-snapshot-img" src={saved.annotatedSnapshotUrl || saved.snapshotDataUrl} alt="Your fence design" />
                                 <div className="bridge-snapshot-badge">SAVED</div>
                                 {isPoolReady && <div className="bridge-pool-badge">POOL READY</div>}
                             </div>

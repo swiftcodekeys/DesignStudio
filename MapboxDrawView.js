@@ -18,6 +18,7 @@ import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts, class
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 import { classifyDrawnLine } from './epqsClient';
+import { buildAnnotatedSnapshot } from './legendOverlay';
 import SlopePopup from './SlopePopup';
 
 // OS-aware modifier key display. Mac shows ⌘, everyone else shows Ctrl.
@@ -1415,8 +1416,37 @@ function MapboxDrawView(props) {
       source: 'auto',
       parcel: parcelData || null,
     };
-    if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
-    props.onComplete(data);
+
+    // Read postCap from saved design config (set by the 3D configurator before
+    // the buyer enters the draw tool). Fall back to flat cap if unavailable.
+    var savedPostCap = 'pcf';
+    var savedFinialType = null;
+    try {
+      var rawSaved = window.localStorage && window.localStorage.getItem('gv_saved_design');
+      if (rawSaved) {
+        var parsedSaved = JSON.parse(rawSaved);
+        if (parsedSaved && parsedSaved.postCap) savedPostCap = parsedSaved.postCap;
+        if (parsedSaved && parsedSaved.finialType) savedFinialType = parsedSaved.finialType;
+      }
+    } catch (_) {}
+
+    // Build the annotated snapshot asynchronously, then emit. The caller gets
+    // both mapboxSnapshotUrl (raw) and annotatedSnapshotUrl (with legend).
+    buildAnnotatedSnapshot(snapshotUrl, outLines, {
+      postCap: savedPostCap,
+      finialType: savedFinialType,
+      totalFt: totalFt,
+      corners: corners,
+    }).then(function(annotatedUrl) {
+      data.annotatedSnapshotUrl = annotatedUrl;
+      if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
+      props.onComplete(data);
+    }).catch(function() {
+      // Overlay generation failed -- proceed without it so the buyer is not
+      // blocked. The raw mapboxSnapshotUrl is still available.
+      if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
+      props.onComplete(data);
+    });
   }
 
   function handleContinue() {

@@ -532,7 +532,11 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     });
     const cta = container.querySelector('.dy-dock-cta');
     expect(cta).toBeTruthy();
-    act(() => { fireEvent.click(cta); });
+    await act(async () => {
+      fireEvent.click(cta);
+      // Flush async promise chain from buildAnnotatedSnapshot compositor.
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
     expect(onComplete).toHaveBeenCalled();
     const arg = onComplete.mock.calls[0][0];
     expect(arg.slopeAnswer).toBe('some');
@@ -562,7 +566,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(cta).toBeTruthy();
     // Loading finished → CTA should be enabled again
     expect(cta.disabled).toBe(false);
-    act(() => { fireEvent.click(cta); });
+    await act(async () => {
+      fireEvent.click(cta);
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
     expect(onComplete).toHaveBeenCalled();
     const arg = onComplete.mock.calls[0][0];
     expect(arg.epqsOverall).toBe('sloped');
@@ -608,7 +615,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     });
     const cta = container.querySelector('.dy-dock-cta');
     expect(cta).toBeTruthy();
-    act(() => { fireEvent.click(cta); });
+    await act(async () => {
+      fireEvent.click(cta);
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
     expect(onComplete).toHaveBeenCalled();
     const arg = onComplete.mock.calls[0][0];
     expect(arg.parcel).toBeTruthy();
@@ -830,7 +840,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
 
     const cta = container.querySelector('.dy-dock-cta');
     expect(cta).toBeTruthy();
-    act(() => { fireEvent.click(cta); });
+    await act(async () => {
+      fireEvent.click(cta);
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
     expect(onComplete).toHaveBeenCalled();
 
     const arg = onComplete.mock.calls[0][0];
@@ -902,7 +915,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
 
     const cta = container.querySelector('.dy-dock-cta');
     expect(cta).toBeTruthy();
-    act(() => { fireEvent.click(cta); });
+    await act(async () => {
+      fireEvent.click(cta);
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
     expect(onComplete).toHaveBeenCalled();
     const arg = onComplete.mock.calls[0][0];
     expect(arg.corners).toBe(expectedTotal);

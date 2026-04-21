@@ -107,7 +107,21 @@ function QuoteStep6_Review(props) {
   if (data.shippingZip) addrParts.push(data.shippingZip);
   var addressSummary = addrParts.length > 0 ? addrParts.join(', ') : 'Not provided';
 
+  var annotatedSnapshotUrl = props.annotatedSnapshotUrl || '';
+
   return el('div', { className: 'qb-review-container' },
+
+    // ======== Annotated fence sketch (manufacturing spec visual) ========
+    annotatedSnapshotUrl ? el('div', { className: 'qs6-annotated-snapshot' },
+      el('img', {
+        src: annotatedSnapshotUrl,
+        alt: 'Annotated fence layout',
+        className: 'qs6-annotated-snapshot-img',
+      }),
+      el('p', { className: 'qs6-annotated-snapshot-caption' },
+        'This is the fence we will manufacture. Review carefully. This is what your order is built against.'
+      )
+    ) : null,
 
     // ======== CYA #3: Measurement responsibility card ========
     React.createElement('div', { className: 'qs6-cya-card' },

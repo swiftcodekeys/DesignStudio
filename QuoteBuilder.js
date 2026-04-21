@@ -197,6 +197,9 @@ function resolveSidebarPreviewSrc() {
     if (!raw) return '';
     var saved = JSON.parse(raw);
     if (!saved || typeof saved !== 'object') return '';
+    if (typeof saved.annotatedSnapshotUrl === 'string' && saved.annotatedSnapshotUrl.length > 0) {
+      return saved.annotatedSnapshotUrl;
+    }
     if (typeof saved.snapshotDataUrl === 'string' && saved.snapshotDataUrl.length > 0) {
       return saved.snapshotDataUrl;
     }
@@ -386,12 +389,16 @@ function QuoteBuilder(props) {
   }
   // step 5 — Review
   if (step === 5) {
+    // Pass annotatedSnapshotUrl from drawToolData so the confirmation card
+    // can show the annotated manufacturing spec image.
+    var reviewAnnotatedUrl = (props.drawToolData && props.drawToolData.annotatedSnapshotUrl) || '';
     stepContent = React.createElement(QuoteStep6_Review, {
       data: data,
       update: update,
       onEditStep: setStep,
       onComplete: props.onComplete,
       zoneName: props.zoneName || 'Your Fence',
+      annotatedSnapshotUrl: reviewAnnotatedUrl,
     });
   }
 
