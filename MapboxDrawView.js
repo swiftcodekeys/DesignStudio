@@ -588,11 +588,13 @@ function MorphingDock(props) {
     }, React.createElement(Check, { size: 16, weight: 'bold' }))
   );
 
-  // When finished, show a single "Edit drawing" link that restores drawing state.
-  // Task 3 AC6: clicking "Edit drawing" also re-enters draw mode so the user
-  // can keep placing vertices on the active line without a second action.
-  // Task 4 will add an explicit "Add another line" button that pairs
-  // onStartNewLine with onEnterDrawMode for the disconnected-line case.
+  // When finished, show "Edit drawing" (resume the active line) and
+  // "Add another line" (push a fresh empty line + re-enter draw mode so
+  // the next click starts a disconnected run). Task 4 AC1/AC2/AC3/AC4.
+  // Order: setIsFinished(false) -> onStartNewLine (push empty line) ->
+  // onEnterDrawMode (cursor back to crosshair). The parent's
+  // handleStartNewLine is a no-op if the active line is already empty,
+  // so double-clicking Add another line is safe.
   var editDrawingLink = React.createElement('div', { className: 'dy-micro dy-micro-finished' },
     React.createElement('button', {
       className: 'dy-edit-drawing-link',
@@ -602,7 +604,17 @@ function MorphingDock(props) {
       },
       type: 'button',
       'aria-label': 'Edit drawing',
-    }, 'Edit drawing')
+    }, 'Edit drawing'),
+    React.createElement('button', {
+      className: 'dy-add-line-btn',
+      onClick: function() {
+        setIsFinished(false);
+        if (props.onStartNewLine) props.onStartNewLine();
+        if (props.onEnterDrawMode) props.onEnterDrawMode();
+      },
+      type: 'button',
+      'aria-label': 'Add another line',
+    }, 'Add another line')
   );
 
   // Task 3 AC2/AC5: the empty-state shows an explicit "Start Drawing" CTA when

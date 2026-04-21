@@ -430,6 +430,29 @@
 }
 .dy-micro-btn:hover { background: #fff; border-color: var(--dy-muted); color: var(--dy-ink); }
 
+/* Finished-state micro row ("Edit drawing" + "Add another line"). Secondary
+   actions that sit beside the Continue CTA and must not outweigh it. */
+.dy-micro-finished { gap: 6px; align-items: center; flex-wrap: wrap; }
+.dy-edit-drawing-link,
+.dy-add-line-btn {
+  background: var(--dy-cream);
+  color: var(--dy-ink-2);
+  border: 1px solid var(--dy-rule);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.dy-edit-drawing-link:hover,
+.dy-add-line-btn:hover {
+  background: #fff;
+  border-color: var(--dy-muted);
+  color: var(--dy-ink);
+}
+
 /* CTA button */
 .dy-dock-cta {
   padding: 10px 18px;

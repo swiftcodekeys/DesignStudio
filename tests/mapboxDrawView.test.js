@@ -91,7 +91,7 @@ vi.mock('mapbox-gl', () => {
   };
 });
 
-import MapboxDrawView, { MapScreen } from '../MapboxDrawView.js';
+import MapboxDrawView, { MapScreen, MorphingDock } from '../MapboxDrawView.js';
 
 describe('MapboxDrawView (pen-tool + morphing dock)', () => {
   beforeEach(() => {
@@ -1149,5 +1149,92 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     act(() => { fireEvent.click(editLink); });
     // Draw mode is back on
     expect(container.querySelector('.dy-map').className).toMatch(/dy-draw-active/);
+  });
+
+  it('Task 4: "Add another line" from finished state calls onStartNewLine and restores micro-actions', () => {
+    // Render the MorphingDock directly so we can stub onStartNewLine and
+    // assert that Finish -> Add another line re-exposes the micro-actions
+    // row (Undo/Reset/Finish) and pushes through the new-line handler.
+    const onStartNewLine = vi.fn();
+    const onEnterDrawMode = vi.fn();
+    const onExitDrawMode = vi.fn();
+    const { container } = render(
+      <MorphingDock
+        phase="ready"
+        totalFt={40}
+        corners={3}
+        linePosts={2}
+        priceRange={{ low: 3000, high: 5000 }}
+        segments={[]}
+        lines={[[[0,0],[1,1],[2,2]]]}
+        onUndo={() => {}}
+        onReset={() => {}}
+        onStartNewLine={onStartNewLine}
+        onContinue={() => {}}
+        onStartDrawing={() => {}}
+        onEnterDrawMode={onEnterDrawMode}
+        onExitDrawMode={onExitDrawMode}
+        drawModeActive={true}
+      />
+    );
+    // Sanity: Finish button is present in the ready-phase micro-actions row.
+    const finishBtn = container.querySelector('button[aria-label="Finish"]');
+    expect(finishBtn).toBeTruthy();
+    // Click Finish to swap micro-actions for the finished-state row.
+    act(() => { fireEvent.click(finishBtn); });
+    // After Finish, micro-actions are hidden; Add another line is visible.
+    expect(container.querySelector('button[aria-label="Undo"]')).toBeFalsy();
+    const addLineBtn = container.querySelector('.dy-add-line-btn');
+    expect(addLineBtn).toBeTruthy();
+    expect(addLineBtn.textContent).toBe('Add another line');
+    // Click Add another line.
+    act(() => { fireEvent.click(addLineBtn); });
+    expect(onStartNewLine).toHaveBeenCalledTimes(1);
+    expect(onEnterDrawMode).toHaveBeenCalled();
+    // Micro-actions row is back (Undo/Reset/Finish present again).
+    expect(container.querySelector('button[aria-label="Undo"]')).toBeTruthy();
+    expect(container.querySelector('button[aria-label="Reset"]')).toBeTruthy();
+    expect(container.querySelector('button[aria-label="Finish"]')).toBeTruthy();
+    // Finished-state link is gone.
+    expect(container.querySelector('.dy-add-line-btn')).toBeFalsy();
+  });
+
+  it('Task 4: "Add another line" at the MapboxDrawView level restores draw mode and micro-actions row', () => {
+    // Integration test: drive the full <MapboxDrawView> through
+    // finish -> add-another-line and assert only on observable DOM
+    // (no internal `lines` state access). Seeds autosave so the dock
+    // opens in `ready` phase with content, and uses the test-only draw
+    // mode flag to bypass the explicit Start Drawing opt-in gate.
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        __testDrawModeActive={true}
+      />
+    );
+    // Sanity: draw mode is on and Finish is present in the micro-actions row.
+    expect(container.querySelector('.dy-map').className).toMatch(/dy-draw-active/);
+    const finishBtn = container.querySelector('button[aria-label="Finish"]');
+    expect(finishBtn).toBeTruthy();
+    // Click Finish: draw mode exits, micro-actions row is replaced by the
+    // finished-state row (Edit drawing + Add another line).
+    act(() => { fireEvent.click(finishBtn); });
+    expect(container.querySelector('.dy-map').className).not.toMatch(/dy-draw-active/);
+    expect(container.querySelector('button[aria-label="Undo"]')).toBeFalsy();
+    const addLineBtn = container.querySelector('.dy-add-line-btn');
+    expect(addLineBtn).toBeTruthy();
+    // Click Add another line: draw mode is restored AND the micro-actions
+    // row (Undo / Reset / Finish) comes back for the next disconnected run.
+    act(() => { fireEvent.click(addLineBtn); });
+    expect(container.querySelector('.dy-map').className).toMatch(/dy-draw-active/);
+    expect(container.querySelector('button[aria-label="Undo"]')).toBeTruthy();
+    expect(container.querySelector('button[aria-label="Reset"]')).toBeTruthy();
+    expect(container.querySelector('button[aria-label="Finish"]')).toBeTruthy();
+    // Finished-state row is gone.
+    expect(container.querySelector('.dy-add-line-btn')).toBeFalsy();
   });
 });
