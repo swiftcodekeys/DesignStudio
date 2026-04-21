@@ -966,12 +966,17 @@
 }
 /* Enlarged invisible hit target — rendered as pseudo-element so it inherits
    Mapbox's absolute positioning on the parent. Prior impl nested a div and
-   broke translate-based marker placement. */
+   broke translate-based marker placement.
+   pointer-events: none so that clicks in the 14px ring AROUND the vertex
+   visual pass through to the Mapbox canvas and register as new vertex drops,
+   rather than being swallowed by this hit-target area.  The .dy-vertex
+   element itself (the 18px circle) retains pointer-events for drag. */
 .dy-vertex::before {
   content: '';
   position: absolute;
   inset: -14px;
   border-radius: 50%;
+  pointer-events: none;
 }
 
 .dy-seg-label {

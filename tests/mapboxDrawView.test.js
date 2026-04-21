@@ -296,6 +296,116 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(rule).not.toMatch(/position\s*:/);
   });
 
+  // --- Task 2.4: vertex-drop reliability near existing vertices ---------------
+
+  it('dy-vertex::before has pointer-events: none so click-ring passes through to canvas', () => {
+    // Regression guard: the ::before pseudo-element must have pointer-events:none
+    // so that clicks in the 14px enlarged hit-target ring around a vertex are
+    // NOT swallowed by the vertex element and instead reach the Mapbox canvas
+    // where the map.on('click') handler can drop a new vertex.
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(
+      path.join(__dirname, '..', 'mapbox.css'),
+      'utf8'
+    );
+    // Match the .dy-vertex::before rule block
+    const match = css.match(/\.dy-vertex::before\s*\{([^}]*)\}/);
+    expect(match).toBeTruthy();
+    const rule = match[1];
+    expect(rule).toMatch(/pointer-events\s*:\s*none/);
+  });
+
+  it('map click near existing vertex still drops a new vertex (canvas target bypasses guard)', async () => {
+    // This is the behavioral test for the fix. With pointer-events:none on
+    // ::before, a click that lands in the 14px ring hits the canvas, not the
+    // .dy-vertex element. The map click handler's t.closest('.dy-vertex') check
+    // then returns null and the new vertex is added.
+    //
+    // We simulate this by firing a map click whose originalEvent.target is the
+    // Mapbox canvas element (a plain div, not inside .dy-vertex). One existing
+    // vertex is already placed. The click must add a second vertex.
+    const mapboxgl = await import('mapbox-gl');
+    const mockInstance = makeMockMapInstance();
+    mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+    const received = [];
+    const setPoints = vi.fn(function (updater) {
+      // Call the updater with the existing single-vertex array to simulate state
+      const existing = received.length === 0 ? [] : received[received.length - 1];
+      const next = typeof updater === 'function' ? updater(existing) : updater;
+      received.push(next);
+    });
+    const setHoverPoint = vi.fn();
+
+    render(
+      <MapScreen
+        location={{ lat: 42.6, lng: -83.9 }}
+        points={[[-83.9, 42.6]]}
+        setPoints={setPoints}
+        setHoverPoint={setHoverPoint}
+      />
+    );
+
+    // Simulate canvas element as click target (what happens when ::before has
+    // pointer-events:none and the user clicks in the ring around the vertex).
+    const canvasEl = document.createElement('canvas');
+    canvasEl.className = 'mapboxgl-canvas';
+
+    // Click at a point 10px away from existing vertex in screen space, but
+    // lngLat is what matters for vertex placement.
+    mockInstance._fire('click', {
+      lngLat: { lng: -83.9001, lat: 42.6001 },
+      point: { x: 410, y: 300 },
+      originalEvent: { target: canvasEl },
+    });
+
+    // setPoints must have been called (new vertex dropped)
+    expect(setPoints).toHaveBeenCalledTimes(1);
+    expect(received.length).toBe(1);
+    // The new point should be the clicked lngLat
+    const newPoint = received[0][received[0].length - 1];
+    expect(newPoint[0]).toBeCloseTo(-83.9001, 4);
+    expect(newPoint[1]).toBeCloseTo(42.6001, 4);
+  });
+
+  it('map click directly on .dy-vertex element is still blocked (drag target not confused with canvas)', async () => {
+    // Sanity check: a click whose originalEvent.target IS a .dy-vertex element
+    // (user clicked right on the 18px circle) should NOT drop a new vertex,
+    // because the map handler guards against it to avoid spurious vertex stacking.
+    const mapboxgl = await import('mapbox-gl');
+    const mockInstance = makeMockMapInstance();
+    mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+    const setPoints = vi.fn();
+    const setHoverPoint = vi.fn();
+
+    render(
+      <MapScreen
+        location={{ lat: 42.6, lng: -83.9 }}
+        points={[[-83.9, 42.6]]}
+        setPoints={setPoints}
+        setHoverPoint={setHoverPoint}
+      />
+    );
+
+    // Construct a .dy-vertex DOM element, like the real marker creates
+    const vertexEl = document.createElement('div');
+    vertexEl.className = 'dy-vertex';
+    document.body.appendChild(vertexEl);
+
+    mockInstance._fire('click', {
+      lngLat: { lng: -83.9, lat: 42.6 },
+      point: { x: 400, y: 300 },
+      originalEvent: { target: vertexEl },
+    });
+
+    // Guard must have fired — no new vertex dropped
+    expect(setPoints).not.toHaveBeenCalled();
+
+    document.body.removeChild(vertexEl);
+  });
+
   it('expanded breakdown has a dedicated close button that collapses the panel', () => {
     localStorage.setItem('gv_draw_state', JSON.stringify({
       points: [
