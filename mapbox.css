@@ -992,7 +992,9 @@
   white-space: nowrap;
   pointer-events: none;
   letter-spacing: -0.02em;
-  transform: translate(12px, -22px);
+  /* Offset is applied dynamically via mapboxgl.Marker({ offset }) from
+     computeLabelOffsetPx so the label sits perpendicular to the segment
+     on the outside of the fence line. No static transform here. */
 }
 .dy-seg-label-ghost {
   background: rgba(194, 65, 12, 0.92);

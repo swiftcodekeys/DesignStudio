@@ -103,6 +103,65 @@ export function epqsBadgeLabel(args) {
   return arrow + ' ' + maxAbsDelta.toFixed(1) + '"';
 }
 
+// Compute a pixel-space offset for a segment length label so it sits
+// perpendicular to the segment, on the "outside" of the fence line.
+// This replaces the old fixed CSS `translate(12px, -22px)`, which collided
+// with the click path when the user's next vertex was up-and-right of the
+// endpoint.
+//
+// Inputs are all in pixel space (from `map.project([lng, lat])`):
+//   p0, p1     - segment endpoints {x, y}
+//   centroid   - centroid of the current line in pixel space, or null if the
+//                line has <3 points (treated as an open line)
+//   isClosed   - true when the line has >=3 points (polygon-ish); for an open
+//                line we use a consistent "left-of-walk" perpendicular sign
+//   distancePx - distance to offset the label from the midpoint (default 22)
+// Returns [offsetX, offsetY] suitable for mapboxgl.Marker({ offset }).
+export function computeLabelOffsetPx(args) {
+  var p0 = args.p0;
+  var p1 = args.p1;
+  var centroid = args.centroid || null;
+  var isClosed = !!args.isClosed;
+  var distancePx = typeof args.distancePx === 'number' ? args.distancePx : 22;
+  var dx = p1.x - p0.x;
+  var dy = p1.y - p0.y;
+  var len = Math.sqrt(dx * dx + dy * dy) || 1;
+  // Unit perpendicular rotated 90 degrees CCW from the segment direction.
+  var nx = -dy / len;
+  var ny = dx / len;
+  var sign = 1;
+  if (isClosed && centroid) {
+    var midX = (p0.x + p1.x) / 2;
+    var midY = (p0.y + p1.y) / 2;
+    // Dot product of (mid - centroid) with the perpendicular tells us
+    // which side of the segment is "away from centroid" (the outside).
+    var towardX = midX - centroid.x;
+    var towardY = midY - centroid.y;
+    sign = (towardX * nx + towardY * ny) >= 0 ? 1 : -1;
+  }
+  return [nx * sign * distancePx, ny * sign * distancePx];
+}
+
+// Compute the pixel-space centroid of a line's vertices. Returns null when
+// the line has fewer than 3 points (no meaningful "inside" yet, so callers
+// should fall through to the open-line sign).
+export function computeCentroidPx(linePoints, projectFn) {
+  if (!linePoints || linePoints.length < 3 || typeof projectFn !== 'function') return null;
+  var sumX = 0;
+  var sumY = 0;
+  var n = 0;
+  for (var i = 0; i < linePoints.length; i++) {
+    var p;
+    try { p = projectFn(linePoints[i]); } catch (e) { return null; }
+    if (!p || typeof p.x !== 'number' || typeof p.y !== 'number') return null;
+    sumX += p.x;
+    sumY += p.y;
+    n++;
+  }
+  if (n === 0) return null;
+  return { x: sumX / n, y: sumY / n };
+}
+
 // ---------- Intro overlay (first visit — flies from globe to rooftop) ----------
 // MapScreen is already mounted behind this overlay with cinematic=true,
 // which starts the Mapbox globe at zoom 1 and flyTo()'s to the user's
@@ -995,6 +1054,11 @@ function MapScreen(props) {
     for (var lineIdx = 0; lineIdx < linesArr.length; lineIdx++) {
       var linePoints = linesArr[lineIdx] || [];
       var segCount = linePoints.length - 1;
+      // Pre-compute per-line centroid so all segment labels on this line
+      // agree on "outside". Centroid is only meaningful for >=3 points.
+      var projectFn = canProject ? function(pt) { return map.project(pt); } : null;
+      var lineCentroid = linePoints.length >= 3 ? computeCentroidPx(linePoints, projectFn) : null;
+      var lineIsClosed = linePoints.length >= 3;
       for (var i = 0; i < segCount; i++) {
         var len = distanceBetween(linePoints[i], linePoints[i + 1]);
         var midLng = (linePoints[i][0] + linePoints[i + 1][0]) / 2;
@@ -1002,6 +1066,10 @@ function MapScreen(props) {
         var isEndpoint = (i === 0) || (i === segCount - 1);
         var shouldRender = true;
         var px = null;
+        // Overlap handling remains at the MIDPOINT pixel level. We only
+        // changed where the label renders (the offset); the dedup comparison
+        // still uses midpoint proximity, which is what matters for "are
+        // these labels too close to each other to both be readable".
         if (!isEndpoint && canProject) {
           try { px = map.project([midLng, midLat]); } catch (err) { px = null; }
           if (px && typeof px.x === 'number' && typeof px.y === 'number') {
@@ -1022,10 +1090,28 @@ function MapScreen(props) {
         if (px && typeof px.x === 'number' && typeof px.y === 'number') {
           keptPx.push({ x: px.x, y: px.y });
         }
+        // Compute perpendicular-outside offset in pixel space. For short/open
+        // lines we fall through to the left-of-walk default; once the line
+        // has 3+ points we have a real centroid and can pick the outside.
+        var markerOffset = [0, 0];
+        if (canProject) {
+          var p0Px = null;
+          var p1Px = null;
+          try { p0Px = map.project(linePoints[i]); } catch (eP0) { p0Px = null; }
+          try { p1Px = map.project(linePoints[i + 1]); } catch (eP1) { p1Px = null; }
+          if (p0Px && p1Px && typeof p0Px.x === 'number' && typeof p1Px.x === 'number') {
+            markerOffset = computeLabelOffsetPx({
+              p0: p0Px,
+              p1: p1Px,
+              centroid: lineCentroid,
+              isClosed: lineIsClosed,
+            });
+          }
+        }
         var el = document.createElement('div');
         el.className = 'dy-seg-label';
         el.textContent = Math.round(len) + ' ft';
-        var marker = new mapboxgl.Marker({ element: el })
+        var marker = new mapboxgl.Marker({ element: el, offset: markerOffset })
           .setLngLat([midLng, midLat])
           .addTo(map);
         labels.push(marker);
@@ -1038,17 +1124,44 @@ function MapScreen(props) {
   useEffect(function() {
     if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
     if (props.points.length === 0 || !props.hoverPoint) return;
+    var map = mapRef.current;
     var last = props.points[props.points.length - 1];
     var len = distanceBetween(last, props.hoverPoint);
     if (len < 1) return;
     var midLng = (last[0] + props.hoverPoint[0]) / 2;
     var midLat = (last[1] + props.hoverPoint[1]) / 2;
+    // Ghost segment uses the same perpendicular-offset logic. If we already
+    // have >=2 committed points and the hover projects, we can compute a
+    // centroid over (committed + hoverPoint) so the ghost label also picks
+    // the outside for in-progress polygons. Otherwise it falls back to the
+    // open-line default (left of walk direction).
+    var markerOffset = [0, 0];
+    var canProject = typeof map.project === 'function';
+    if (canProject) {
+      var p0Px = null;
+      var p1Px = null;
+      try { p0Px = map.project(last); } catch (eP0) { p0Px = null; }
+      try { p1Px = map.project(props.hoverPoint); } catch (eP1) { p1Px = null; }
+      if (p0Px && p1Px && typeof p0Px.x === 'number' && typeof p1Px.x === 'number') {
+        var ghostLine = props.points.concat([props.hoverPoint]);
+        var ghostIsClosed = ghostLine.length >= 3;
+        var ghostCentroid = ghostIsClosed
+          ? computeCentroidPx(ghostLine, function(pt) { return map.project(pt); })
+          : null;
+        markerOffset = computeLabelOffsetPx({
+          p0: p0Px,
+          p1: p1Px,
+          centroid: ghostCentroid,
+          isClosed: ghostIsClosed,
+        });
+      }
+    }
     var el = document.createElement('div');
     el.className = 'dy-seg-label dy-seg-label-ghost';
     el.textContent = '+' + Math.round(len) + ' ft';
-    var marker = new mapboxgl.Marker({ element: el })
+    var marker = new mapboxgl.Marker({ element: el, offset: markerOffset })
       .setLngLat([midLng, midLat])
-      .addTo(mapRef.current);
+      .addTo(map);
     return function() { marker.remove(); };
   }, [props.points, props.hoverPoint]);
 
