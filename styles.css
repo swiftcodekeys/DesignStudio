@@ -4931,6 +4931,26 @@ html, body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+/* "Same as drawing address" prefill checkbox on the Shipping step.
+   Reads gv_bridge_location (the geocoded draw address) and fills the
+   street/city/state/zip fields in one click (UX-5b). */
+.qb-ship-same-as-draw {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; margin-bottom: 12px;
+  background: #f0fbf5; border: 1px solid #bfeed3; border-radius: 10px;
+  cursor: pointer;
+}
+.qb-ship-same-as-draw input[type="checkbox"] {
+  margin-top: 3px; flex-shrink: 0;
+}
+.qb-ship-same-as-draw-text {
+  font-size: 13px; line-height: 1.5;
+  color: var(--text-primary, #1a1a2e);
+}
+.qb-ship-same-as-draw-text strong {
+  font-weight: 700; color: var(--text-primary, #1a1a2e);
+}
+
 /* Running-estimate card in the QB sidebar. Updates live on every config
    change so buyers feel the cost consequence of each pick (UX-2). */
 .qb-sidebar-estimate {

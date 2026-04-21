@@ -36,6 +36,52 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '');
 }
 
+// Parse a Mapbox geocoder placeName (e.g. "1600 Pennsylvania Ave NW,
+// Washington, DC 20500, United States") into street/city/state/zip parts.
+// Heuristic and tolerant: returns nulls for parts it can't confidently pull.
+function parseMapboxPlaceName(placeName) {
+  if (!placeName || typeof placeName !== 'string') return null;
+  var parts = placeName.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  // Drop trailing country component
+  while (parts.length && /^(united states|usa|us)$/i.test(parts[parts.length - 1])) {
+    parts.pop();
+  }
+  if (parts.length === 0) return null;
+  var last = parts.pop();
+  var stateZipMatch = last.match(/^([A-Za-z]{2})\s+([\d-]+)$/);
+  var state = '';
+  var zip = '';
+  var cityFromLast = '';
+  if (stateZipMatch) {
+    state = stateZipMatch[1].toUpperCase();
+    zip = stateZipMatch[2];
+  } else {
+    // Sometimes the last token is just the zip or just the city.
+    if (/^\d{5}(-\d{4})?$/.test(last)) zip = last;
+    else cityFromLast = last;
+  }
+  var city = parts.length ? parts.pop() : cityFromLast;
+  var street = parts.join(', ');
+  return {
+    street: street || '',
+    city: city || '',
+    state: state,
+    zip: zip,
+  };
+}
+
+function readDrawAddressFromStorage() {
+  try {
+    var raw = window.localStorage.getItem('gv_bridge_location');
+    if (!raw) return null;
+    var loc = JSON.parse(raw);
+    if (!loc || typeof loc !== 'object') return null;
+    var parsed = parseMapboxPlaceName(loc.address);
+    if (!parsed) return null;
+    return Object.assign({ placeName: loc.address || '' }, parsed);
+  } catch (_) { return null; }
+}
+
 function QuoteStep5_Shipping(props) {
   var data = props.data;
   var update = props.update;
@@ -43,6 +89,32 @@ function QuoteStep5_Shipping(props) {
   var editingContact = useState(false);
   var isEditing = editingContact[0];
   var setEditing = editingContact[1];
+
+  // "Same as drawing address" auto-fill (UX-5b). Reads gv_bridge_location
+  // (written by the draw flow's Mapbox geocoder) so the buyer can one-click
+  // populate the shipping address. Checkbox defaults to true if shipping
+  // fields are empty AND we have a parsed draw address — matches how most
+  // buyers use the tool (draw first, then quote at the same site).
+  var drawAddrFromStorage = React.useMemo(readDrawAddressFromStorage, []);
+  var shipIsEmpty = !data.shippingStreet && !data.shippingCity && !data.shippingState && !data.shippingZip;
+  var sameAsDrawState = useState(function() {
+    return !!(drawAddrFromStorage && shipIsEmpty);
+  });
+  var sameAsDraw = sameAsDrawState[0];
+  var setSameAsDraw = sameAsDrawState[1];
+
+  // Apply the autofill on mount and whenever the checkbox flips on. We do NOT
+  // clear fields when the checkbox flips off, so a buyer who toggles can edit
+  // from the prefilled values rather than losing them.
+  React.useEffect(function() {
+    if (!sameAsDraw || !drawAddrFromStorage) return;
+    update({
+      shippingStreet: drawAddrFromStorage.street || data.shippingStreet || '',
+      shippingCity: drawAddrFromStorage.city || data.shippingCity || '',
+      shippingState: drawAddrFromStorage.state || data.shippingState || '',
+      shippingZip: drawAddrFromStorage.zip || data.shippingZip || '',
+    });
+  }, [sameAsDraw]);
 
   // Pre-fill from jobAddress if available and shipping fields empty
   React.useEffect(function() {
@@ -85,6 +157,20 @@ function QuoteStep5_Shipping(props) {
 
     // ---- Shipping Address ----
     sectionHeader('Shipping Address'),
+
+    // Auto-populate from the address the buyer entered when drawing their fence
+    drawAddrFromStorage ? el('label', { className: 'qb-ship-same-as-draw' },
+      el('input', {
+        type: 'checkbox',
+        checked: sameAsDraw,
+        onChange: function(e) { setSameAsDraw(e.target.checked); },
+      }),
+      el('span', { className: 'qb-ship-same-as-draw-text' },
+        'Ship to the address where you drew your fence: ',
+        el('strong', null, drawAddrFromStorage.placeName || '')
+      )
+    ) : null,
+
     el('div', { className: 'qb-ship-fields' },
       el('input', {
         className: 'qb-ship-input qb-ship-full',
