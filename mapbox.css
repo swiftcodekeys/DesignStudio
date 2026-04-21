@@ -999,6 +999,12 @@
    .dy-draw-active on the wrapper and the crosshair takes over. */
 .dy-map.dy-draw-active .mapboxgl-canvas-container.mapboxgl-interactive { cursor: crosshair; }
 
+/* Mapbox attribution control (the circled "i" in the bottom-right corner). */
+/* Required by Mapbox ToS, but visually muted so it reads as map chrome. */
+.dy-map .mapboxgl-ctrl-attrib { opacity: 0.65; transition: opacity 120ms; }
+.dy-map .mapboxgl-ctrl-attrib:hover { opacity: 1; }
+.dy-map .mapboxgl-ctrl-attrib.mapboxgl-compact { background: rgba(255, 255, 255, 0.75); }
+
 /* ===== Map overlays (vertex markers, labels) ===== */
 .dy-vertex {
   width: 18px;

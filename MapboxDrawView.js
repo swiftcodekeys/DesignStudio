@@ -852,6 +852,10 @@ function MapScreen(props) {
       pitch: 0,
       attributionControl: false,
     });
+    // Mapbox requires attribution per its terms of service. The `compact: true`
+    // variant collapses the full text into a small circled "i" icon that
+    // expands on click. The `.mapboxgl-ctrl-bottom-right` CSS in mapbox.css
+    // mutes the opacity so it reads as map chrome, not a primary UI button.
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
     mapRef.current = map;
     if (props.mapInstanceRef) props.mapInstanceRef.current = map;
