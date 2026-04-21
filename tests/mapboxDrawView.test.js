@@ -220,6 +220,7 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
         points={[]}
         setPoints={setPoints}
         setHoverPoint={setHoverPoint}
+        drawModeActive={true}
       />
     );
 
@@ -234,6 +235,44 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(received.length).toBe(1);
     expect(received[0][0][0]).toBe(expectedLng);
     expect(received[0][0][1]).toBe(expectedLat);
+  });
+
+  it('MapScreen gates map clicks on drawModeActive=false', async () => {
+    // Task 3 leaf-level gate: when the parent has not opted into draw mode,
+    // MapScreen's click handler must be a no-op. Even a perfectly valid click
+    // (canvas target, good lngLat, no .dy-vertex guard) must NOT append a
+    // point. This pins the gate at the MapScreen boundary so a future refactor
+    // that forgets to thread drawModeActive down would fail loudly here rather
+    // than silently dropping vertices in pan/zoom mode.
+    const mapboxgl = await import('mapbox-gl');
+    const mockInstance = makeMockMapInstance();
+    mapboxgl.default.Map = vi.fn(function () { return mockInstance; });
+
+    const setPoints = vi.fn();
+    const setHoverPoint = vi.fn();
+
+    render(
+      <MapScreen
+        location={{ lat: 42.6, lng: -83.9 }}
+        points={[]}
+        setPoints={setPoints}
+        setHoverPoint={setHoverPoint}
+        drawModeActive={false}
+      />
+    );
+
+    // Fire a click that would otherwise drop a vertex (canvas target, valid
+    // lngLat, no vertex-guard collision).
+    const canvasEl = document.createElement('canvas');
+    canvasEl.className = 'mapboxgl-canvas';
+    mockInstance._fire('click', {
+      lngLat: { lng: -83.912, lat: 42.601 },
+      point: { x: 400, y: 300 },
+      originalEvent: { target: canvasEl },
+    });
+
+    // Gate must have swallowed the click — no vertex appended.
+    expect(setPoints).not.toHaveBeenCalled();
   });
 
   it('estimate banner is visible when user has drawn points and opens a popup on click', () => {
@@ -344,6 +383,7 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
         points={[[-83.9, 42.6]]}
         setPoints={setPoints}
         setHoverPoint={setHoverPoint}
+        drawModeActive={true}
       />
     );
 
@@ -386,6 +426,7 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
         points={[[-83.9, 42.6]]}
         setPoints={setPoints}
         setHoverPoint={setHoverPoint}
+        drawModeActive={true}
       />
     );
 
@@ -949,5 +990,164 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     const flat = L0.concat(L1);
     const flatCorners = countCornersAndLinePosts(flat, 6).corners;
     expect(arg.corners).not.toBe(flatCorners);
+  });
+
+  // --- Task 3: Draw mode off by default / explicit "Start Drawing" gate ------
+
+  it('Task 3: on mount with no autosave, clicking the map does NOT drop a vertex', async () => {
+    // The tool should open in pan/zoom-only mode. Firing a Mapbox click before
+    // the user opts in via "Start Drawing" must be a no-op (no new vertex,
+    // no state mutation). This is the core of Sarah's fix.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    // Empty-state CTA should be visible before the user opts in
+    const startBtn = Array.from(container.querySelectorAll('.dy-dock-cta'))
+      .find(function(b) { return b.textContent.trim() === 'Start Drawing'; });
+    expect(startBtn).toBeTruthy();
+    // Fire a map click. drawModeActive is still false, so nothing should happen.
+    inst._fire('click', {
+      lngLat: { lng: -83.91, lat: 42.61 },
+      point: { x: 100, y: 100 },
+      originalEvent: { target: document.createElement('canvas') },
+    });
+    // No vertex markers (no .dy-vertex in the container, though markers
+    // are rendered via Mapbox Marker mock). The real assertion is that the
+    // empty overlay is still visible, meaning points.length is still 0.
+    expect(container.querySelector('.dy-empty-overlay')).toBeTruthy();
+  });
+
+  it('Task 3: .dy-map does NOT have dy-draw-active class before opt-in', () => {
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    const mapEl = container.querySelector('.dy-map');
+    expect(mapEl).toBeTruthy();
+    expect(mapEl.className).not.toMatch(/dy-draw-active/);
+  });
+
+  it('Task 3: clicking "Start Drawing" toggles dy-draw-active on .dy-map and enables vertex clicks', async () => {
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    const startBtn = Array.from(container.querySelectorAll('.dy-dock-cta'))
+      .find(function(b) { return b.textContent.trim() === 'Start Drawing'; });
+    expect(startBtn).toBeTruthy();
+
+    act(() => { fireEvent.click(startBtn); });
+
+    // After opt-in, the wrapper gets dy-draw-active (CSS flips cursor to crosshair)
+    const mapEl = container.querySelector('.dy-map');
+    expect(mapEl.className).toMatch(/dy-draw-active/);
+
+    // Start Drawing button should be hidden in draw-active empty state
+    const startAfter = Array.from(container.querySelectorAll('.dy-dock-cta'))
+      .find(function(b) { return b.textContent.trim() === 'Start Drawing'; });
+    expect(startAfter).toBeFalsy();
+
+    // Map clicks now drop vertices. Assert empty overlay disappears once
+    // a vertex lands in state.
+    inst._fire('click', {
+      lngLat: { lng: -83.91, lat: 42.61 },
+      point: { x: 100, y: 100 },
+      originalEvent: { target: document.createElement('canvas') },
+    });
+    // React state updates from the click handler are flushed synchronously
+    // by testing-library inside the _fire handler call; empty overlay gone.
+    expect(container.querySelector('.dy-empty-overlay')).toBeNull();
+  });
+
+  it('Task 3: Finish exits draw mode (dy-draw-active removed, Start Drawing re-shows after reset)', async () => {
+    // Seed autosave with points so phase=='ready' and micro-actions (incl Finish) render.
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        __testDrawModeActive={true}
+      />
+    );
+    // Sanity: dy-draw-active is on
+    expect(container.querySelector('.dy-map').className).toMatch(/dy-draw-active/);
+    // Click Finish
+    const finishBtn = container.querySelector('button[aria-label="Finish"]');
+    expect(finishBtn).toBeTruthy();
+    act(() => { fireEvent.click(finishBtn); });
+    // dy-draw-active should be gone
+    expect(container.querySelector('.dy-map').className).not.toMatch(/dy-draw-active/);
+  });
+
+  it('Task 3: Continue to Quote exits draw mode', async () => {
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.once = vi.fn(function(event, handler) { handler(); });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const onComplete = vi.fn();
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={onComplete}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        __testDrawModeActive={true}
+      />
+    );
+    expect(container.querySelector('.dy-map').className).toMatch(/dy-draw-active/);
+    await act(async () => { await new Promise(function(r) { setTimeout(r, 900); }); });
+    const cta = container.querySelector('.dy-dock-cta');
+    expect(cta).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(cta);
+      await new Promise(function(r) { setTimeout(r, 0); });
+    });
+    // After Continue, draw mode is off so .dy-map has no dy-draw-active anymore.
+    expect(container.querySelector('.dy-map').className).not.toMatch(/dy-draw-active/);
+  });
+
+  it('Task 3: "Edit drawing" from finished state re-enters draw mode', () => {
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+        __testDrawModeActive={true}
+      />
+    );
+    // Click Finish to get into finished state
+    const finishBtn = container.querySelector('button[aria-label="Finish"]');
+    act(() => { fireEvent.click(finishBtn); });
+    expect(container.querySelector('.dy-map').className).not.toMatch(/dy-draw-active/);
+    // Click "Edit drawing"
+    const editLink = container.querySelector('.dy-edit-drawing-link');
+    expect(editLink).toBeTruthy();
+    act(() => { fireEvent.click(editLink); });
+    // Draw mode is back on
+    expect(container.querySelector('.dy-map').className).toMatch(/dy-draw-active/);
   });
 });

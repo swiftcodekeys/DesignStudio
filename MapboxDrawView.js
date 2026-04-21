@@ -576,7 +576,12 @@ function MorphingDock(props) {
     }, React.createElement(Plus, { size: 16, weight: 'regular' })),
     React.createElement('button', {
       className: 'dy-micro-btn dy-micro-btn-finish',
-      onClick: function() { setIsFinished(true); },
+      onClick: function() {
+        setIsFinished(true);
+        // Task 3 AC4: Finish exits draw mode so the cursor returns to normal
+        // and map clicks go back to pan/zoom until the user opts in again.
+        if (props.onExitDrawMode) props.onExitDrawMode();
+      },
       title: 'Finish drawing and review before continuing',
       type: 'button',
       'aria-label': 'Finish',
@@ -584,15 +589,26 @@ function MorphingDock(props) {
   );
 
   // When finished, show a single "Edit drawing" link that restores drawing state.
+  // Task 3 AC6: clicking "Edit drawing" also re-enters draw mode so the user
+  // can keep placing vertices on the active line without a second action.
+  // Task 4 will add an explicit "Add another line" button that pairs
+  // onStartNewLine with onEnterDrawMode for the disconnected-line case.
   var editDrawingLink = React.createElement('div', { className: 'dy-micro dy-micro-finished' },
     React.createElement('button', {
       className: 'dy-edit-drawing-link',
-      onClick: function() { setIsFinished(false); },
+      onClick: function() {
+        setIsFinished(false);
+        if (props.onEnterDrawMode) props.onEnterDrawMode();
+      },
       type: 'button',
       'aria-label': 'Edit drawing',
     }, 'Edit drawing')
   );
 
+  // Task 3 AC2/AC5: the empty-state shows an explicit "Start Drawing" CTA when
+  // draw mode is NOT yet active. Once the user opts in we hide the CTA and
+  // keep the hint copy so the dock doesn't feel disabled while they place
+  // their first corner.
   var emptyContent = React.createElement(React.Fragment, null,
     React.createElement('div', { className: 'dy-dock-icon' },
       React.createElement(Pencil, { size: 22, weight: 'regular', color: '#c2410c' })
@@ -602,11 +618,11 @@ function MorphingDock(props) {
       React.createElement('span', { className: 'dy-dock-sep' }, '\u00B7'),
       'Click on the map to drop your first corner'
     ),
-    React.createElement('button', {
-      className: 'dy-dock-cta dy-dock-cta-disabled',
-      disabled: true,
+    !props.drawModeActive && React.createElement('button', {
+      className: 'dy-dock-cta dy-dock-cta-ready',
+      onClick: props.onStartDrawing,
       type: 'button',
-    }, 'Start drawing')
+    }, 'Start Drawing')
   );
 
   // CTA label branches: EPQS-loading (ready phase only) > continue-ready > keep-going.
@@ -757,6 +773,15 @@ function MapScreen(props) {
   var pointsRef = useRef(props.points);
   pointsRef.current = props.points;
 
+  // Task 3: drawModeActive gates the click handler so we don't drop a vertex
+  // until the user explicitly opts in via "Start Drawing". We use a ref so the
+  // one-time click handler registered in the mount effect always sees the
+  // current value without a stale-closure rebind.
+  var drawModeActiveRef = useRef(!!props.drawModeActive);
+  useEffect(function() {
+    drawModeActiveRef.current = !!props.drawModeActive;
+  }, [props.drawModeActive]);
+
   // One-time map init per location
   useEffect(function() {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -808,8 +833,11 @@ function MapScreen(props) {
       });
     });
 
-    // Click to drop vertex (but not if the click hit an existing vertex marker)
+    // Click to drop vertex (but not if the click hit an existing vertex marker).
+    // Task 3: gate on drawModeActiveRef so the tool opens in pan/zoom-only mode
+    // and only accepts vertex clicks after the user hits "Start Drawing".
     map.on('click', function(e) {
+      if (!drawModeActiveRef.current) return;
       if (e.originalEvent && e.originalEvent.target) {
         var t = e.originalEvent.target;
         if (t.closest && t.closest('.dy-vertex')) return;
@@ -1167,7 +1195,7 @@ function MapScreen(props) {
 
   return React.createElement('div', {
     ref: mapContainerRef,
-    className: 'dy-map',
+    className: 'dy-map' + (props.drawModeActive ? ' dy-draw-active' : ''),
   });
 }
 
@@ -1251,6 +1279,21 @@ function MapboxDrawView(props) {
   var saveErrorState = useState('');
   var saveError = saveErrorState[0];
   var setSaveError = saveErrorState[1];
+
+  // Task 3: draw mode is off by default. The user opens the tool in pan/zoom
+  // mode with a normal cursor; clicking "Start Drawing" in the empty-state
+  // dock flips this to true and the Mapbox click handler starts accepting
+  // vertex drops. Finish / Continue flip it back to false. Not persisted:
+  // reloading lands the user in pan/zoom mode again for a cleaner mental
+  // model (the drawing itself is still restored from localStorage, but the
+  // cursor won't silently be in crosshair on a fresh tab).
+  // TEST-ONLY: `__testDrawModeActive` lets the test suite bypass the opt-in
+  // gate and render as if the user had already clicked Start Drawing. The
+  // double-underscore prefix signals this is not a public prop and must not
+  // be used by production callers. Nothing outside `tests/` should set it.
+  var drawModeActiveState = useState(!!props.__testDrawModeActive);
+  var drawModeActive = drawModeActiveState[0];
+  var setDrawModeActive = drawModeActiveState[1];
 
   // First-visit cinematic: ride the real Mapbox flyTo animation instead
   // of a fake pre-map overlay. Gated by the dy_seen cookie and the
@@ -1430,8 +1473,26 @@ function MapboxDrawView(props) {
     // leaving behind any other lines when multi-line UI lands in Step 3.
     setLines([[]]);
     setShowBreakdown(false);
+    // Task 3: clearing the sketch also exits draw mode so the user lands back
+    // in the same opt-in state as a fresh session.
+    setDrawModeActive(false);
     try { localStorage.removeItem('gv_slope_answer'); } catch (e) {}
     setSlopeAnswer(null);
+  }
+
+  // Task 3: opt in / out of vertex-drop mode. Exposed to MorphingDock via
+  // onStartDrawing / onExitDrawMode / onEnterDrawMode so the empty-state CTA,
+  // Finish button, and "Edit drawing" link can all flip the gate in the same
+  // place. Kept separate from isFinished so the cursor state is the single
+  // source of truth for "is the map currently capturing vertex clicks".
+  function handleStartDrawing() {
+    setDrawModeActive(true);
+  }
+  function handleExitDrawMode() {
+    setDrawModeActive(false);
+  }
+  function handleEnterDrawMode() {
+    setDrawModeActive(true);
   }
 
   // Push a fresh empty line onto `lines` so the next map click drops a
@@ -1551,6 +1612,9 @@ function MapboxDrawView(props) {
   }
 
   function handleContinue() {
+    // Task 3 AC4: exit draw mode before continuing so if the user bounces
+    // back into the view the cursor is normal and clicks pan/zoom again.
+    setDrawModeActive(false);
     if (!mapInstanceRef.current) { buildAndComplete(null); return; }
     var map = mapInstanceRef.current;
     map.once('render', function() {
@@ -1675,6 +1739,7 @@ function MapboxDrawView(props) {
       mapInstanceRef: mapInstanceRef,
       cinematic: cinematic,
       setParcelData: setParcelData,
+      drawModeActive: drawModeActive,
     }),
 
     // Cinematic overlay rides on top of the live flyTo for first visits
@@ -1703,6 +1768,11 @@ function MapboxDrawView(props) {
       onToggleBreakdown: handleToggleBreakdown,
       onDeleteSegment: handleDeleteSegment,
       onSetTierOverride: handleSetTierOverride,
+      // Task 3: draw-mode opt-in wiring
+      drawModeActive: drawModeActive,
+      onStartDrawing: handleStartDrawing,
+      onExitDrawMode: handleExitDrawMode,
+      onEnterDrawMode: handleEnterDrawMode,
     }),
 
     // Estimate banner (compact, always visible while drawing) + popup
