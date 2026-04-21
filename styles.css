@@ -4931,6 +4931,30 @@ html, body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+/* Running-estimate card in the QB sidebar. Updates live on every config
+   change so buyers feel the cost consequence of each pick (UX-2). */
+.qb-sidebar-estimate {
+  background: linear-gradient(180deg, #f4fafe 0%, #ebf5fb 100%);
+  border: 1px solid #cfe3f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.qb-sidebar-estimate-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-hint, #8e95a0);
+}
+.qb-sidebar-estimate-total {
+  font-size: 20px; font-weight: 800; letter-spacing: -0.2px;
+  color: var(--text-primary, #1a1a2e);
+}
+.qb-sidebar-estimate-perfoot { font-size: 16px; }
+.qb-sidebar-estimate-note {
+  font-size: 11px; color: var(--text-secondary, #5a6270);
+  line-height: 1.4;
+}
+
 .qb-sidebar-image-wrap {
   position: relative;
   border-radius: 8px;

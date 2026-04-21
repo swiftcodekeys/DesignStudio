@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Phone } from '@phosphor-icons/react';
 import { emailSaveLink } from './quoteSaver';
+import { estimatePerFootRange } from './retailPricing';
 import { trackStepEnter, trackStepComplete } from './analytics';
 import QuoteStep1_Style, { POOL_MIN_HEIGHT_BY_STYLE } from './QuoteStep1_Style';
 import QuoteStep2_Layout from './QuoteStep2_Layout';
@@ -464,6 +465,38 @@ function QuoteBuilder(props) {
             : React.createElement('div', { className: 'qb-sidebar-empty' },
                 'Selections will appear as you answer questions.'
               ),
+
+          // ---- Live estimate (UX-2) ----
+          // Runs every render so buyers feel each pick's cost impact in real
+          // time. Panels + posts only; gates/extras/shipping are added to the
+          // full quote at Review. Shows a total band when linearFeet is set,
+          // otherwise a per-linear-foot band so the buyer still sees movement
+          // before they've entered footage.
+          (function() {
+            var est = estimatePerFootRange(data);
+            if (!est) return null;
+            var fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-US'); };
+            var lf = Number(data.linearFeet) || 0;
+            var hasTotal = lf > 0;
+            var totalLow = hasTotal ? est.low * lf : 0;
+            var totalHigh = hasTotal ? est.high * lf : 0;
+            return React.createElement('div', { className: 'qb-sidebar-estimate', 'data-test': 'qb-sidebar-estimate' },
+              React.createElement('div', { className: 'qb-sidebar-estimate-label' }, 'Running estimate'),
+              hasTotal
+                ? React.createElement('div', { className: 'qb-sidebar-estimate-total' },
+                    fmt(totalLow) + ' – ' + fmt(totalHigh)
+                  )
+                : React.createElement('div', { className: 'qb-sidebar-estimate-total qb-sidebar-estimate-perfoot' },
+                    fmt(est.low) + ' – ' + fmt(est.high) + '/ft'
+                  ),
+              React.createElement('div', { className: 'qb-sidebar-estimate-note' },
+                hasTotal
+                  ? 'Panels + posts for ' + Math.round(lf) + ' ft. Gates and shipping added at checkout.'
+                  : 'Per linear foot. Enter footage to see your total.'
+              )
+            );
+          })(),
+
           React.createElement('div', { className: 'qb-sidebar-prefill' },
             React.createElement(ArrowRight, { size: 14, style: { flexShrink: 0 } }),
             ' Pre-filled from your design. Finalize your quote on the right.'
