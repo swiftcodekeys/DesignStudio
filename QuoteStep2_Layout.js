@@ -360,7 +360,10 @@ function QuoteStep2_Layout(props) {
 
       // Racking tier (only if racked)
       slopeMethod === 'racked' ? el('div', { className: 'qb-rack-tiers' },
-        sectionHeader('Racking Tier'),
+        sectionHeader('Racking Tier', {
+          title: 'Racking Tier',
+          text: 'Racking tier is how much slope each panel can absorb without needing a step. Standard racking handles up to 6" of rise per 6-foot panel, rackable handles up to 20", and heavy-rackable up to 36". Higher tiers need double-punched rails and cost a little more per foot.',
+        }),
         RACKING_TIERS.map(function(tier) {
           return el('button', {
             key: tier.id,
@@ -454,7 +457,10 @@ function QuoteStep2_Layout(props) {
 
     // ---- Post Summary ----
     el('div', { className: 'qb-layout-post-summary' },
-      sectionHeader('Post Summary'),
+      sectionHeader('Post Summary', {
+        title: 'How we count posts',
+        text: 'Every corner, end, and gate needs its own special post. Line posts sit between them, spaced by panel width (typically 6 feet residential, 8 feet industrial). The totals here are what Grandview will ship; the material quote on the right reflects them.',
+      }),
       el('div', { className: 'qb-layout-post-grid' },
         el('div', { className: 'qb-layout-post-item' },
           el('div', { className: 'qb-layout-post-count' }, linePosts),
