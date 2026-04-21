@@ -434,6 +434,13 @@ describe('full manufacturing payload end-to-end', function() {
 
     var container = render(React.createElement(QuoteBuilder, {})).container;
 
+    // Core visible-in-sidebar fields (Sarah's screenshot 7 shows these survive).
+    // Asserting explicitly so a future hydrate regression on Style/Height/Color
+    // is caught by vitest instead of discovered by a buyer.
+    expect(getSidebarSpec(container, 'Style')).toBe('Charleston');
+    expect(getSidebarSpec(container, 'Height')).toBe('72"');
+    expect(getSidebarSpec(container, 'Color')).toBe('Textured Bronze');
+
     expect(getSidebarSpec(container, 'Post cap')).toBe('Ball Cap');
     expect(getSidebarSpec(container, 'Finials')).toBe('Tri-Finial');
     expect(getSidebarSpec(container, 'Puppy pickets')).toBe('Standard');
