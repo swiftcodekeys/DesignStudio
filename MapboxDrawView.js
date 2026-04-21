@@ -459,6 +459,12 @@ function MorphingDock(props) {
   var epqsLoading = props.epqsLoading;
   var canContinue = (isReady || isExpanded) && !epqsLoading;
 
+  // Task 2.3: "Finish" vs "Continue" split. isFinished collapses micro-actions
+  // so the user can pan/zoom and review the sketch before advancing to QB.
+  var isFinishedState = useState(false);
+  var isFinished = isFinishedState[0];
+  var setIsFinished = isFinishedState[1];
+
   function formatMoney(n) {
     return '$' + Math.round(n).toLocaleString();
   }
@@ -507,7 +513,24 @@ function MorphingDock(props) {
       title: 'Start new disconnected line',
       type: 'button',
       'aria-label': 'New line',
-    }, React.createElement(Plus, { size: 16, weight: 'regular' }))
+    }, React.createElement(Plus, { size: 16, weight: 'regular' })),
+    React.createElement('button', {
+      className: 'dy-micro-btn dy-micro-btn-finish',
+      onClick: function() { setIsFinished(true); },
+      title: 'Finish drawing and review before continuing',
+      type: 'button',
+      'aria-label': 'Finish',
+    }, React.createElement(Check, { size: 16, weight: 'bold' }))
+  );
+
+  // When finished, show a single "Edit drawing" link that restores drawing state.
+  var editDrawingLink = React.createElement('div', { className: 'dy-micro dy-micro-finished' },
+    React.createElement('button', {
+      className: 'dy-edit-drawing-link',
+      onClick: function() { setIsFinished(false); },
+      type: 'button',
+      'aria-label': 'Edit drawing',
+    }, 'Edit drawing')
   );
 
   var emptyContent = React.createElement(React.Fragment, null,
@@ -533,6 +556,16 @@ function MorphingDock(props) {
   var ctaLabel;
   if (showEpqsLoading) {
     ctaLabel = React.createElement('span', null, 'Calculating slope\u2026');
+  } else if (canContinue && isFinished) {
+    var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
+    ctaLabel = React.createElement(React.Fragment, null,
+      React.createElement(Check, { size: 14, weight: 'bold' }),
+      React.createElement('span', null, 'Continue to Quote'),
+      priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
+        '· ~' + formatMoney(mid)
+      ),
+      React.createElement(ArrowRight, { size: 14, weight: 'bold' })
+    );
   } else if (canContinue) {
     var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
     ctaLabel = React.createElement(React.Fragment, null,
@@ -551,7 +584,7 @@ function MorphingDock(props) {
 
   var drawingOrReadyContent = React.createElement(React.Fragment, null,
     statsRow,
-    microActions,
+    isFinished ? editDrawingLink : microActions,
     React.createElement('button', {
       className: 'dy-dock-cta ' + (canContinue ? 'dy-dock-cta-ready' : 'dy-dock-cta-disabled'),
       onClick: canContinue ? props.onContinue : null,
@@ -1599,5 +1632,5 @@ function MapboxDrawView(props) {
   );
 }
 
-export { MapScreen };
+export { MapScreen, MorphingDock };
 export default MapboxDrawView;
