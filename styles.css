@@ -4851,7 +4851,13 @@ html, body {
    and scrolling right (quote form)
    ============================================================ */
 .qb-container {
-  max-width: 1200px; margin: 0 auto; padding: 24px 24px 120px;
+  /* Fluid container: fills viewport width up to a readable ceiling (1440px).
+     Horizontal padding scales with viewport so big-desktop breathing room is
+     generous and laptop/tablet gutters stay tight — meaningful content at
+     every size, not a stretched shell. */
+  max-width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 24px clamp(16px, 2.5vw, 40px) 120px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -4869,8 +4875,11 @@ html, body {
 
 .qb-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 28px;
+  /* Sidebar scales between 280px (tight laptop) and 380px (big desktop) so
+     the "Your design" preview and spec list stay legible at all widths
+     without either cramping content or burning space. Gap tracks viewport. */
+  grid-template-columns: clamp(280px, 22vw, 380px) 1fr;
+  gap: clamp(16px, 2vw, 32px);
   align-items: start;
 }
 
