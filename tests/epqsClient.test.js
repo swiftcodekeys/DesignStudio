@@ -51,4 +51,35 @@ describe('classifyDrawnLine', () => {
     const r = await classifyDrawnLine([[-83.9,42.6],[-83.89,42.6]], 6);
     expect(r.overallClassification).toBe('steep');
   });
+
+  it('returns unknown (non-null) when USGS proxy returns 502 for every point', async () => {
+    // Regression guard for Task 2.5: a total USGS outage must not hang the UI
+    // or return null — the classifier returns a fully-formed result whose
+    // overall classification is 'unknown' so the draw flow can proceed.
+    global.fetch.mockResolvedValue({ ok: false, status: 502, json: async () => ({ ok: false, error: 'Upstream error' }) });
+    const r = await classifyDrawnLine([[-83.9,42.6],[-83.89,42.6],[-83.88,42.6]], 6);
+    expect(r).not.toBeNull();
+    expect(r.overallClassification).toBe('unknown');
+    expect(r.confidence).toBe('low');
+    expect(Array.isArray(r.segmentClassifications)).toBe(true);
+  });
+
+  it('returns partial classifications when one sample fails', async () => {
+    // Task 2.5 graceful degradation: a single failed sample no longer nukes
+    // the whole classification. Segments bordering the missing sample are
+    // flagged 'unknown' while valid segments keep their flat/sloped/steep
+    // classification.
+    let call = 0;
+    global.fetch.mockImplementation(async () => {
+      const i = call++;
+      if (i === 1) return { ok: false, status: 502, json: async () => ({ ok: false }) };
+      return { ok: true, json: async () => ({ ok: true, data: { elevationFeet: 100, dataSource: '3DEP 1m' } }) };
+    });
+    const r = await classifyDrawnLine([[-83.9,42.6],[-83.89,42.6],[-83.88,42.6]], 6);
+    expect(r).not.toBeNull();
+    expect(r.segmentClassifications).toHaveLength(2);
+    // Both segments touch the failed middle sample → both should be 'unknown'.
+    expect(r.segmentClassifications[0].classification).toBe('unknown');
+    expect(r.segmentClassifications[1].classification).toBe('unknown');
+  });
 });

@@ -1195,14 +1195,33 @@ function MapboxDrawView(props) {
 
   useEffect(function() {
     if (!points || points.length < 2) { epqsResults.current = null; return; }
+    var cancelled = false;
+    var ceilingTimer = null;
     var timer = setTimeout(function() {
       setEpqsLoading(true);
-      Promise.resolve().then(function() { return classifyDrawnLine(points, 6); })
-        .then(function(result) { epqsResults.current = result; })
-        .catch(function() { epqsResults.current = null; })
-        .then(function() { setEpqsLoading(false); });
+      // Hard 12s ceiling: if the classification call hangs (cold-start USGS,
+      // retry thrash), force-resolve to 'unknown' so the Continue CTA isn't
+      // stuck. The worker-side retry + 10s upstream timeout should keep us
+      // under this ceiling in the happy path.
+      var classifyPromise = Promise.resolve().then(function() { return classifyDrawnLine(points, 6); });
+      var ceiling = new Promise(function(resolve) {
+        ceilingTimer = setTimeout(function() {
+          resolve({ segmentClassifications: [], overallClassification: 'unknown', confidence: 'low', maxDeltaInches: 0 });
+        }, 12000);
+      });
+      Promise.race([classifyPromise, ceiling])
+        .then(function(result) { if (!cancelled) epqsResults.current = result; })
+        .catch(function() { if (!cancelled) epqsResults.current = null; })
+        .then(function() {
+          if (ceilingTimer) clearTimeout(ceilingTimer);
+          if (!cancelled) setEpqsLoading(false);
+        });
     }, 800);
-    return function() { clearTimeout(timer); };
+    return function() {
+      cancelled = true;
+      clearTimeout(timer);
+      if (ceilingTimer) clearTimeout(ceilingTimer);
+    };
   }, [points]);
 
   // On mount: check URL hash for a resume link (#dy-resume=...)

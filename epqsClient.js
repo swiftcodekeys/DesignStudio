@@ -37,17 +37,34 @@ export async function classifyDrawnLine(points, segmentLengthFt) {
     return queryElevation(pt[1], pt[0]);  // EPQS uses x=lng, y=lat
   }));
 
-  var allLidar = samples.every(function(s) { return s && /1m|lidar|3DEP/i.test(s.dataSource); });
   var anyNull = samples.some(function(s) { return !s; });
-
-  if (anyNull) {
+  var allNull = samples.every(function(s) { return !s; });
+  // With every sample missing we have nothing to partially classify, and the
+  // UI should present the honest "unknown, ask the customer" path.
+  if (allNull) {
     return { segmentClassifications: [], overallClassification: 'unknown', confidence: 'low', maxDeltaInches: 0 };
   }
+
+  var validSamples = samples.filter(function(s) { return !!s; });
+  var allLidar = !anyNull && validSamples.every(function(s) { return /1m|lidar|3DEP/i.test(s.dataSource); });
 
   var classifications = [];
   var maxDelta = 0;
   for (var i = 0; i < samples.length - 1; i++) {
-    var deltaFt = Math.abs(samples[i+1].elevationFeet - samples[i].elevationFeet);
+    var a = samples[i];
+    var b = samples[i+1];
+    // Segments with either endpoint missing are flagged 'unknown' rather than
+    // dropping the whole classification. Lets the UI show what it can.
+    if (!a || !b) {
+      classifications.push({
+        segmentIndex: i,
+        deltaInches: 0,
+        classification: 'unknown',
+        dataSource: (a && a.dataSource) || (b && b.dataSource) || null,
+      });
+      continue;
+    }
+    var deltaFt = Math.abs(b.elevationFeet - a.elevationFeet);
     var deltaIn = deltaFt * 12;
     maxDelta = Math.max(maxDelta, deltaIn);
     var c = 'flat';
@@ -58,7 +75,7 @@ export async function classifyDrawnLine(points, segmentLengthFt) {
       segmentIndex: i,
       deltaInches: deltaIn,
       classification: c,
-      dataSource: samples[i].dataSource,
+      dataSource: a.dataSource,
     });
   }
 
@@ -68,6 +85,9 @@ export async function classifyDrawnLine(points, segmentLengthFt) {
     if (classifications[j].classification === 'steep') overall = 'steep';
     else if (classifications[j].classification === 'sloped' && overall === 'flat') overall = 'sloped';
   }
+  // Downgrade overall to 'unknown' if we partially failed AND everything we
+  // did classify was flat. Otherwise the steeper observed segment wins.
+  if (anyNull && overall === 'flat') overall = 'unknown';
 
   return {
     segmentClassifications: classifications,

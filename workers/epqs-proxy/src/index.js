@@ -8,7 +8,13 @@
 // We allow these implicitly so branch previews work without editing ALLOWED_ORIGINS.
 var PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.designstudio-csy\.pages\.dev$/;
 
-var UPSTREAM_TIMEOUT_MS = 5000;
+var UPSTREAM_TIMEOUT_MS = 10000;
+var UPSTREAM_RETRY_BACKOFF_MS = 300;
+
+async function fetchEpqsOnce(epqsUrl, signal) {
+  var r = await fetch(epqsUrl, { signal: signal });
+  return r;
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -55,7 +61,12 @@ export default {
       try {
         var epqsUrl = 'https://epqs.nationalmap.gov/v1/json?x=' + lng + '&y=' + lat +
           '&units=Feet&wkid=4326&includeDate=false';
-        var uResp = await fetch(epqsUrl, { signal: controller.signal });
+        var uResp = await fetchEpqsOnce(epqsUrl, controller.signal);
+        // One retry on 5xx to ride through USGS cold starts before giving up.
+        if (!uResp.ok && uResp.status >= 500) {
+          await new Promise(function(res) { setTimeout(res, UPSTREAM_RETRY_BACKOFF_MS); });
+          uResp = await fetchEpqsOnce(epqsUrl, controller.signal);
+        }
         if (!uResp.ok) throw new Error('EPQS ' + uResp.status);
         var uData = await uResp.json();
         if (uData == null || uData.value == null) {
