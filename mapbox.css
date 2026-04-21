@@ -946,6 +946,9 @@
   cursor: not-allowed;
 }
 
+/* Crosshair cursor over the draw canvas in interactive mode (before vertex rule for clarity) */
+.dy-map .mapboxgl-canvas-container.mapboxgl-interactive { cursor: crosshair; }
+
 /* ===== Map overlays (vertex markers, labels) ===== */
 .dy-vertex {
   width: 18px;
