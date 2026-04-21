@@ -230,6 +230,29 @@ function resolveSidebarPreviewSrc(drawToolData) {
   }
 }
 
+// Resolve the sidebar preview src for the FENCE-focused steps (Style, Gates,
+// Extras, Shipping, Review). The buyer is looking at what they are
+// configuring, not at their yard. Priority chain:
+//   1. saved.snapshotDataUrl  (3D fence configurator render)
+//   2. STYLE_THUMBNAILS[styleId]  (stock thumbnail anchor)
+// Returns '' when the buyer has never touched the 3D configurator.
+function resolveFenceSidebarPreviewSrc() {
+  try {
+    var raw = window.localStorage.getItem('gv_saved_design');
+    if (!raw) return '';
+    var saved = JSON.parse(raw);
+    if (!saved || typeof saved !== 'object') return '';
+    if (typeof saved.snapshotDataUrl === 'string' && saved.snapshotDataUrl.length > 0) {
+      return saved.snapshotDataUrl;
+    }
+    var styleId = saved.styleId || (saved.config && saved.config.styleId) || '';
+    if (styleId && STYLE_THUMBNAILS[styleId]) return STYLE_THUMBNAILS[styleId];
+    return '';
+  } catch (_) {
+    return '';
+  }
+}
+
 function titleCase(s) {
   if (!s) return '';
   return String(s).replace(/[-_]/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -462,12 +485,19 @@ function QuoteBuilder(props) {
 
   var specs = buildSidebarSpecs(data);
 
-  // Sidebar preview src: explicit prop wins (back-compat for any caller that
-  // still passes snapshotDataUrl), otherwise fall back to the saved design
-  // in localStorage — snapshot first, style thumbnail second. We read on
-  // every render because the saved design is written by the 3D configurator
-  // outside React, and the QuoteBuilder may mount AFTER that write.
-  var previewSrc = props.snapshotDataUrl || resolveSidebarPreviewSrc(props.drawToolData);
+  // Sidebar preview src is step-aware. Step 0 (Layout and Posts) shows the
+  // yard drawing because that's what the buyer is working with. Steps 1+
+  // show the 3D fence render because that's what they are configuring.
+  // Explicit `props.snapshotDataUrl` still wins for back-compat with callers
+  // that pass a pinned image. We read the saved design on every render
+  // because the 3D configurator writes it outside React and the QuoteBuilder
+  // may mount after that write.
+  var previewSrc;
+  if (step === 0) {
+    previewSrc = props.snapshotDataUrl || resolveSidebarPreviewSrc(props.drawToolData);
+  } else {
+    previewSrc = props.snapshotDataUrl || resolveFenceSidebarPreviewSrc();
+  }
 
   return React.createElement('div', { className: 'qb-container' },
 

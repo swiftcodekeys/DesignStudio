@@ -149,6 +149,38 @@ describe('QuoteBuilder sidebar preview', () => {
     expect(img).toBeTruthy();
     expect(img.getAttribute('src')).toBe('assets/ifence_previews/gate_styles/san_marino_15.png');
   });
+
+  // Task 14: on Style and Config step (step 1) the buyer is configuring the
+  // fence, so the sidebar should show the 3D fence render, not the yard.
+  it('Style and Config step prefers saved 3D fence snapshot over yard snapshots', function() {
+    var fenceSnap = 'data:image/jpeg;base64,FENCE3D';
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      snapshotDataUrl: fenceSnap,
+      styleId: 'horizon',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      skipToStep: 1,
+      drawToolData: {
+        annotatedSnapshotUrl: 'data:image/jpeg;base64,ANNOTATED',
+        mapboxSnapshotUrl: 'data:image/jpeg;base64,MAPRAW',
+      },
+    })).container;
+    var img = container.querySelector('[data-test="quote-design-preview"]');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe(fenceSnap);
+  });
+
+  it('Style and Config step falls back to STYLE_THUMBNAILS when no 3D snapshot exists', function() {
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({
+      styleId: 'horizon',
+    }));
+    var container = render(React.createElement(QuoteBuilder, {
+      skipToStep: 1,
+    })).container;
+    var img = container.querySelector('[data-test="quote-design-preview"]');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe('assets/ifence_previews/gate_styles/san_marino_15.png');
+  });
 });
 
 // ---------------------------------------------------------------------------
