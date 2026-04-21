@@ -389,9 +389,23 @@ function QuoteBuilder(props) {
   }
   // step 5 — Review
   if (step === 5) {
-    // Pass annotatedSnapshotUrl from drawToolData so the confirmation card
-    // can show the annotated manufacturing spec image.
+    // Pass annotatedSnapshotUrl from drawToolData when the buyer arrives via
+    // the draw-to-quote path. On a direct URL landing (/studio?view=quote via
+    // a CRM email link) drawToolData is null, so fall back to the saved
+    // design's annotatedSnapshotUrl written during the earlier flow. This
+    // keeps the manufacturing-spec image visible across session restarts.
     var reviewAnnotatedUrl = (props.drawToolData && props.drawToolData.annotatedSnapshotUrl) || '';
+    if (!reviewAnnotatedUrl) {
+      try {
+        var rawSaved = window.localStorage.getItem('gv_saved_design');
+        if (rawSaved) {
+          var parsedSaved = JSON.parse(rawSaved);
+          if (parsedSaved && typeof parsedSaved.annotatedSnapshotUrl === 'string' && parsedSaved.annotatedSnapshotUrl.length > 0) {
+            reviewAnnotatedUrl = parsedSaved.annotatedSnapshotUrl;
+          }
+        }
+      } catch (_) { /* ignore parse errors */ }
+    }
     stepContent = React.createElement(QuoteStep6_Review, {
       data: data,
       update: update,

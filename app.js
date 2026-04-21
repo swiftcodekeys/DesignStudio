@@ -160,12 +160,33 @@ var DesignStudio = function() {
         privacyPanelColor: 'white',
     };
 
-    // Separate config state per fence tab — preserves user selections when switching
-    var frontYardConfigState = useState(defaultFrontYardConfig);
+    // Separate config state per fence tab. Preserves user selections across
+    // tab switches AND across direct URL landings like /studio?view=quote.
+    //
+    // Lazy initializers hydrate from localStorage (gv_fence_config /
+    // gv_back_config) so a buyer returning via a CRM email link doesn't have
+    // their saved color clobbered by the defaults' write-back useEffect.
+    // Without the hydration, the useState default fires, the write useEffect
+    // fires, and the user's real color is overwritten before QuoteBuilder
+    // reads gv_fence_config.
+    function hydrateConfig(storageKey, defaults) {
+        try {
+            var raw = localStorage.getItem(storageKey);
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    return Object.assign({}, defaults, parsed);
+                }
+            }
+        } catch (_) { /* ignore */ }
+        return defaults;
+    }
+
+    var frontYardConfigState = useState(function() { return hydrateConfig('gv_fence_config', defaultFrontYardConfig); });
     var frontYardConfig = frontYardConfigState[0];
     var setFrontYardConfig = frontYardConfigState[1];
 
-    var backyardConfigState = useState(defaultBackyardConfig);
+    var backyardConfigState = useState(function() { return hydrateConfig('gv_back_config', defaultBackyardConfig); });
     var backyardConfig = backyardConfigState[0];
     var setBackyardConfig = backyardConfigState[1];
 
