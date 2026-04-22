@@ -4902,11 +4902,10 @@ html, body {
    .qb-container rule in wizard.css:31 for the wizard flow. Direct-child combinator
    scopes this strictly to the QB-as-root-view case. */
 .app-shell > .qb-container {
-  /* Pass 4: outer shell scrolls, not this inner wrapper. Previously had */
-  /* overflow-y: auto which produced a second scrollbar on the right of the */
-  /* quote content. The body / app-shell already scrolls; double scrollbars */
-  /* are a UX anti-pattern. */
-  overflow: visible;
+  /* R6: restore outer scroll so content below the fold is reachable. The
+     sidebar (.qb-sidebar) intentionally has no overflow-y:auto — it grows
+     with its content. One scrollbar, on the right, as the buyer expects. */
+  overflow-y: auto;
   flex: 1;
   min-height: 0;
 }

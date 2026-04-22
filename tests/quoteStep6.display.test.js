@@ -40,6 +40,21 @@ describe('QuoteStep6_Review display', () => {
     expect(value.textContent).toBe('2');
   });
 
+  // R6: styles.css .app-shell > .qb-container must have overflow-y: auto so the
+  // page-level scrollbar appears on the right. Pass 4 changed this to
+  // overflow: visible, which clips all content below the fold.
+  it('styles.css .app-shell > .qb-container has overflow-y: auto (R6 outer scroll)', () => {
+    var css = fs.readFileSync(path.resolve(__dirname, '../styles.css'), 'utf8');
+    // Match the direct-child combinator rule block.
+    var match = css.match(/\.app-shell\s*>\s*\.qb-container\s*\{([^}]+)\}/);
+    expect(match).toBeTruthy();
+    // Strip C-style block comments from the block body before checking, so a
+    // commented-out property (e.g. "/* overflow-y: auto */") does not produce
+    // a false positive.
+    var blockBody = match[1].replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(blockBody).toMatch(/overflow-y\s*:\s*auto/);
+  });
+
   it('CYA card speaks as Grandview, not Sarah personally (P3.3)', () => {
     // Per the customer-facing voice rule, the "Before you continue" card
     // must not say "Sarah personally reviews every order" because that
