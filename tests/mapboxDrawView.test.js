@@ -1243,4 +1243,55 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     // Finished-state row is gone.
     expect(container.querySelector('.dy-add-line-btn')).toBeFalsy();
   });
+
+  // --- Pass 4 Tasks 5 + 6: colored posts, colored segments, legend ----------
+
+  it('P4.5: post legend is hidden in the empty phase and visible once a line exists', () => {
+    localStorage.removeItem('gv_draw_state');
+    const { container: empty } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    expect(empty.querySelector('.dy-post-legend')).toBeNull();
+
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
+      ts: Date.now(),
+    }));
+    const { container: drawn } = render(
+      <MapboxDrawView
+        onComplete={() => {}}
+        initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
+      />
+    );
+    const legend = drawn.querySelector('.dy-post-legend');
+    expect(legend).toBeTruthy();
+    // Three color dots (end, corner, line) plus the copy hint.
+    expect(drawn.querySelectorAll('.dy-post-legend .dy-legend-dot').length).toBe(3);
+    expect(legend.textContent).toMatch(/End posts/);
+    expect(legend.textContent).toMatch(/Corner posts/);
+    expect(legend.textContent).toMatch(/Line posts/);
+    expect(legend.textContent).toMatch(/15/);
+  });
+
+  it('P4.6: breakdown rows render a colored dot matching the rainbow palette', () => {
+    localStorage.setItem('gv_draw_state', JSON.stringify({
+      points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605], [-83.905, 42.6]],
+      ts: Date.now(),
+    }));
+    const { container } = render(
+      <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
+    );
+    act(() => { fireEvent.click(container.querySelector('.dy-breakdown-toggle')); });
+    const items = container.querySelectorAll('.dy-segment-item');
+    expect(items.length).toBe(3);
+    items.forEach(function(it) {
+      const dot = it.querySelector('.dy-segment-dot');
+      expect(dot).toBeTruthy();
+      // background inline-style should be set to a non-empty color.
+      expect(dot.style.background).toBeTruthy();
+    });
+  });
 });

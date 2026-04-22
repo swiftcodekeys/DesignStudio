@@ -606,6 +606,17 @@
   color: var(--dy-ink-2);
 }
 .dy-segment-item:last-child { border-bottom: none; }
+/* Pass 4 Task 6: small colored dot at the front of each breakdown row that
+ * matches the segment's rainbow color on the map, so the buyer can reconcile
+ * a row (e.g. "28 ft") to a specific colored stretch in the drawing. */
+.dy-segment-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95),
+              0 1px 2px rgba(0, 0, 0, 0.15);
+}
 .dy-segment-num {
   width: 22px;
   height: 22px;
@@ -1295,11 +1306,95 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
+/* ===== Post color legend (Pass 4 Task 5) ===== */
+/* Thin horizontal bar sitting directly under the morphing dock. Centered on
+ * the same baseline so the three post-type colors and the 15-degree corner
+ * threshold stay in the buyer's peripheral vision while drawing. Matches the
+ * dock's frosted-white aesthetic so it reads as part of the same module.
+ * The dock itself is absolutely positioned; we wrap both in `.dy-dock-wrap`
+ * to keep the legend aligned without redoing the dock's centering logic. */
+.dy-dock-wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 20;
+}
+/* Inside the wrap, the dock drops its own absolute positioning and flows
+ * naturally so the legend can sit below it on the flex baseline. */
+.dy-dock-wrap > .dy-dock {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  pointer-events: auto;
+}
+.dy-post-legend {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--dy-rule);
+  border-radius: 999px;
+  padding: 7px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  font-family: var(--dy-font-ui);
+  font-size: 12px;
+  color: var(--dy-ink-2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  max-width: 860px;
+  pointer-events: auto;
+}
+.dy-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.dy-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95),
+              0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.dy-legend-label {
+  font-weight: 600;
+  color: var(--dy-ink);
+  letter-spacing: 0.01em;
+}
+.dy-legend-hint {
+  color: var(--dy-muted);
+  font-style: italic;
+  padding-left: 8px;
+  border-left: 1px solid var(--dy-rule);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .dy-dock, .dy-dock-ready, .dy-dock-drawing, .dy-dock-expanded, .dy-dock-empty {
     width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);
+  }
+  .dy-post-legend {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    font-size: 11px;
+    gap: 10px;
+  }
+  .dy-legend-hint {
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+    padding-top: 4px;
+    border-top: 1px dashed var(--dy-rule);
   }
   .dy-dock-breakdown {
     grid-template-columns: 1fr;

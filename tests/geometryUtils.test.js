@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments, computeSlopedPostCount } from '../geometryUtils.js';
+import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments, computeSlopedPostCount, classifyPostsPerVertex, computeLinePostPositions } from '../geometryUtils.js';
 
 describe('simplifyRDP', () => {
   it('passes through points below threshold', () => {
@@ -164,5 +164,133 @@ describe('computeSlopedPostCount', () => {
     var sloped = computeSlopedPostCount(segs, 6);
     expect(sloped).toBe(31);
     expect(sloped).toBeLessThanOrEqual(totalPosts);
+  });
+});
+
+describe('classifyPostsPerVertex (Pass 4 Task 5)', () => {
+  it('returns empty array for zero or one point', () => {
+    expect(classifyPostsPerVertex([], 15)).toEqual([]);
+    expect(classifyPostsPerVertex([[-83.9, 42.6]], 15)).toEqual([]);
+  });
+
+  it('classifies a 2-point straight line as two end posts', () => {
+    var r = classifyPostsPerVertex([[-83.9, 42.6], [-83.9, 42.601]], 15);
+    expect(r.length).toBe(2);
+    expect(r[0].type).toBe('end');
+    expect(r[1].type).toBe('end');
+    expect(r[0].index).toBe(0);
+    expect(r[1].index).toBe(1);
+  });
+
+  it('classifies a sharp 90-degree elbow as end + corner + end', () => {
+    // L shape: [0,0] -> [0, 0.001] -> [0.001, 0.001]
+    var r = classifyPostsPerVertex([[0, 0], [0, 0.001], [0.001, 0.001]], 15);
+    expect(r.length).toBe(3);
+    expect(r[0].type).toBe('end');
+    expect(r[1].type).toBe('corner');
+    expect(r[2].type).toBe('end');
+  });
+
+  it('classifies a gentle bend under 15 degrees as line post, not corner', () => {
+    // Two nearly-colinear segments with only ~3 degrees of deflection.
+    // The helper should treat the interior vertex as a line post (panels
+    // flex through) and only the endpoints as structural posts.
+    var r = classifyPostsPerVertex([[0, 0], [0, 0.001], [0.00005, 0.002]], 15);
+    expect(r.length).toBe(3);
+    expect(r[0].type).toBe('end');
+    expect(r[1].type).toBe('line'); // under threshold
+    expect(r[2].type).toBe('end');
+  });
+
+  it('classifies a closed polygon (first === last) with no end posts', () => {
+    // Square: 5 points, first === last. The wrap-around vertex is dropped
+    // so we emit exactly 4 vertices, all corners.
+    var square = [[-83.9, 42.6], [-83.89, 42.6], [-83.89, 42.61], [-83.9, 42.61], [-83.9, 42.6]];
+    var r = classifyPostsPerVertex(square, 15);
+    expect(r.length).toBe(4);
+    r.forEach(function(p) { expect(p.type).toBe('corner'); });
+  });
+
+  it('respects a custom minCornerDeg threshold', () => {
+    // ~3 degree bend: counts as corner at threshold 1, line at threshold 15.
+    var pts = [[0, 0], [0, 0.001], [0.00005, 0.002]];
+    var strict = classifyPostsPerVertex(pts, 1);
+    expect(strict[1].type).toBe('corner');
+    var loose = classifyPostsPerVertex(pts, 15);
+    expect(loose[1].type).toBe('line');
+  });
+});
+
+describe('computeLinePostPositions (Pass 4 Task 5)', () => {
+  it('returns empty array for zero or one point', () => {
+    expect(computeLinePostPositions([], 6)).toEqual([]);
+    expect(computeLinePostPositions([[-83.9, 42.6]], 6)).toEqual([]);
+  });
+
+  it('returns empty array for a sub-panel-length segment', () => {
+    // 2 points ~4 ft apart along same latitude at 42.5 N: 0.0000144 deg ≈ 4 ft.
+    // Shorter than one panel -> no line posts between the two end posts.
+    var r = computeLinePostPositions([[0, 42.5], [0.0000144, 42.5]], 6);
+    expect(r).toEqual([]);
+  });
+
+  it('interpolates line posts along a straight ~27 ft run at 6 ft spacing', () => {
+    // ~27 ft along same latitude at 42.5 N. 27 / 6 = 4.5, so we get line
+    // posts at 6, 12, 18, 24 ft marks (4 interior posts). Using a length
+    // that is NOT a clean multiple of the panel length avoids floating-
+    // point edge cases at the endpoint.
+    var lenFt = 27;
+    var FEET_PER_DEG_LAT = 364567.2;
+    var dLng = lenFt / FEET_PER_DEG_LAT; // at 42.5 lat, lng scale ~ cos(42.5)
+    // Use along-latitude so dLng is scaled by cos(42.5).
+    dLng = lenFt / (FEET_PER_DEG_LAT * Math.cos(42.5 * Math.PI / 180));
+    var a = [0, 42.5];
+    var b = [dLng, 42.5];
+    var r = computeLinePostPositions([a, b], 6);
+    expect(r.length).toBe(4);
+    r.forEach(function(lp) { expect(lp.segmentIndex).toBe(0); });
+    expect(r.map(function(lp) { return lp.index; })).toEqual([1, 2, 3, 4]);
+    // First post sits at 6 ft of a ~27 ft run, so ~2/9 of the way from a
+    // to b. Allow a small tolerance for the flat-earth vs. haversine
+    // rounding inherent to lat/lng interpolation at residential scale.
+    expect(r[0].lng).toBeCloseTo(a[0] + (b[0] - a[0]) * (6 / 27), 5);
+    expect(r[0].lat).toBeCloseTo(a[1], 8);
+  });
+
+  it('skips the downstream structural-post coincidence on an exact multiple run', () => {
+    // A run of exactly panelLength * N produces N-1 interior line posts,
+    // because the N-th panel break coincides with the end structural post.
+    var lenFt = 30;
+    var FEET_PER_DEG_LAT = 364567.2;
+    var dLng = lenFt / (FEET_PER_DEG_LAT * Math.cos(42.5 * Math.PI / 180));
+    var r = computeLinePostPositions([[0, 42.5], [dLng, 42.5]], 6);
+    expect(r.length).toBe(4);
+  });
+
+  it('assigns segmentIndex 0, 1, ... across a multi-segment line', () => {
+    // Two ~30 ft segments in an L. Only caring about segmentIndex tagging.
+    var FEET_PER_DEG_LAT = 364567.2;
+    var dLng = 30 / (FEET_PER_DEG_LAT * Math.cos(42.5 * Math.PI / 180));
+    var dLat = 30 / FEET_PER_DEG_LAT;
+    var pts = [
+      [0, 42.5],
+      [dLng, 42.5],
+      [dLng, 42.5 + dLat],
+    ];
+    var r = computeLinePostPositions(pts, 6);
+    var seg0 = r.filter(function(lp) { return lp.segmentIndex === 0; });
+    var seg1 = r.filter(function(lp) { return lp.segmentIndex === 1; });
+    expect(seg0.length).toBeGreaterThan(0);
+    expect(seg1.length).toBeGreaterThan(0);
+  });
+
+  it('respects a custom panelLengthFt (industrial 8 ft panels)', () => {
+    // ~40 ft run with 8 ft panels: breaks at 8, 16, 24, 32 (the 40 mark
+    // is the end post and is skipped). 4 interior line posts.
+    var lenFt = 40;
+    var FEET_PER_DEG_LAT = 364567.2;
+    var dLng = lenFt / (FEET_PER_DEG_LAT * Math.cos(42.5 * Math.PI / 180));
+    var r = computeLinePostPositions([[0, 42.5], [dLng, 42.5]], 8);
+    expect(r.length).toBe(4);
   });
 });

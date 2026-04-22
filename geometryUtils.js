@@ -254,6 +254,53 @@ function bearingDeg(a, b) {
   return Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI;
 }
 
+// Line-post positions for every straight run between structural posts.
+// Walks each segment from start to end at `panelLengthFt` (default 6 ft)
+// spacing and emits one line post at each panel break that is strictly
+// interior to the segment. Example: a 30 ft run at 6 ft spacing drops posts
+// at 6, 12, 18, and 24 ft (the 30 ft mark is the downstream structural post
+// so we skip it). Pass 4 Task 5: these populate the blue "line post" circles
+// on the map overlay.
+//
+// segmentIndex refers to the flat segment index across the whole line (the
+// segment from points[i] to points[i+1] has segmentIndex i). `index` is the
+// 1-based count of the line post within that segment. Interpolation is linear
+// in (lng, lat) — accurate enough at residential scale where a single run is
+// well under a kilometer.
+export function computeLinePostPositions(points, panelLengthFt) {
+  if (!points || points.length < 2) return [];
+  var pl = panelLengthFt || 6;
+  var out = [];
+  for (var i = 0; i < points.length - 1; i++) {
+    var a = points[i];
+    var b = points[i + 1];
+    var lenFt = haversineFeet(a, b);
+    // Emit posts at pl, 2*pl, 3*pl, ... as long as the mark is at least
+    // half a panel from the end. On an exact multiple (e.g. a 30 ft run at
+    // 6 ft spacing), the final pl-multiple coincides with the structural
+    // end post and is skipped — a 30 ft run produces 4 interior line posts
+    // (at 6, 12, 18, 24). The half-panel guard also absorbs the small
+    // haversine-vs-flat-earth rounding difference we see at residential
+    // scale (~0.07% at 42.5 lat).
+    if (lenFt <= pl) continue;
+    var dLng = b[0] - a[0];
+    var dLat = b[1] - a[1];
+    var emitted = 0;
+    for (var k = 1; k * pl < lenFt - pl * 0.5; k++) {
+      var t = (k * pl) / lenFt;
+      out.push({
+        lng: a[0] + dLng * t,
+        lat: a[1] + dLat * t,
+        segmentIndex: i,
+        index: k,
+      });
+      emitted++;
+      if (emitted > 1000) break; // safety net for pathological input
+    }
+  }
+  return out;
+}
+
 // Haversine distance in feet between two [lng, lat] points.
 function haversineFeet(a, b) {
   var R = 20902231; // Earth radius in feet

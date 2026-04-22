@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { geocodeAddress, suggestAddresses } from './mapboxGeocoder';
 import { fetchParcel } from './parcelClient';
-import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts, classificationToRackingTier } from './geometryUtils';
+import { computeSlopedPostCount, compassBearing, countCornersAndLinePosts, classificationToRackingTier, classifyPostsPerVertex, computeLinePostPositions } from './geometryUtils';
 import { estimatePerFootRange } from './retailPricing';
 import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 import { classifyDrawnLine } from './epqsClient';
@@ -45,6 +45,24 @@ var DEFAULT_ESTIMATE_INPUTS = {
   grade: 'residential',
   spacing: 'standard',
 };
+
+// Pass 4 Task 5: post-type colors for the colored post overlay. Also referenced
+// by the legend under the dock so both UIs stay in lockstep. Chosen to read at a
+// glance on satellite imagery without clashing with the orange line stroke.
+export var POST_COLOR_END = '#d97706';    // amber / burnt orange
+export var POST_COLOR_CORNER = '#dc2626'; // red
+export var POST_COLOR_LINE = '#2563eb';   // blue
+
+// Pass 4 Task 6: 8-color rainbow palette used to distinguish each run between
+// two structural posts. Deliberately avoids the three post colors above so the
+// segments and posts never visually collide.
+export var SEGMENT_COLOR_PALETTE = [
+  '#0ea5e9', '#8b5cf6', '#14b8a6', '#f59e0b',
+  '#ec4899', '#84cc16', '#6366f1', '#f97316',
+];
+export function segmentColorForIndex(i) {
+  return SEGMENT_COLOR_PALETTE[((i % SEGMENT_COLOR_PALETTE.length) + SEGMENT_COLOR_PALETTE.length) % SEGMENT_COLOR_PALETTE.length];
+}
 
 var MIN_DRAW_FT = 30;
 // Minimum pixel distance between two segment-label midpoints before we hide
@@ -744,7 +762,16 @@ function MorphingDock(props) {
           // moves to the quote page (QuoteStep2_Layout) where we present
           // plain-language slope options. The delete affordance stays so
           // the buyer can trim a misplaced segment before continuing.
+          // Pass 4 Task 6: each breakdown row shows the same rainbow color
+          // as the segment's stroke on the map so the buyer can reconcile
+          // "that 18 ft run" to "the teal stretch along the driveway".
+          var dotColor = s.color || segmentColorForIndex(i);
           return React.createElement('li', { key: i, className: 'dy-segment-item' },
+            React.createElement('span', {
+              className: 'dy-segment-dot',
+              style: { background: dotColor },
+              'aria-hidden': 'true',
+            }),
             React.createElement('span', { className: 'dy-segment-num' }, i + 1),
             React.createElement('span', { className: 'dy-segment-len' }, Math.round(s.lengthFeet) + ' ft'),
             React.createElement('button', {
@@ -810,21 +837,64 @@ function MorphingDock(props) {
     )
   );
 
-  return React.createElement('div', { className: 'dy-dock dy-dock-' + phase },
-    React.createElement('div', { className: 'dy-dock-main' },
-      isEmpty ? emptyContent : drawingOrReadyContent
+  // Pass 4 Task 5: post-color legend. Hidden in the empty phase so the
+  // initial "Ready when you are" prompt doesn't compete with an explanation
+  // of markers that aren't on the map yet. Matches the frosted-white dock
+  // aesthetic and renders as a thin horizontal strip directly under the
+  // dock so the three colors and the 15-degree corner threshold are always
+  // in the buyer's peripheral vision while they draw.
+  var postLegend = !isEmpty && React.createElement('div', {
+    className: 'dy-post-legend',
+    role: 'group',
+    'aria-label': 'Post color legend',
+  },
+    React.createElement('span', { className: 'dy-legend-item' },
+      React.createElement('span', {
+        className: 'dy-legend-dot',
+        style: { background: POST_COLOR_END },
+        'aria-hidden': 'true',
+      }),
+      React.createElement('span', { className: 'dy-legend-label' }, 'End posts')
     ),
-    expandedPanel,
-    isEmpty && React.createElement('div', { className: 'dy-keyboard-hints' },
-      React.createElement('span', { className: 'dy-kbd-hint' },
-        React.createElement('kbd', null, 'Click'), ' drop corner'),
-      React.createElement('span', { className: 'dy-kbd-hint' },
-        React.createElement('kbd', null, 'Drag'), ' move corner'),
-      React.createElement('span', { className: 'dy-kbd-hint' },
-        React.createElement('kbd', null, 'Right-click'), ' delete'),
-      React.createElement('span', { className: 'dy-kbd-hint' },
-        React.createElement('kbd', null, MOD_KEY + 'Z'), ' undo')
+    React.createElement('span', { className: 'dy-legend-item' },
+      React.createElement('span', {
+        className: 'dy-legend-dot',
+        style: { background: POST_COLOR_CORNER },
+        'aria-hidden': 'true',
+      }),
+      React.createElement('span', { className: 'dy-legend-label' }, 'Corner posts (turns > 15°)')
+    ),
+    React.createElement('span', { className: 'dy-legend-item' },
+      React.createElement('span', {
+        className: 'dy-legend-dot',
+        style: { background: POST_COLOR_LINE },
+        'aria-hidden': 'true',
+      }),
+      React.createElement('span', { className: 'dy-legend-label' }, 'Line posts')
+    ),
+    React.createElement('span', { className: 'dy-legend-hint' },
+      'Turns under 15° don’t need a corner post. Panels flex through.'
     )
+  );
+
+  return React.createElement('div', { className: 'dy-dock-wrap' },
+    React.createElement('div', { className: 'dy-dock dy-dock-' + phase },
+      React.createElement('div', { className: 'dy-dock-main' },
+        isEmpty ? emptyContent : drawingOrReadyContent
+      ),
+      expandedPanel,
+      isEmpty && React.createElement('div', { className: 'dy-keyboard-hints' },
+        React.createElement('span', { className: 'dy-kbd-hint' },
+          React.createElement('kbd', null, 'Click'), ' drop corner'),
+        React.createElement('span', { className: 'dy-kbd-hint' },
+          React.createElement('kbd', null, 'Drag'), ' move corner'),
+        React.createElement('span', { className: 'dy-kbd-hint' },
+          React.createElement('kbd', null, 'Right-click'), ' delete'),
+        React.createElement('span', { className: 'dy-kbd-hint' },
+          React.createElement('kbd', null, MOD_KEY + 'Z'), ' undo')
+      )
+    ),
+    postLegend
   );
 }
 
@@ -989,12 +1059,18 @@ function MapScreen(props) {
     mapRef.current.setPaintProperty('parcel-pulse', 'line-opacity', props.points.length === 0 ? 0.8 : 0);
   }, [props.points.length]);
 
-  // Main polyline (glow + solid orange) — per-line source/layers.
+  // Main polyline (glow + per-segment colored stroke) — per-line source/layers.
+  // Pass 4 Task 6: the source now holds one Feature per segment (2-point
+  // LineString) with a `segmentIndex` property. The stroke layer uses a
+  // data-expression on `line-color` keyed to that property, so each run
+  // between two structural posts gets its own rainbow color. The underlying
+  // glow layer stays orange so the line still reads as one continuous fence
+  // from a distance.
+  //
   // Each entry in `props.lines` gets its own `dy-line-${idx}` source plus a
-  // `dy-line-${idx}-glow` + `dy-line-${idx}` layer pair (blurred wide glow
-  // underneath, solid narrow stroke on top). When `lines` shrinks (e.g.
-  // via a future delete-line action in P4.3), the now-removed indices are
-  // torn down so orphan sources/layers don't leak.
+  // `dy-line-${idx}-glow` + `dy-line-${idx}` layer pair. When `lines` shrinks
+  // (e.g. via a future delete-line action in P4.3), the now-removed indices
+  // are torn down so orphan sources/layers don't leak.
   var prevLineCountRef = useRef(0);
   useEffect(function() {
     if (!mapRef.current) return;
@@ -1002,8 +1078,21 @@ function MapScreen(props) {
     function apply() {
       var map = mapRef.current;
       if (!map) return;
+      // Build the data-driven color expression once. It resolves
+      // `properties.segmentIndex` modulo the palette length (palette has
+      // SEGMENT_COLOR_PALETTE.length entries — all branches enumerated).
+      var colorExpr = ['match', ['%', ['get', 'segmentIndex'], SEGMENT_COLOR_PALETTE.length]];
+      for (var ci = 0; ci < SEGMENT_COLOR_PALETTE.length; ci++) {
+        colorExpr.push(ci, SEGMENT_COLOR_PALETTE[ci]);
+      }
+      colorExpr.push('#c2410c'); // fallback (should never be hit)
+
+      // Running offset for flat segment indices across lines. Lines draw the
+      // same rainbow sequence start-to-end so the breakdown rows match.
+      var flatOffset = 0;
+
       // Upsert each line: either update the existing source's data, or
-      // add the source + glow layer + solid layer fresh.
+      // add the source + glow layer + colored stroke layer fresh.
       linesArr.forEach(function(linePoints, idx) {
         var srcId = 'dy-line-' + idx;
         var glowId = 'dy-line-' + idx + '-glow';
@@ -1016,7 +1105,18 @@ function MapScreen(props) {
           if (map.getSource && map.getSource(srcId) && map.removeSource) map.removeSource(srcId);
           return;
         }
-        var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: linePoints } };
+        // Emit one 2-point LineString feature per segment so each can be
+        // colored independently via the data-driven paint expression.
+        var features = [];
+        for (var s = 0; s < linePoints.length - 1; s++) {
+          features.push({
+            type: 'Feature',
+            properties: { segmentIndex: flatOffset + s },
+            geometry: { type: 'LineString', coordinates: [linePoints[s], linePoints[s + 1]] },
+          });
+        }
+        flatOffset += Math.max(0, linePoints.length - 1);
+        var geoj = { type: 'FeatureCollection', features: features };
         var src = map.getSource && map.getSource(srcId);
         if (src && src.setData) { src.setData(geoj); return; }
         if (!map.addSource) return;
@@ -1031,7 +1131,7 @@ function MapScreen(props) {
           id: strokeId,
           type: 'line',
           source: srcId,
-          paint: { 'line-color': '#c2410c', 'line-width': 4 },
+          paint: { 'line-color': colorExpr, 'line-width': 4 },
         });
       });
       // Cleanup on shrink: if the array shortened since last render, remove
@@ -1050,6 +1150,75 @@ function MapScreen(props) {
         }
       }
       prevLineCountRef.current = linesArr.length;
+    }
+    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
+    else mapRef.current.once && mapRef.current.once('style.load', apply);
+  }, [props.lines]);
+
+  // Pass 4 Task 5: colored post overlay. We build a single GeoJSON source
+  // (`dy-posts`) that holds one Point feature per post (end / corner / line)
+  // and render it as a Mapbox circle layer. Circle color is a data expression
+  // on the `postType` property, so all three post types live in one layer.
+  // Using a circle layer (not mapboxgl.Marker) keeps scaling consistent on
+  // zoom and avoids DOM thrash when the user drags a vertex.
+  useEffect(function() {
+    if (!mapRef.current) return;
+    var linesArr = props.lines || [];
+    function apply() {
+      var map = mapRef.current;
+      if (!map) return;
+      var features = [];
+      for (var li = 0; li < linesArr.length; li++) {
+        var linePoints = linesArr[li] || [];
+        if (linePoints.length < 2) continue;
+        var vertices = classifyPostsPerVertex(linePoints, 15);
+        for (var vi = 0; vi < vertices.length; vi++) {
+          var v = vertices[vi];
+          features.push({
+            type: 'Feature',
+            properties: { postType: v.type },
+            geometry: { type: 'Point', coordinates: [v.lng, v.lat] },
+          });
+        }
+        var linePostsArr = computeLinePostPositions(linePoints, 6);
+        for (var lpi = 0; lpi < linePostsArr.length; lpi++) {
+          var lp = linePostsArr[lpi];
+          features.push({
+            type: 'Feature',
+            properties: { postType: 'line' },
+            geometry: { type: 'Point', coordinates: [lp.lng, lp.lat] },
+          });
+        }
+      }
+      var geoj = { type: 'FeatureCollection', features: features };
+      var src = map.getSource && map.getSource('dy-posts');
+      if (src && src.setData) { src.setData(geoj); return; }
+      if (!map.addSource) return;
+      map.addSource('dy-posts', { type: 'geojson', data: geoj });
+      map.addLayer({
+        id: 'dy-posts',
+        type: 'circle',
+        source: 'dy-posts',
+        paint: {
+          'circle-radius': [
+            'match', ['get', 'postType'],
+            'end', 6,
+            'corner', 6,
+            'line', 4,
+            4,
+          ],
+          'circle-color': [
+            'match', ['get', 'postType'],
+            'end', POST_COLOR_END,
+            'corner', POST_COLOR_CORNER,
+            'line', POST_COLOR_LINE,
+            POST_COLOR_LINE,
+          ],
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.95,
+        },
+      });
     }
     if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
     else mapRef.current.once && mapRef.current.once('style.load', apply);
@@ -1641,6 +1810,7 @@ function MapboxDrawView(props) {
     // use the same `flatIdx` for lookup.
     var outLines = [];
     var flatIdx = 0;
+    var flatSegIdx = 0; // segment-only index (no bridge slots), for color palette cycling
     var allSegments = []; // combined list, used for computeSlopedPostCount
     for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
       var linePoints = lines[lineIdx];
@@ -1655,7 +1825,10 @@ function MapboxDrawView(props) {
           index: i,
           mapLayerIdx: null,
           lengthFeet: lengthFt,
-          color: '#c2410c',
+          // Pass 4 Task 6: color now matches the on-map rainbow palette so
+          // downstream renderers (annotated snapshot, quote breakdown) stay
+          // visually aligned with what the buyer saw while drawing.
+          color: segmentColorForIndex(flatSegIdx),
           compassLabel: compassBearing(linePoints[i], linePoints[i + 1]),
           panels: Math.ceil(lengthFt / 6),
           start: linePoints[i],
@@ -1668,6 +1841,7 @@ function MapboxDrawView(props) {
         segs.push(seg);
         allSegments.push(seg);
         flatIdx++;
+        flatSegIdx++;
       }
       outLines.push({
         id: 'line-' + lineIdx,
@@ -1815,8 +1989,9 @@ function MapboxDrawView(props) {
   }
 
   // Build segments array for the dock, including auto-detected EPQS racking
-  // tier (if available) and any user override. The dock renders a dropdown
-  // per segment so customers can see and adjust the tier.
+  // tier (if available), any user override, and the rainbow color matching
+  // the segment's stroke on the map (Pass 4 Task 6). The breakdown rows use
+  // `color` to render the leading dot.
   var dockSegments = [];
   for (var si = 0; si < points.length - 1; si++) {
     var epqsSeg = epqsResults.current && epqsResults.current.segmentClassifications
@@ -1827,6 +2002,7 @@ function MapboxDrawView(props) {
       lengthFeet: distanceBetween(points[si], points[si + 1]),
       rackingTier: userTier || autoTier,
       rackingSource: userTier ? 'user' : 'auto',
+      color: segmentColorForIndex(si),
     });
   }
 
