@@ -1227,12 +1227,16 @@ function MapScreen(props) {
   // Dashed ghost segment from last point to hover. Only renders during
   // active draw mode so the preview line disappears after Finish / Add
   // another line / Continue to Quote.
+  // R3: use activeLinePoints (the currently-being-drawn line) instead of the
+  // flat `points` shim so that immediately after "Add another line" — when the
+  // new active line is empty — no ghost renders from Line 1's last vertex.
   useEffect(function() {
     if (!mapRef.current) return;
     var empty = { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } };
     var coords = [];
-    if (props.drawModeActive && props.points.length > 0 && props.hoverPoint) {
-      coords = [props.points[props.points.length - 1], props.hoverPoint];
+    var activeLine = props.activeLinePoints || [];
+    if (props.drawModeActive && activeLine.length > 0 && props.hoverPoint) {
+      coords = [activeLine[activeLine.length - 1], props.hoverPoint];
     }
     var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
     function apply() {
@@ -1258,7 +1262,7 @@ function MapScreen(props) {
     }
     if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
     else mapRef.current.once && mapRef.current.once('style.load', apply);
-  }, [props.points, props.hoverPoint, props.drawModeActive]);
+  }, [props.activeLinePoints, props.hoverPoint, props.drawModeActive]);
 
   // Vertex markers (draggable, right-click to delete)
   useEffect(function() {
@@ -1393,12 +1397,16 @@ function MapScreen(props) {
 
   // Live ghost distance label ("+42 ft"). Gated on drawModeActive so the
   // floating "+N ft" tag disappears together with the dashed line.
+  // R3: use activeLinePoints instead of the flat `points` shim for the same
+  // reason as the dy-ghost effect above — the label must not appear from
+  // Line 1's last vertex after "Add another line" before any vertex is placed.
   useEffect(function() {
     if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
     if (!props.drawModeActive) return;
-    if (props.points.length === 0 || !props.hoverPoint) return;
+    var activeLine = props.activeLinePoints || [];
+    if (activeLine.length === 0 || !props.hoverPoint) return;
     var map = mapRef.current;
-    var last = props.points[props.points.length - 1];
+    var last = activeLine[activeLine.length - 1];
     var len = distanceBetween(last, props.hoverPoint);
     if (len < 1) return;
     var midLng = (last[0] + props.hoverPoint[0]) / 2;
@@ -1416,7 +1424,7 @@ function MapScreen(props) {
       try { p0Px = map.project(last); } catch (eP0) { p0Px = null; }
       try { p1Px = map.project(props.hoverPoint); } catch (eP1) { p1Px = null; }
       if (p0Px && p1Px && typeof p0Px.x === 'number' && typeof p1Px.x === 'number') {
-        var ghostLine = props.points.concat([props.hoverPoint]);
+        var ghostLine = activeLine.concat([props.hoverPoint]);
         var ghostIsClosed = ghostLine.length >= 3;
         var ghostCentroid = ghostIsClosed
           ? computeCentroidPx(ghostLine, function(pt) { return map.project(pt); })
@@ -1436,7 +1444,7 @@ function MapScreen(props) {
       .setLngLat([midLng, midLat])
       .addTo(map);
     return function() { marker.remove(); };
-  }, [props.points, props.hoverPoint, props.drawModeActive]);
+  }, [props.activeLinePoints, props.hoverPoint, props.drawModeActive]);
 
   return React.createElement('div', {
     ref: mapContainerRef,
@@ -2029,6 +2037,7 @@ function MapboxDrawView(props) {
       location: location,
       points: points,
       lines: lines,
+      activeLinePoints: lines[lines.length - 1] || [],
       setPoints: setActiveLinePoints,
       hoverPoint: hoverPoint,
       setHoverPoint: setHoverPoint,

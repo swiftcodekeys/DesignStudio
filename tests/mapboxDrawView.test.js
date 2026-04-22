@@ -1341,4 +1341,87 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
       expect(dot.style.background).toBeTruthy();
     });
   });
+
+  // --- R3: Ghost line origin follows active line, not flat shim ---------------
+
+  it('R3: dy-ghost source receives empty coords when active line is empty (first click after Add another line)', async () => {
+    // State: Line 1 is finished with 2 vertices; Line 2 is the new active line
+    // with zero vertices. drawModeActive=true. Hover is over [2,2].
+    // Expected: the ghost effect sees an empty active line and sets dy-ghost
+    // to an empty coordinates array — no ghost renders connecting Line 1's
+    // last vertex to the cursor.
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    // isStyleLoaded returns true so apply() runs synchronously inside the effect.
+    inst.isStyleLoaded = vi.fn(() => true);
+    // getSource('dy-ghost') returns a mock source with setData so the effect
+    // takes the fast-path (src.setData) rather than addSource.
+    const ghostSrc = { setData: vi.fn() };
+    inst.getSource = vi.fn(function(id) {
+      if (id === 'dy-ghost') return ghostSrc;
+      return null;
+    });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    // Two-line state: Line 1 finished [[0,0],[1,1]], Line 2 active but empty [].
+    // The flat `points` shim concatenates both = [[0,0],[1,1]] — this is the
+    // stale reference that the old code would use, causing the ghost to appear.
+    render(
+      <MapScreen
+        location={{ lat: 42.6, lng: -83.9 }}
+        points={[[0, 0], [1, 1]]}
+        lines={[[[0, 0], [1, 1]], []]}
+        activeLinePoints={[]}
+        setPoints={vi.fn()}
+        hoverPoint={[2, 2]}
+        setHoverPoint={vi.fn()}
+        drawModeActive={true}
+      />
+    );
+
+    // Find the setData call that targeted the ghost source.
+    const ghostCalls = ghostSrc.setData.mock.calls;
+    expect(ghostCalls.length).toBeGreaterThan(0);
+    const lastCall = ghostCalls[ghostCalls.length - 1];
+    const coords = lastCall[0].geometry.coordinates;
+    // Active line is empty → no ghost segment should render.
+    expect(coords).toEqual([]);
+  });
+
+  it('R3: dy-ghost source connects active-line last vertex to hoverPoint, not Line 1 last vertex', async () => {
+    // State: Line 1 finished [[0,0],[1,1]]; Line 2 active with one vertex [[2,2]].
+    // drawModeActive=true. Hover is at [3,3].
+    // Expected: ghost connects [2,2] → [3,3], NOT [1,1] → [3,3].
+    const mapboxgl = await import('mapbox-gl');
+    const inst = makeMockMapInstance();
+    inst.isStyleLoaded = vi.fn(() => true);
+    const ghostSrc = { setData: vi.fn() };
+    inst.getSource = vi.fn(function(id) {
+      if (id === 'dy-ghost') return ghostSrc;
+      return null;
+    });
+    mapboxgl.default.Map = vi.fn(function() { return inst; });
+
+    render(
+      <MapScreen
+        location={{ lat: 42.6, lng: -83.9 }}
+        points={[[0, 0], [1, 1], [2, 2]]}
+        lines={[[[0, 0], [1, 1]], [[2, 2]]]}
+        activeLinePoints={[[2, 2]]}
+        setPoints={vi.fn()}
+        hoverPoint={[3, 3]}
+        setHoverPoint={vi.fn()}
+        drawModeActive={true}
+      />
+    );
+
+    const ghostCalls = ghostSrc.setData.mock.calls;
+    expect(ghostCalls.length).toBeGreaterThan(0);
+    const lastCall = ghostCalls[ghostCalls.length - 1];
+    const coords = lastCall[0].geometry.coordinates;
+    // Must start from Line 2's first vertex [2,2], not Line 1's last vertex [1,1].
+    expect(coords.length).toBe(2);
+    expect(coords[0]).toEqual([2, 2]);
+    expect(coords[1]).toEqual([3, 3]);
+  });
 });
