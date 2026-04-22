@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { checkForResume } from './quoteSaver';
 import UnifiedCanvas from './UnifiedCanvas';
 import TopNav from './TopNav';
 import FloatingPanel from './FloatingPanel';
@@ -7,14 +8,19 @@ import BacklinksFooter from './BacklinksFooter';
 import SocialProof from './SocialProof';
 import ContactPopup from './ContactPopup';
 import DrawYardView from './DrawYardView';
+import MapboxDrawView from './MapboxDrawView';
 import QuoteBuilder from './QuoteBuilder';
 import { COLORS, FENCE_STYLES } from './configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 import QuizPage from './quiz/QuizPage';
 import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';
+import DesignReviewPage from './DesignReviewPage';
+import AreaReturnPage from './AreaReturnPage';
+import HowToMeasurePage from './HowToMeasurePage';
 
 var STORAGE_KEY = 'gv_config';
+var USE_MAPBOX = process.env.USE_MAPBOX_DRAW;
 
 function buildHashString(config) {
     var parts = [
@@ -154,12 +160,33 @@ var DesignStudio = function() {
         privacyPanelColor: 'white',
     };
 
-    // Separate config state per fence tab — preserves user selections when switching
-    var frontYardConfigState = useState(defaultFrontYardConfig);
+    // Separate config state per fence tab. Preserves user selections across
+    // tab switches AND across direct URL landings like /studio?view=quote.
+    //
+    // Lazy initializers hydrate from localStorage (gv_fence_config /
+    // gv_back_config) so a buyer returning via a CRM email link doesn't have
+    // their saved color clobbered by the defaults' write-back useEffect.
+    // Without the hydration, the useState default fires, the write useEffect
+    // fires, and the user's real color is overwritten before QuoteBuilder
+    // reads gv_fence_config.
+    function hydrateConfig(storageKey, defaults) {
+        try {
+            var raw = localStorage.getItem(storageKey);
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    return Object.assign({}, defaults, parsed);
+                }
+            }
+        } catch (_) { /* ignore */ }
+        return defaults;
+    }
+
+    var frontYardConfigState = useState(function() { return hydrateConfig('gv_fence_config', defaultFrontYardConfig); });
     var frontYardConfig = frontYardConfigState[0];
     var setFrontYardConfig = frontYardConfigState[1];
 
-    var backyardConfigState = useState(defaultBackyardConfig);
+    var backyardConfigState = useState(function() { return hydrateConfig('gv_back_config', defaultBackyardConfig); });
     var backyardConfig = backyardConfigState[0];
     var setBackyardConfig = backyardConfigState[1];
 
@@ -222,50 +249,163 @@ var DesignStudio = function() {
     var view = viewState[0];
     var setView = viewState[1];
 
-    var handleGetQuote = function() {
-        handleOpenQuoteBuilder();
+    // Multi-area flow state
+    var multiAreaState = useState(null); // null = single area, { areas: [...], activeAreaIndex: 0 }
+    var multiArea = multiAreaState[0];
+    var setMultiArea = multiAreaState[1];
+
+    var poolPopupState = useState(false);
+    var showPoolPopup = poolPopupState[0];
+    var setShowPoolPopup = poolPopupState[1];
+
+    // Draw tool data from MapboxDrawView.onComplete — passed into QuoteBuilder so
+    // QuoteStep2_Layout can pre-fill linearFeet/segments/rackingTier from the drawn yard.
+    var drawToolDataState = useState(null);
+    var drawToolData = drawToolDataState[0];
+    var setDrawToolData = drawToolDataState[1];
+
+    var buildSavedDesign = function(scene, activeConfig) {
+        var acc = activeConfig.accessories || {};
+        var isFence = (scene === 'fencing' || scene === 'backyard');
+
+        // Capture viewport snapshot (background image + 3D canvas composited)
+        var snapshotDataUrl = '';
+        try {
+            // Request a synchronous render pass from whichever renderer is
+            // currently mounted. With preserveDrawingBuffer:true the back
+            // buffer then contains the latest frame for toDataURL.
+            try { window.dispatchEvent(new CustomEvent('gv:request-render')); } catch (_) {}
+
+            var viewportWrap = document.querySelector('.viewport-wrap');
+            var canvasEl = document.querySelector('.viewport-scene canvas');
+            var bgImgEl = viewportWrap ? viewportWrap.querySelector('.viewport-scene img') : null;
+            if (canvasEl && viewportWrap) {
+                var w = canvasEl.width;
+                var h = canvasEl.height;
+                var offscreen = document.createElement('canvas');
+                offscreen.width = w;
+                offscreen.height = h;
+                var ctx = offscreen.getContext('2d');
+                if (bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth > 0) {
+                    ctx.drawImage(bgImgEl, 0, 0, w, h);
+                } else {
+                    var grad = ctx.createLinearGradient(0, 0, 0, h);
+                    grad.addColorStop(0, '#cddcea');
+                    grad.addColorStop(0.25, '#b4c6d6');
+                    grad.addColorStop(0.5, '#a0b4c4');
+                    grad.addColorStop(1, '#94a8b4');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, w, h);
+                }
+                ctx.drawImage(canvasEl, 0, 0, w, h);
+                snapshotDataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+            } else if (canvasEl) {
+                snapshotDataUrl = canvasEl.toDataURL('image/jpeg', 0.85);
+            }
+        } catch (e) {
+            console.warn('[SaveDesign] Canvas capture failed:', e);
+        }
+
+        return {
+            scene: scene,
+            styleId: activeConfig.styleId || '',
+            height: activeConfig.height || '48',
+            color: activeConfig.color ? {
+                id: activeConfig.color.id,
+                displayName: activeConfig.color.displayName,
+                hex: activeConfig.color.hex || activeConfig.color.threeHex || '',
+            } : null,
+            postCap: activeConfig.postCap || 'pcf',
+            finialType: isFence ? (activeConfig.finialType || null) : (activeConfig.finial || null),
+            pupType: activeConfig.pupType || null,
+            circles: !!acc.tcr,
+            butterflies: !!acc.tbu,
+            scrolls: !!acc.scr,
+            midRail: !!acc.mdr,
+            upperFinialRail: !!acc.ufr,
+            proSpacing: !!acc.res,
+            arch: isFence ? null : (activeConfig.arch || null),
+            mount: isFence ? null : (activeConfig.mount || null),
+            leaf: isFence ? null : (activeConfig.leaf || null),
+            privacyPostColor: activeConfig.privacyPostColor || null,
+            privacyPanelColor: activeConfig.privacyPanelColor || null,
+            poolBarrier: false,
+            poolCompliance: null,
+            snapshotDataUrl: snapshotDataUrl,
+            timestamp: new Date().toISOString(),
+        };
     };
 
-    var handleOpenQuoteBuilder = function() {
+    var handleGetQuote = function(data) {
+        // Defensive: only store draw tool data when the arg is a real draw result.
+        // handleGetQuote is also called with no arg from the contact popup submit
+        // and from handleSkipToManualEntry — those callers must not clear state.
+        if (data && typeof data === 'object' && data.totalFeet != null) {
+            setDrawToolData(data);
+        }
         setContactPopupOpen(false);
-        // Pre-fill quote builder with current design studio config
+
+        var isFenceScene = (activeTab === 'fencing' || activeTab === 'backyard');
+        var activeConfig = isFenceScene ? fenceConfig : config;
+        var scene = activeTab === 'draw' ? 'fencing' : activeTab;
+
+        var savedDesign = buildSavedDesign(scene, activeConfig);
+
+        // Pass 4: when the buyer arrives from the draw tool, the .viewport-scene
+        // canvas is no longer in the DOM (they left the 3D view when they
+        // clicked Draw Your Yard). buildSavedDesign tries to capture the 3D
+        // canvas here and comes back with an empty snapshotDataUrl, which
+        // would clobber the real fence render that was captured when they
+        // entered the draw tool. Read the previously-persisted design and
+        // preserve its snapshotDataUrl + any config fields the draw flow
+        // can't re-derive. Other fields (styleId, color, etc.) still get
+        // refreshed from activeConfig so any final tweaks carry forward.
         try {
-            var isFenceMode = activeTab === 'fencing' || activeTab === 'backyard' || activeTab === 'draw';
-            var activeConfig = isFenceMode ? fenceConfig : config;
-            var colorMap = {
-                5: 'textured-black', 6: 'textured-black',
-                3: 'textured-white', 4: 'textured-white',
-                1: 'textured-bronze', 2: 'textured-bronze',
-                0: 'textured-khaki', 7: 'silver',
-            };
-            var styleMap = {
-                'uaf_200': 'horizon', 'uaf_201': 'horizon-pro',
-                'uab_200': 'haven', 'uaf_250': 'vanguard',
-                'uas_100': 'charleston', 'uas_101': 'charleston-pro',
-                'uas_150': 'savannah', 'uas_300': 'cambridge', 'uas_350': 'lexington',
-            };
-            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
-            var prefill = Object.assign({}, existing, {
-                style: styleMap[activeConfig.styleId] || existing.style || '',
-                height: parseInt(activeConfig.height) || existing.height || 60,
-                color: (activeConfig.color && colorMap[activeConfig.color.id]) || existing.color || 'textured-black',
-                isFence: isFenceMode,
-                postCap: activeConfig.postCap || existing.postCap || '',
-                finial: activeConfig.finial || activeConfig.finialType || existing.finial || '',
-            });
-            localStorage.setItem('gv_quote_builder', JSON.stringify(prefill));
-        } catch (e) { console.error('[App] Quote prefill error:', e); }
-        setView('quote-builder');
+            var rawPrev = localStorage.getItem('gv_saved_design');
+            if (rawPrev) {
+                var prev = JSON.parse(rawPrev);
+                if (prev && typeof prev === 'object') {
+                    if (!savedDesign.snapshotDataUrl && prev.snapshotDataUrl) {
+                        savedDesign.snapshotDataUrl = prev.snapshotDataUrl;
+                    }
+                }
+            }
+        } catch (_) {}
+
+        // Persist the annotated + raw map snapshots from the draw tool into
+        // gv_saved_design so the QB sidebar still shows the buyer's yard
+        // drawing after a reload. Without this, drawToolData state resets to
+        // null on the next mount and the sidebar falls through to the generic
+        // style thumbnail even though the drawing was just captured.
+        if (data && typeof data === 'object') {
+            if (typeof data.annotatedSnapshotUrl === 'string' && data.annotatedSnapshotUrl.length > 0) {
+                savedDesign.annotatedSnapshotUrl = data.annotatedSnapshotUrl;
+            }
+            if (typeof data.mapboxSnapshotUrl === 'string' && data.mapboxSnapshotUrl.length > 0) {
+                savedDesign.mapboxSnapshotUrl = data.mapboxSnapshotUrl;
+            }
+        }
+
+        try {
+            localStorage.setItem('gv_saved_design', JSON.stringify(savedDesign));
+        } catch (e) {
+            console.warn('[SaveDesign] localStorage write failed:', e);
+        }
+
+        // From draw tool: go straight to quote builder (they already have measurements)
+        // From design studio: go to bridge page (review design + enter address or manual)
+        if (activeTab === 'draw') {
+            setView('quote-builder');
+        } else {
+            setView('design-review');
+            if (scene === 'backyard' && !savedDesign.poolBarrier) {
+                setShowPoolPopup(true);
+            }
+        }
     };
 
     var handleSkipToManualEntry = function() {
-        handleOpenQuoteBuilder();
-        // QuoteBuilder will read initialStep from localStorage
-        try {
-            var existing = JSON.parse(localStorage.getItem('gv_quote_builder') || '{}');
-            existing.initialStep = 1; // Step 1 = Layout (manual footage entry)
-            localStorage.setItem('gv_quote_builder', JSON.stringify(existing));
-        } catch (e) { /* */ }
+        handleGetQuote();
     };
 
     var handleReset = function() {
@@ -290,22 +430,131 @@ var DesignStudio = function() {
         window.history.replaceState(null, '', '#' + hashString);
     }, [config]);
 
+    useEffect(function() {
+        try {
+            localStorage.setItem('gv_fence_config', JSON.stringify(frontYardConfig));
+        } catch (e) {}
+    }, [frontYardConfig]);
+
+    useEffect(function() {
+        try {
+            localStorage.setItem('gv_back_config', JSON.stringify(backyardConfig));
+        } catch (e) {}
+    }, [backyardConfig]);
+
     var isDraw = activeTab === 'draw';
+
+    if (view === 'design-review') {
+        return (
+            <div className="app-shell">
+                <DesignReviewPage
+                    onNavigateToDraw={function(location) {
+                        setView('studio');
+                        setActiveTab('draw');
+                    }}
+                    onNavigateToManual={function(payload) {
+                        if (payload && payload.totalFeet) {
+                            setDrawToolData({
+                                totalFeet: payload.totalFeet,
+                                manualEntry: true,
+                            });
+                        }
+                        setView('quote-builder');
+                    }}
+                    onNavigateToStudio={function() {
+                        setView('studio');
+                    }}
+                    onOpenContact={function() {
+                        setContactPopupOpen(true);
+                        setView('studio');
+                    }}
+                    showPoolPopup={showPoolPopup}
+                    onPoolComplete={function(result) {
+                        setShowPoolPopup(false);
+                        // Update saved design with pool data
+                        try {
+                            var raw = localStorage.getItem('gv_saved_design');
+                            if (raw) {
+                                var design = JSON.parse(raw);
+                                design.poolBarrier = result.poolBarrier;
+                                design.poolCompliance = result.poolCompliance;
+                                localStorage.setItem('gv_saved_design', JSON.stringify(design));
+                            }
+                        } catch (e) {}
+                    }}
+                    onPoolCancel={function() { setShowPoolPopup(false); }}
+                />
+            </div>
+        );
+    }
+
+    if (view === 'area-return') {
+        return (
+            <div className="app-shell">
+                <AreaReturnPage
+                    area1Config={multiArea && multiArea.areas ? multiArea.areas[0] : null}
+                    onSameSystem={function() {
+                        // Copy area 1 config to area 2
+                        setMultiArea(function(prev) {
+                            if (!prev || !prev.areas) return prev;
+                            var updated = Object.assign({}, prev);
+                            var areas = updated.areas.slice();
+                            areas[1] = Object.assign({}, areas[0], { zone: 'back', layout: null });
+                            updated.areas = areas;
+                            updated.activeAreaIndex = 1;
+                            return updated;
+                        });
+                        // Save area 2 design and go to bridge page for measurement
+                        setView('design-review');
+                    }}
+                    onDifferentSystem={function() {
+                        // Go to design tool with backyard tab
+                        setActiveTab('backyard');
+                        setView('studio');
+                    }}
+                    onBack={function() {
+                        setView('design-review');
+                    }}
+                />
+            </div>
+        );
+    }
 
     if (view === 'quote-builder') {
         return (
             <div className="app-shell">
-                <QuoteBuilder onClose={function() { setView('studio'); }} />
+                <QuoteBuilder
+                    drawToolData={drawToolData}
+                    onClose={function() { setView('studio'); }}
+                    onBackToDesignReview={function() { setView('design-review'); }}
+                />
             </div>
         );
     }
 
     return (
         <div className="app-shell">
-            <TopNav activeScene={activeTab} onSceneChange={function(id) { setActiveTab(id); setView('studio'); }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
+            <TopNav activeScene={activeTab} onSceneChange={function(id) {
+                if (id === 'draw') {
+                    // Show bridge page first — user enters address, then goes to draw tool
+                    var isFenceScene = (activeTab === 'fencing' || activeTab === 'backyard');
+                    var activeConfig = isFenceScene ? fenceConfig : config;
+                    var scene = activeTab === 'gates' ? 'gates' : activeTab;
+                    var savedDesign = buildSavedDesign(scene, activeConfig);
+                    try {
+                        localStorage.setItem('gv_saved_design', JSON.stringify(savedDesign));
+                    } catch (e) {}
+                    setView('design-review');
+                } else {
+                    setActiveTab(id);
+                    setView('studio');
+                }
+            }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
-                    <DrawYardView onGetQuote={handleOpenQuoteBuilder} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
+                    {USE_MAPBOX
+                        ? <MapboxDrawView onComplete={handleGetQuote} initialLocation={null} onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />
+                        : <DrawYardView onGetQuote={handleGetQuote} onSkipToManualEntry={handleSkipToManualEntry} fenceConfig={fenceConfig} />}
                     <BacklinksFooter config={config} />
                 </div>
             ) : (
@@ -335,12 +584,29 @@ var DesignStudio = function() {
 };
 
 var App = function() {
+    var navigate = useNavigate();
+    useEffect(function() {
+        // Handle legacy hash-style routes: /#/wizard, /#/studio, etc.
+        // Anyone bookmarking or sharing a hash URL gets redirected to the
+        // correct path route instead of falling through to the landing page.
+        var hash = window.location.hash || '';
+        if (hash.indexOf('#/') === 0) {
+            var hashPath = hash.slice(1); // '#/wizard' -> '/wizard'
+            window.history.replaceState(null, '', hashPath);
+            navigate(hashPath, { replace: true });
+            return;
+        }
+        if (checkForResume()) {
+            navigate('/wizard');
+        }
+    }, []);
     return (
         <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/wizard" element={<WizardShell />} />
             <Route path="/fence-quiz" element={<QuizPage />} />
             <Route path="/studio" element={<DesignStudio />} />
+            <Route path="/how-to-measure-your-yard" element={<HowToMeasurePage />} />
             <Route path="/*" element={<DesignStudio />} />
         </Routes>
     );

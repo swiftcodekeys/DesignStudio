@@ -92,6 +92,34 @@ function pathLengthFt(points) {
 }
 
 // ============================================================
+// Angle detection for corner counting
+// Returns deviation angle (degrees) between three consecutive points
+// 0 = straight, 90 = right angle, 180 = U-turn
+// ============================================================
+function angleBetweenPoints(p1, p2, p3) {
+    var dx1 = p2.lng - p1.lng;
+    var dy1 = p2.lat - p1.lat;
+    var dx2 = p3.lng - p2.lng;
+    var dy2 = p3.lat - p2.lat;
+    var angle1 = Math.atan2(dy1, dx1);
+    var angle2 = Math.atan2(dy2, dx2);
+    var diff = Math.abs(angle2 - angle1) * (180 / Math.PI);
+    if (diff > 180) diff = 360 - diff;
+    return diff;
+}
+
+function countCornersWithAngle(line, threshold) {
+    if (!threshold) threshold = 15;
+    if (!line.points || line.points.length < 3) return 0;
+    var corners = 0;
+    for (var i = 1; i < line.points.length - 1; i++) {
+        var angle = angleBetweenPoints(line.points[i - 1], line.points[i], line.points[i + 1]);
+        if (angle > threshold) corners++;
+    }
+    return corners;
+}
+
+// ============================================================
 // Line color palette — each line gets a unique color
 // ============================================================
 var LINE_COLORS = ['#22C55E', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6'];
@@ -271,7 +299,7 @@ var AddressEntry = function(props) {
                     </button>
                 </form>
                 <button className="draw-skip-link" onClick={onSkip}>
-                    Skip &mdash; I'll enter measurements manually
+                    Skip. I'll enter measurements manually
                 </button>
             </div>
         </div>
@@ -911,9 +939,7 @@ var DrawingPanel = function(props) {
                 totalFt += distanceFt(line.points[si].lat, line.points[si].lng, line.points[si + 1].lat, line.points[si + 1].lng);
             }
         }
-        if (line.points.length > 2) {
-            cornerCount += line.points.length - 2;
-        }
+        cornerCount += countCornersWithAngle(line);
     });
     totalFt = Math.round(totalFt);
 
@@ -1504,7 +1530,21 @@ var DrawYardView = function(props) {
     var mapsReady = mapsReadyState[0];
     var setMapsReady = mapsReadyState[1];
 
-    var locationState = useState(null);
+    // Hydrate from wizard-provided address (gv_bridge_location) if present.
+    // Only ONE address entry should ever appear in the full flow — when the
+    // wizard already captured an address, skip straight to the map.
+    var locationState = useState(function() {
+        try {
+            var saved = localStorage.getItem('gv_bridge_location');
+            if (saved) {
+                var loc = JSON.parse(saved);
+                if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number' && loc.address) {
+                    return loc;
+                }
+            }
+        } catch (e) {}
+        return null;
+    });
     var location = locationState[0];
     var setLocation = locationState[1];
 
@@ -1667,7 +1707,7 @@ var DrawYardView = function(props) {
 
         var corners = 0;
         lines.forEach(function(line) {
-            if (line.points.length > 2) corners += line.points.length - 2;
+            corners += countCornersWithAngle(line);
         });
 
         // Build flat segments array for pricing engine (slope + length per segment)

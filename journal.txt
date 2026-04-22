@@ -1,324 +1,63 @@
 ================================================================================
-JOURNAL — Grandview Design Studio Fence Tool
+JOURNAL - Grandview Design Studio Fence Tool
 ================================================================================
-
-GIT REMOTE NOTE:
-  DesignStudio remote (swiftcodekeys/DesignStudio) uses main branch.
-  Always push: git push designstudio main
-  Local branch: main (working directory)
-  Remote name: designstudio
+Archive policy: keep this file under 100 lines. Roll older entries into
+docs/journal-archive-YYYY-MM.md monthly. Previous entries:
+  docs/journal-archive-2026-04.md  (everything through Pass 3 2026-04-21)
 
 
-2026-04-02 — Diagnostic Investigation
-──────────────────────────────────────
+BRANCH SITUATION (as of 2026-04-21)
+-----------------------------------
+Active branch: feat/quote-redesign, pushed to origin.
+Preview: https://feat-quote-redesign.designstudio-csy.pages.dev
 
-BUG 1: Extra Pickets Rendering Above Puppy Rail — LEFT OF GATE ONLY
-====================================================================
-
-Files involved:
-  - FenceRenderer.js:557-561 (gate section finial placement — THE BUG)
-  - fenceSpatialConstants.js FENCE_PUPPY_FINIAL_POSITIONS (16 positions)
-  - fence_tool/m/6/gpupcl.json (gate section puppy model, X 0.031-1.127)
-
-Root cause (CORRECTED — previous diagnosis was wrong):
-  Gate section puppy finials overflow into the adjacent panel's space.
-
-  FenceRenderer.js lines 557-561 place gate section finials using the
-  full FENCE_PUPPY_FINIAL_POSITIONS array (16 positions, X 0.0815 to
-  1.7485). But the gate section puppy model (gpupcl.json) is only
-  1.096m wide (X 0.031 to 1.127) — NOT a full 1.8288m panel.
-
-  Finials 10-15 (at local X = 1.1925, 1.3035, 1.4145, 1.5255, 1.6375,
-  1.7485) are placed BEYOND the gate section geometry, overflowing into
-  world Z range 4.939 to 5.495.
-
-  Panel poArr[4] (z=4.9911) — which is RIGHT of the gate in world Z —
-  starts at world Z 5.022. The overflow finials land right at its near
-  edge, appearing as extra picket-like geometry on that panel.
-
-  Due to the front yard camera angle (position -7.05, 1.42, -1.85 with
-  rotation.y=-120°), panel poArr[4] appears to the LEFT of the gate
-  on screen. This is why Sarah sees "extra pickets left of the gate."
-
-What was ruled out:
-  - Gate geometry does NOT overlap adjacent panels (0.152m gap, clean)
-  - No gap-fill, connector, or bridge geometry exists
-  - All panels get identical geometry from placeMeshes (no index logic)
-  - FenceRenderer and GateRenderer never run simultaneously
-  - No shared materials or clip planes between renderers
-
-What a fix would require:
-  Use a separate, shorter finial position array for the gate section
-  that only covers positions within the gate model's X range [0.031 to
-  1.127]. Approximately the first 10 of 16 positions (X <= 1.0815).
-  Filter FENCE_PUPPY_FINIAL_POSITIONS to exclude entries with X > 1.127.
-
-Fix applied (commit 1c68e74):
-  Added `if (fp[0] > 1.127) return;` to the gate section finial loop
-  at FenceRenderer.js line 558. Filters out finial positions beyond
-  the gate model's X extent. One line change.
-
-  Verified: Classic Spear and Staggered Quad-Finial — no overflow
-  finials on the panel left of the gate in either variant.
-
-Reproduction (before fix):
-  1. Open Design Studio, Front Yard view
-  2. Pick Horizon (or any puppy-eligible style)
-  3. Go to Puppy tab, select any Classic variant (Classic Spear, etc.)
-  4. Look at the panel that appears LEFT of the gate on screen
-  5. Extra finials visible above the puppy rail on that panel only
+Latest Pass 3 snapshot committed through ecc8afe. Today (2026-04-21 later)
+Pass 4 is in progress on top of that.
 
 
-BUG 2: Quote Form Not Receiving Data from Fence Builder / Draw Tool
-===================================================================
+PASS 4 PROGRESS (2026-04-21)
+----------------------------
+Sarah reviewed the pushed preview and surfaced a new round of draw-tool +
+quote-page fixes. Nine task items.
 
-Files involved:
-  - app.js:159-161 (handleGetQuote — opens QuoteModal)
-  - app.js:163-190 (handleOpenQuoteBuilder — pre-fills QuoteBuilder)
-  - app.js:253 (QuoteModal receives config — THE PRIMARY BUG)
-  - app.js:242-243 (FloatingPanel correctly switches config — shows the
-    pattern that QuoteModal should follow)
-  - QuoteModal.js:80 (buildConfigSummary reads config)
-  - QuoteModal.js:4-33 (buildConfigSummary uses gate-specific lookups)
-  - QuoteBuilder.js:133-179 (GPS draw data import — manual, not auto)
-  - QuoteTab.js:45-46 (both buttons route to handleGetQuote)
-  - DrawYardView.js:573-604 (handleGetQuoteForLayout saves to localStorage)
-  - TopNav.js:59 (Get Quote button calls onGetQuote)
+Done:
+- P4.1-4 batched at 2369926. Trailing dotted line gated on drawModeActive;
+  post math now returns {endPosts, corners, linePosts} with 15 degree
+  corner threshold; dock stats row redesigned with Barlow Condensed font,
+  flex-wrap, stable min-width so numbers stop colliding; Continue CTA no
+  longer duplicates the stats-row price tail.
+- P4.7 at 437c195. Per-segment rackability dropdown removed from the
+  draw tool entirely. Racking tier selection moves to the quote page.
 
-Root cause:
-  PRIMARY — app.js line 253:
-    <QuoteModal ... config={config} ... />
-
-  QuoteModal ALWAYS receives the gate `config` object, never `fenceConfig`.
-  When the user is on the fencing/backyard tab, they configure fenceConfig,
-  but the modal is hardcoded to show gate config. Compare with line 242:
-    config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
-
-  FloatingPanel already uses the correct pattern. QuoteModal does not.
-
-  SECONDARY — app.js lines 163-190 (handleOpenQuoteBuilder):
-  1. Only transfers 3 fields (style, height, color) out of ~10+ config fields.
-     Missing: postCap, finialType, pupType, accessories, privacy options.
-  2. Color ID mapping may not match FENCE_COLORS numeric IDs.
-  3. Style ID mapping is hardcoded and may miss fence-specific styles.
-  4. When coming from Draw tool (activeTab === 'draw'), isFenceMode = false,
-     so it picks gate config instead of fence config.
-
-  TERTIARY — QuoteModal.js buildConfigSummary (lines 4-33):
-  Uses gate-specific lookup tables (FENCE_STYLES, ARCH_STYLES, POST_CAPS,
-  FINIALS from configData.js). Even if fenceConfig were passed, the function
-  wouldn't resolve fence-specific style IDs against fenceConfigData.js.
-
-  QUATERNARY — QuoteBuilder.js GPS import (lines 133-179):
-  The GPS draw data is saved to localStorage under 'gv_draw_layout', but the
-  QuoteBuilder requires the user to manually click "Use This Layout" on Step 2.
-  The button is not visible on Step 0 (Project) where the QuoteBuilder opens.
-  The import is not automatic.
-
-Data flow diagram:
-
-  [FloatingPanel QuoteTab] --"Get Instant Quote"--> handleGetQuote()
-       |                                                |
-       v                                                v
-  [TopNav "Get Quote"]  ----onGetQuote()------>  setQuoteModalOpen(true)
-                                                        |
-                                                        v
-                                               [QuoteModal config={config}]
-                                                   ^^^ ALWAYS GATE CONFIG
-                                                        |
-                                               "build your quote step by step"
-                                                        |
-                                                        v
-                                               handleOpenQuoteBuilder()
-                                               - picks gate/fence config ✓
-                                               - only transfers 3 fields ✗
-                                               - saves to localStorage
-                                                        |
-                                                        v
-                                               [QuoteBuilder]
-                                               - reads localStorage
-                                               - GPS data needs manual import
-
-  [DrawYardView] --"Get Quote for Layout"--> handleOpenQuoteBuilder()
-                                             ^^^ isFenceMode=false (activeTab='draw')
-                                             saves GPS layout to localStorage
-                                             QuoteBuilder opens at Step 0
-                                             GPS banner only visible at Step 2
-
-Reproduction:
-  1. Open Design Studio, select Front Yard
-  2. Configure a fence: pick Horizon style, White color, 60" height
-  3. Go to Puppy tab, select Classic Spear
-  4. Click "Get Quote" in the nav bar (or "Get Instant Quote" in Quote tab)
-  5. QuoteModal opens — shows gate config (wrong style, wrong color, etc.)
-  6. Click "build your quote step by step" — QuoteBuilder opens
-  7. Only style/height/color are pre-filled, all other selections are lost
-
-  For Draw tool:
-  1. Click "Draw Your Yard" tab
-  2. Draw a fence layout
-  3. Click "Get Quote for This Layout"
-  4. QuoteBuilder opens at Step 0 — no fence config visible
-  5. User must advance to Step 2 and manually click "Use This Layout"
-
-What a fix would require:
-  1. app.js line 253: Change config={config} to use the same ternary as
-     FloatingPanel (line 242):
-       config={(activeTab === 'fencing' || activeTab === 'backyard') ? fenceConfig : config}
-  2. QuoteModal.js buildConfigSummary: Add fence-mode awareness — import
-     FENCE_TOOL_STYLES and FENCE_COLORS from fenceConfigData.js, and use
-     them when config has fence-specific shape.
-  3. handleOpenQuoteBuilder: Transfer all config fields, not just 3.
-     Add: postCap, finialType, pupType, accessories, privacy options.
-  4. handleOpenQuoteBuilder: When activeTab === 'draw', set isFenceMode
-     based on what the draw tool was configuring (always fence).
-  5. QuoteBuilder GPS import: Auto-apply GPS data when opening from
-     the Draw tool, or at least open on Step 2 (Layout) instead of Step 0.
-  6. Pass an isFence prop to QuoteModal so it knows which lookup tables
-     to use for the config summary.
-
-Questions before fixing:
-  - Should the QuoteModal show the fence config summary in fence mode, or
-    should it just be a pass-through to QuoteBuilder?
-  - Is the QuoteBuilder meant to be the primary quote path (replacing the
-    modal), or are both paths needed?
-  - Should GPS draw data auto-import or require manual confirmation?
-  - Should the "Get Instant Quote" and "Request Custom Quote" buttons in
-    QuoteTab do different things, or is it intentional that both open the
-    same QuoteModal?
+In flight (subagents dispatched in parallel):
+- P4.5 + P4.6. Color-coded posts on map (end = amber, corner = red,
+  line = blue), legend with "corners at turns greater than 15 degrees"
+  copy, and per-segment rainbow colors in the breakdown rows that match
+  the line paint on the overlay.
+- P4.8 + P4.9. Plain-language slope options on quote page (No Slope /
+  Sloped / Heavy Slope, internal SKU values unchanged), racking-vs-
+  stair-step SVG diagrams with racking-preferred framing per GreatFence.
 
 
-2026-04-04 — UX Audit + Conditional Logic Research Session
-══════════════════════════════════════════════════════════════
+CURRENT STATE
+-------------
+Working:
+- Draw tool opens in pan/zoom mode, buyer opts in via Start Drawing.
+- Post counts split into end / corner / line with readable font.
+- CTA is clean (no duplicate price).
+- Rackability lives on the quote page only.
+- Email guard protects preview from burning GAS quota.
 
-Scope: Full UX audit of wizard flow + price book data extraction +
-       conditional logic spreadsheet + UX redesign proposal.
+Broken / known rough edges:
+- Legend + colored post/segment overlays not yet visible (subagent P4.5
+  pending).
+- Quote page still shows technical Racking Tier names; plain-language
+  labels arriving in subagent P4.8 commit.
 
-RESEARCH COMPLETED:
-  1. Read Ultra price book (May 2025) data via QUOTE_ENGINE_SPEC.md
-     - Full product matrix: 7 residential styles + Defender + Privacy
-     - Panel pricing for all grades (Residential/Commercial/Industrial)
-     - Post pricing by size/wall thickness/length
-     - Gate pricing: Walk (W suffix) and Double Drive (D suffix)
-     - Hardware pricing: hinges, latches, drop rods
-     - Shipping rates by state
-  2. Read "Changes to Price Book" PDF errata document
-     - 10 price corrections across walk gates and double drive gates
-     - Privacy gate pricing table (UAE-ALGW-DS30U pattern)
-  3. Read generate-order-form.js — documented all 11 sections / 54 fields
-     of Ultra Easy Order Form v3.3
-  4. Read all wizard components in correct repo (fence-tool):
-     - app.js, FloatingPanel.js, QuoteBuilder.js, QuoteModal.js
-     - WizardShell.js (newer multi-zone wizard approach)
-     - DrawYardView.js (GPS map drawing with Haversine calculation)
-     - configData.js (12 gate styles), fenceConfigData.js (9 fence styles)
-     - All 7 tab components
-  5. Read existing UX-Research-Summary.md (already in repo)
-  6. Read QUOTE_ENGINE_SPEC.md (full pricing + calculation spec)
-  7. Read QUOTE_FUNNEL_SPEC.md (funnel audit + recommendations)
 
-FINDINGS — CRITICAL ISSUES:
-  1. GPS disclaimer: NONE exists. DrawYardView shows raw footage with
-     no accuracy warning. 3-5 meter GPS error = 10% material error.
-  2. mailto: submission: Both QuoteModal and QuoteBuilder use window
-     .location.href = mailto:. Silently fails without email client.
-  3. Gate hardware: Not captured in any flow. Hinge type ($29-$290),
-     latch type ($44-$162) missing. D&D hardware is NOT ProCoat matched.
-  4. Rackability: Not explained. Terrain dropdown exists but not
-     connected to racking implications or post surcharges.
-  5. Multi-zone disconnect: WizardShell saves to localStorage keys
-     that QuoteBuilder never reads. User work is lost.
-  6. Haven/Defender height enforcement: Haven shows invalid heights
-     in some flows. Defender not limited to 84/96.
-  7. Skip button broken: Routes to QuoteModal instead of QuoteBuilder
-     layout step for manual footage entry.
-  8. Dual config system: configData.js and fenceConfigData.js maintain
-     separate product definitions that can drift.
-  9. No real-time pricing: User never sees a price estimate until
-     after submitting contact info, despite pricing data being available.
-  10. Color name errors: "Textured Beige" (should be Khaki) and
-      "Hartford Green" (not approved) in QuoteBuilder.
-
-Easy Order Form gap analysis:
-  - 15 of 54 fields fully captured (28%)
-  - 12 partially captured (22%)
-  - 27 not captured (50%)
-  - Most gaps are auto-derivable (grade, post specs, rail count)
-  - True UI gaps: gate hardware, grade selection, special notes
-
-FILES CREATED:
-  1. C:\Users\sarah\Desktop\DESIGN_STUDIO_CONDITIONAL_LOGIC.xlsx
-     - 7 sheets: Product Master, Height Matrix, Color Matrix,
-       Picket Tops, Gate Options, Easy Order Form Map, UX Issues
-     - 20 UX issues documented with severity + recommended fixes
-  2. C:\Users\sarah\Desktop\DESIGN_STUDIO_UX_REDESIGN_PROPOSAL.md
-     - Section 1: 10 current state problems with file/line references
-     - Section 2: Solutions for multi-zone, GPS, gates, rackability
-     - Section 3: 5-step proposed wizard flow
-     - Section 4: Full TypeScript data model (QuoteRequest interface)
-     - Section 5: Implementation priority matrix
-     - Appendices: pricing reference, open questions for Amanda
-
-OPEN QUESTIONS FOR AMANDA:
-  1. Haven Lite / Haven Plus / Haven Guard — Ultra model numbers?
-  2. Cambridge (UAL-100) — still available or discontinued?
-  3. Solace / Solace Air / Solace Screen — exact model numbers, heights
-  4. Defender — confirm UAD-100, confirm 84/96 ONLY
-  5. Silver color — standard or premium (call for pricing)?
-  6. Rackability — $25 setup fee still current? Max angle per style?
-  7. Privacy gate pricing — same Easy Order Form workflow?
-
-NOTE: Price book PDFs are image-based but pdf2json was able to extract
-text elements (165K chars from 72 pages). Full extraction saved to:
-  C:\Users\sarah\Desktop\PRICE_BOOK_3_26_EXTRACTED.md
-
-2026-04-05 — QUOTE_ENGINE_SPEC.md Price Update
-══════════════════════════════════════════════════
-
-Updated QUOTE_ENGINE_SPEC.md from May 2025 prices to March 2026 prices.
-Source: Ultra_Fence_Privacy_PriceBook_3_26LR_Digital.pdf + errata.
-
-Key price changes (March 2026 vs May 2025):
-  - Residential panels: +15-29% across all styles/heights
-  - Posts: +15% across all sizes
-  - LokkLatch: $43.75 → $58.50 (+34%)
-  - MagnaLatch: $162.00 → $186.50 (+15%)
-  - Standard Hinge: $29.00 → $33.50 (+16%)
-  - TRUClose: $83.00 → $95.50 (+15%)
-  - LokkLatch Deluxe: $133.00 → $175.00 (+32%)
-  - Drop Rod: $34.00 → $39.25 (+15%)
-  - Finials (quad/tri): $8.75 → $10.25 (+17%)
-  - Circles: $11.00 → $12.75 (+16%)
-  - Ball Cap 2.5": $25.25 → $29.00 (+15%)
-  - Ultra Adjustable Hinge: $290.00 → $290.00 (unchanged)
-  - Puppy picket surcharge: $57.00 (unchanged)
-
-Worked examples recalculated:
-  Example A (150LF Horizon 48"): $5,794 → $6,692 (+15.5%)
-  Example B (300LF Charleston 60" comm): $25,661 → $29,006 (+13%)
-
-2026-04-05 — pricing.js Updated to March 2026
-══════════════════════════════════════════════
-
-Updated grandview-quote-system/shared/pricing.js from May 2025 → March 2026.
-Authoritative source: C:\Users\sarah\Downloads\ULTRA_PRICEBOOK_MARCH2026_PARSED (1).md
-
-Changes made:
-  - All residential panel prices (standard + pro, 12 styles)
-  - All commercial panel prices (6 styles)
-  - All industrial panel prices (6 styles)
-  - Defender UAD-100 + UAD-101 prices
-  - All post prices (2x2, 2.5x2.5, 3x3, 4x4)
-  - All residential walk gate prices (standard + pro, 6 style groups)
-  - All accessories (caps, finials, circles, butterflies, scrolls)
-  - All hardware (hinges, latches, drop rod, EAK)
-  - All rails, flanges, misc items
-  - Added industrial TRUClose ($131.75), commercial Ultra hinge ($333.50)
-  - Added freight thresholds and Michigan freight rate
-  - Added Pro style mappings (savannah-pro, eclipse-pro, etc.)
-  - Fixed pool compliance in QUOTE_ENGINE_SPEC (spear styles NOT pool compliant)
-  - Fixed Haven variant documentation (Lite/Plus/Guard = config options, not SKUs)
-  - Confirmed Cambridge/UAL-100 NOT in March 2026 price book — likely discontinued
-  - Easy Order Form is v4.0 (not v3.3 as previously assumed)
-
-Cross-check: 16 key prices verified against authoritative parsed doc. All match.
+OPEN DECISIONS / BLOCKERS
+-------------------------
+- Industrial post pricing at 72" still missing the 96" postLength entry
+  in POST_PRICING. Deferred.
+- Admin CRM (grandview-quote-system) still needs git init before any
+  PO/pricing commits can be tracked.

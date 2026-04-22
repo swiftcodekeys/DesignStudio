@@ -23,6 +23,10 @@ module.exports = {
       {
         test: /\.(jpg|jpeg|png|gif|webp)$/i,
         type: 'asset/resource',
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
       }
     ]
   },
@@ -39,6 +43,8 @@ module.exports = {
         { from: 'landing.css', to: 'landing.css' },
         { from: 'wizard.css', to: 'wizard.css' },
         { from: '_redirects', to: '_redirects' },
+        { from: 'docs/research/how-to-measure-yard-for-fence-guide.md', to: 'docs/how-to-measure-yard-for-fence-guide.md' },
+        { from: 'assets/slope-guides', to: 'assets/slope-guides' },
       ]
     }),
     new webpack.DefinePlugin({
@@ -46,7 +52,11 @@ module.exports = {
       'process.env.STRIPE_PUBLISHABLE_KEY': JSON.stringify(''),
       'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || ''),
       'process.env.ANTHROPIC_API_KEY': JSON.stringify(''),
-      'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env.USE_MAPBOX_DRAW': JSON.stringify(process.env.USE_MAPBOX_DRAW !== 'false'),
+      'process.env.EARTH_INTRO_ENABLED': JSON.stringify(process.env.EARTH_INTRO_ENABLED !== 'false'),
+      'process.env.MAPBOX_ACCESS_TOKEN': JSON.stringify(process.env.MAPBOX_ACCESS_TOKEN || ''),
+      'process.env.PARCEL_PROXY_URL': JSON.stringify(process.env.PARCEL_PROXY_URL || 'https://grandview-parcel-proxy.sarah-13a.workers.dev'),
+      'process.env.EPQS_PROXY_URL': JSON.stringify(process.env.EPQS_PROXY_URL || 'https://grandview-epqs-proxy.sarah-13a.workers.dev'),
     })
   ],
   devServer: {

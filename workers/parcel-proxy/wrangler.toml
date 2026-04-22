@@ -1,0 +1,15 @@
+# workers/parcel-proxy/wrangler.toml
+name = "grandview-parcel-proxy"
+main = "src/index.js"
+compatibility_date = "2026-04-01"
+
+[vars]
+# Exact-match allowlist for CORS. Comma-separated.
+# NOTE: Any *.designstudio-csy.pages.dev subdomain is ALSO accepted by the
+# worker via a regex in src/index.js (covers Cloudflare Pages branch previews
+# like feat-quote-redesign.designstudio-csy.pages.dev). Do not add preview
+# subdomains here; update the regex in src/index.js if the Pages project
+# ever moves off designstudio-csy.pages.dev.
+ALLOWED_ORIGINS = "https://grandview-design-studio.pages.dev,http://localhost:3000"
+
+# REGRID_API_KEY and MAPBOX_ACCESS_TOKEN set via `wrangler secret put`

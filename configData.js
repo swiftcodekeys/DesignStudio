@@ -329,3 +329,60 @@ export function styleSupports3D(styleId) {
     var style = FENCE_STYLES.find(function(s) { return s.id === styleId; });
     return style ? style.supports3D : false;
 }
+
+// ============================================================
+// GRADE_DEFINITIONS — picket/rail/post specs per grade
+// ============================================================
+export var GRADE_DEFINITIONS = {
+  residential: {
+    label: 'Residential',
+    picketSize: '5/8"',
+    railSize: '1" x 1-1/2"',
+    postSizeDefault: '2" x 2"',
+    postWallDefault: '.060',
+    panelLength: 6,
+    description: 'Standard home fencing. Lightweight, elegant.',
+  },
+  commercial: {
+    label: 'Commercial',
+    picketSize: '3/4"',
+    railSize: '1-1/4" x 1-3/4"',
+    postSizeDefault: '2.5" x 2.5"',
+    postWallDefault: '.100',
+    panelLength: 6,
+    description: 'Schools, businesses, HOA. Heavier pickets and rails.',
+  },
+  industrial: {
+    label: 'Industrial',
+    picketSize: '1"',
+    railSize: '1-1/2" x 2"',
+    postSizeDefault: '3" x 3"',
+    postWallDefault: '.125',
+    panelLength: 8,
+    description: 'Maximum security. 8-foot panels, heavy-duty.',
+  },
+};
+
+// ============================================================
+// WALK_WIDTHS / DRIVE_WIDTHS — standard gate widths in inches
+// ============================================================
+export var WALK_WIDTHS  = [36, 42, 48, 60, 72];
+export var DRIVE_WIDTHS = [72, 84, 96, 120, 144];
+
+// ============================================================
+// PRIVACY_STYLES — stub for future Privacy Fence feature
+// ============================================================
+export var PRIVACY_STYLES = [
+  { id: 'solace',   name: 'Solace',         type: 'Aluminum T&G',     ultraModel: 'UAP-100' },
+  { id: 'louvered', name: 'Louvered',       type: 'Airflow Screening', ultraModel: 'UAP-200' },
+  { id: 'vinyl',    name: 'Vinyl Privacy',  type: 'Solid/Variegated',  ultraModel: 'UVP-100' },
+];
+
+// ============================================================
+// HEIGHTS_BY_GRADE — available fence heights (inches) per grade
+// ============================================================
+export var HEIGHTS_BY_GRADE = {
+  residential: [36, 42, 48, 54, 60, 72],
+  commercial:  [48, 60, 72],
+  industrial:  [48, 60, 72, 84, 96, 108, 120],
+};

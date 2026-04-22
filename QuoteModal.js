@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FENCE_STYLES, ARCH_STYLES, POST_CAPS, FINIALS, ACCESSORIES } from './configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import { isProductionEmailHost } from './emailWorkerClient';
 
 var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';
 
@@ -134,6 +135,14 @@ var QuoteModal = function(props) {
             pageUrl: configUrl,
         };
 
+        // Guard against non-prod hosts (dev, preview, tests) firing real
+        // emails to Sarah's inbox. See emailWorkerClient.js for rationale.
+        if (!isProductionEmailHost()) {
+            console.info('[QuoteModal] BLOCKED on non-prod host; submit simulated');
+            setSending(false);
+            setSent(true);
+            return;
+        }
         fetch(GAS_ENDPOINT, {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -145,7 +154,7 @@ var QuoteModal = function(props) {
         .catch(function(err) {
             console.error('[QuoteModal] Submit error:', err);
             setSending(false);
-            setSent(true); // Still show success — GAS is fire-and-forget, CORS may block response
+            setSent(true); // Still show success. GAS is fire-and-forget, CORS may block response.
         });
     };
 

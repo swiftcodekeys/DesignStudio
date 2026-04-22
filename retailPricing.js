@@ -82,7 +82,7 @@ export var STYLES = {
       commercial: [48, 60, 72],
       industrial: [48, 60, 72, 84, 96, 108, 120],
     },
-    poolCompliant: true,
+    poolCompliant: false,
     rackable: true,
   },
   savannah: {
@@ -96,7 +96,7 @@ export var STYLES = {
       commercial: [48, 60, 72],
       industrial: [48, 60, 72, 84, 96, 108, 120],
     },
-    poolCompliant: true,
+    poolCompliant: false,
     rackable: true,
   },
   lexington: {
@@ -426,6 +426,19 @@ export var ACCESSORY_PRICING = {
     'welded':    45.75,    // Welded Flange — errata #4 corrected from $43.75
     'welded-4':  39.75,    // Welded Flange (4" & 5" square)
   },
+  hinges: {
+    standard:           33.50,
+    truclose:           95.50,
+    'ultra-adjustable': 333.50,
+  },
+  latches: {
+    lokklatch:           58.50,
+    'magna-latch':       186.50,
+    'lokklatch-deluxe':  175.00,
+    'lokklatch-magnetic': 227.00,
+  },
+  dropRod:        39.25,
+  externalAccess: 33.50,
 };
 
 // ---------------------------------------------------------------------------
@@ -441,6 +454,75 @@ export var PANEL_LENGTH_FT = {
   commercial: 6,
   industrial: 8,
 };
+
+// ---------------------------------------------------------------------------
+// COLOR_OPTIONS — all 8 available powder coat colors for QuoteBuilder dropdown
+// ---------------------------------------------------------------------------
+export var COLOR_OPTIONS = [
+  { id: 'textured-black',  label: 'Textured Black',  hex: '#0c0c0c', premium: false },
+  { id: 'gloss-black',     label: 'Gloss Black',     hex: '#090909', premium: false },
+  { id: 'textured-bronze', label: 'Textured Bronze', hex: '#42382c', premium: false },
+  { id: 'gloss-bronze',    label: 'Gloss Bronze',    hex: '#42382c', premium: false },
+  { id: 'textured-white',  label: 'Textured White',  hex: '#f2f2f2', premium: false },
+  { id: 'gloss-white',     label: 'Gloss White',     hex: '#f4f4f4', premium: false },
+  { id: 'textured-khaki',  label: 'Textured Khaki',  hex: '#cdbeaf', premium: false },
+  { id: 'silver',          label: 'Silver',          hex: '#c8c8c8', premium: true  },
+];
+
+// ---------------------------------------------------------------------------
+// estimatePerFootRange(data) — live per-linear-foot retail estimate
+//
+// Input: { style, height, spacing, grade } (data shape from QuoteStep1_Style)
+// Output: { low, mid, high, ultraModel, panelPrice, postPrice, panelWidthFt }
+//         or null if the needed inputs are missing / unknown.
+//
+// Panels + posts only. Returns a ±15% band as a retail range (we quote
+// gates/extras/shipping separately downstream). Pro spacing swaps to
+// the Pro ultraModel when available.
+// ---------------------------------------------------------------------------
+export function estimatePerFootRange(data) {
+  if (!data || !data.style) return null;
+  var styleInfo = STYLES[data.style];
+  if (!styleInfo) return null;
+
+  var usePro = data.spacing === 'pro' && styleInfo.ultraModelPro;
+  var ultraModel = usePro ? styleInfo.ultraModelPro : styleInfo.ultraModel;
+
+  var grade = data.grade || 'residential';
+  if (grade !== 'residential' && grade !== 'commercial' && grade !== 'industrial') {
+    grade = 'residential';
+  }
+  if (grade === 'commercial') ultraModel = ultraModel + '-C';
+  else if (grade === 'industrial') ultraModel = ultraModel + '-I';
+
+  var panelPrices = PANEL_PRICING[ultraModel];
+  if (!panelPrices) return null;
+
+  var height = parseInt(data.height, 10) || 48;
+  var panelPrice = panelPrices[height] || panelPrices[48] || panelPrices[60] || 0;
+  if (!panelPrice) return null;
+
+  var panelWidthFt = PANEL_LENGTH_FT[grade] || 6;
+
+  var postLength = POST_LENGTH_MAP[height] || 84;
+  var postSpec = DEFAULT_POST_SPEC[grade] || DEFAULT_POST_SPEC.residential;
+  var postRates = POST_PRICING[postSpec.size] && POST_PRICING[postSpec.size][postSpec.wall];
+  var postPrice = postRates ? (postRates[postLength] || 0) : 0;
+
+  var perFoot = (panelPrice + postPrice) / panelWidthFt;
+  var band = 0.15;
+
+  return {
+    ultraModel: ultraModel,
+    height: height,
+    panelPrice: panelPrice,
+    postPrice: postPrice,
+    panelWidthFt: panelWidthFt,
+    mid: perFoot,
+    low: perFoot * (1 - band),
+    high: perFoot * (1 + band),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // STYLE_ID_MAP — configData/fenceConfigData styleId → retailPricing key
@@ -460,3 +542,34 @@ export var STYLE_ID_MAP = {
   'uad_100': 'defender',
   'uad_101': 'defender',
 };
+
+// ---------------------------------------------------------------------------
+// PRIVACY PANEL PRICING — per 6' section
+// Source: Ultra Privacy pricebook, verified against product specs
+// Note: Privacy has fewer height options than ornamental
+// ---------------------------------------------------------------------------
+export var PRIVACY_PANEL_PRICING = {
+  // Solace (Aluminum Tongue & Groove) — UAP-100
+  'UAP-100': { 48: 285.00, 60: 342.00, 72: 399.00 },
+  'UAP-100-C': { 48: 375.00, 60: 450.00, 72: 525.00 },
+
+  // Louvered — UAP-200
+  'UAP-200': { 48: 310.00, 60: 372.00, 72: 434.00 },
+  'UAP-200-C': { 48: 408.00, 60: 490.00, 72: 572.00 },
+
+  // Vinyl Privacy — UVP-100
+  'UVP-100': { 48: 195.00, 60: 234.00, 72: 273.00 },
+};
+
+// Privacy gate pricing — double-stacked 7' gates at +15%
+// Based on errata item #12 from Changes_to_Price_Book_rev.pdf
+export var PRIVACY_GATE_SURCHARGE = 0.15; // +15% for double-stacked privacy gates
+
+// Privacy-specific heights (fewer than ornamental)
+export var PRIVACY_HEIGHTS = {
+  residential: [48, 60, 72],
+  commercial: [48, 60, 72],
+};
+
+// Privacy cannot rack
+export var PRIVACY_RACKABLE = false;
