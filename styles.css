@@ -4896,7 +4896,7 @@ html, body {
 }
 
 /* Non-wizard Quote Builder flow (app.js:470 wraps <QuoteBuilder> in <div class="app-shell">).
-   .app-shell is a 100vh flex column with overflow:hidden, so without these rules the
+   .app-shell is a 100vh flex column; without these rules the
    .qb-container only takes its intrinsic content height and the remaining viewport
    space appears as ~900px of dead whitespace below. Mirrors the .wizard-shell
    .qb-container rule in wizard.css:31 for the wizard flow. Direct-child combinator
