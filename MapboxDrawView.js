@@ -1942,24 +1942,30 @@ function MapboxDrawView(props) {
     // 'idle' fires only once all visible tiles are fetched and painted, giving a
     // full-fidelity satellite + fence-line image. triggerRepaint() nudges the map
     // so idle fires even when the map is already at rest.
-    map.once('idle', function() {
+    // Capture with idle + timeout fallback.
+    // idle fires when all tiles have composited. The timeout fires if idle
+    // never arrives (e.g. the parcel boundary layer is stuck retrying after
+    // a network error, which can block Mapbox from reaching idle state).
+    var captured = false;
+    function doCapture(source) {
+      if (captured) return;
+      captured = true;
       var snapshotUrl = null;
       try {
         var src = map.getCanvas();
         var w = src.width;
         var h = src.height;
-        console.log('[R5-diag] idle fired. canvas:', w, 'x', h, 'loaded:', map.loaded(), 'areTilesLoaded:', map.areTilesLoaded && map.areTilesLoaded());
+        console.log('[R5-diag] capture via', source, '| canvas:', w, 'x', h, '| loaded:', map.loaded(), '| areTilesLoaded:', map.areTilesLoaded && map.areTilesLoaded());
         if (w > 0 && h > 0) {
           var tmp = document.createElement('canvas');
           tmp.width = w;
           tmp.height = h;
           var ctx2d = tmp.getContext('2d');
           ctx2d.drawImage(src, 0, 0, w, h);
-          // Sample a pixel from the center to check if the canvas has content
           var px = ctx2d.getImageData(w >> 1, h >> 1, 1, 1).data;
           console.log('[R5-diag] center pixel RGBA:', px[0], px[1], px[2], px[3]);
           snapshotUrl = tmp.toDataURL('image/png');
-          console.log('[R5-diag] snapshotUrl length:', snapshotUrl ? snapshotUrl.length : 0, 'prefix:', snapshotUrl ? snapshotUrl.substring(0, 30) : 'null');
+          console.log('[R5-diag] dataUrl length:', snapshotUrl ? snapshotUrl.length : 0);
         } else {
           console.warn('[R5-diag] canvas is 0x0 -- skipping capture');
         }
@@ -1968,7 +1974,11 @@ function MapboxDrawView(props) {
       }
       setDrawModeActive(false);
       buildAndComplete(snapshotUrl);
-    });
+    }
+    map.once('idle', function() { doCapture('idle'); });
+    // 4-second safety net: if the map never reaches idle (stuck parcel layer,
+    // network hang, etc.), capture whatever is currently on the canvas.
+    setTimeout(function() { doCapture('timeout-fallback'); }, 4000);
     map.triggerRepaint();
   }
 
