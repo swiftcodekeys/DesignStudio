@@ -5506,6 +5506,33 @@ html, body {
   padding: 8px 12px; margin-top: 8px;
 }
 
+/* Pass 4 Task 9: racking vs stair-step education block */
+.qb-rack-diagrams {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin-top: 16px;
+}
+.qb-rack-diagram {
+  margin: 0; padding: 10px;
+  background: #fff; border: 1px solid var(--border, #e8eaed);
+  border-radius: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.qb-rack-diagram svg {
+  width: 100%; height: auto;
+}
+.qb-rack-diagram-caption {
+  font-size: 12px; font-weight: 700; color: var(--text-primary, #1a1a2e);
+  text-align: center;
+}
+.qb-rack-education-copy {
+  margin: 12px 0 16px;
+  font-size: 13px; line-height: 1.5;
+  color: var(--text-secondary, #5a6270);
+}
+.qb-rack-slope-handling {
+  margin-top: 16px;
+}
+
 /* Task 16: per-segment racking breakdown card */
 .qb-rack-breakdown {
   margin-top: 14px;
@@ -5603,6 +5630,7 @@ html, body {
 @media (max-width: 480px) {
   .qb-layout-terrain-grid { grid-template-columns: 1fr; }
   .qb-rack-compare { grid-template-columns: 1fr; }
+  .qb-rack-diagrams { grid-template-columns: 1fr; }
   .qb-layout-shape-grid { grid-template-columns: 1fr; }
   .qb-layout-post-grid { grid-template-columns: repeat(2, 1fr); }
 }

@@ -136,8 +136,8 @@ describe('QuoteStep2_Layout. Terrain section defers to slopeAnswer (Task 15)', f
     var rackReadonly = container.querySelector('[data-test="qb-racking-readonly"]');
     expect(rackReadonly).toBeTruthy();
     expect(rackReadonly.textContent).toMatch(/Grandview detected/i);
-    // 'rackable' -> "Rackable panels"
-    expect(rackReadonly.textContent).toMatch(/Rackable panels/);
+    // 'rackable' -> "Sloped" (Pass 4 Task 8: plain-language summary label)
+    expect(rackReadonly.textContent).toMatch(/Sloped/);
 
     // Change racking tier button present
     var rackChange = rackReadonly.querySelector('.qs1-collapsible-toggle');

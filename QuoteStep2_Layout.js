@@ -45,27 +45,193 @@ function readOnlySummary(opts) {
   );
 }
 
+// ---- Task 9: Racking vs stair-step SVG diagrams ----
+// Inline SVG, no external assets. 4 panels on a 15 degree grade.
+// Approximate 240x100 viewBox. Uses site tokens via currentColor / CSS vars.
+//
+// Racking: pickets stay vertical, top and bottom rails angle with the slope
+// so the top forms a smooth diagonal.
+// Stair-step: each panel is level (horizontal rails) and posts step up at
+// each panel break, giving a staircase profile.
+function rackingDiagramSvg() {
+  // Ground: slopes down-right to simulate a 15 degree descending grade.
+  // 4 panels span x=20..220 (50 wide each). Top/bottom rails follow the
+  // slope (left higher than right). Pickets stay vertical.
+  var groundY1 = 55;
+  var groundY2 = 95;
+  var postX = [20, 70, 120, 170, 220];
+  // Rail Y at each x along the slope. Linear interpolation matches the
+  // ground slope so the fence top rises smoothly left to right.
+  function slopeY(x) {
+    var t = (x - 20) / 200; // 0..1 across the run
+    return 30 + t * 40;     // top rail Y at left vs right
+  }
+  return el('svg', {
+    viewBox: '0 0 240 100',
+    width: '100%',
+    height: 'auto',
+    xmlns: 'http://www.w3.org/2000/svg',
+    'aria-hidden': 'true',
+    style: { display: 'block' },
+  },
+    // Ground line
+    el('line', {
+      x1: 0, y1: groundY1, x2: 240, y2: groundY2,
+      stroke: 'var(--text-hint, #8e95a0)', strokeWidth: 1, strokeDasharray: '3 3',
+    }),
+    // Top rail (diagonal, follows slope)
+    el('line', {
+      x1: postX[0], y1: slopeY(postX[0]),
+      x2: postX[4], y2: slopeY(postX[4]),
+      stroke: 'var(--brand, #6BA3C2)', strokeWidth: 2,
+    }),
+    // Bottom rail (diagonal, parallel to top, above ground)
+    el('line', {
+      x1: postX[0], y1: slopeY(postX[0]) + 32,
+      x2: postX[4], y2: slopeY(postX[4]) + 32,
+      stroke: 'var(--brand, #6BA3C2)', strokeWidth: 2,
+    }),
+    // Posts + vertical pickets. Posts anchor top rail to ground.
+    postX.map(function(px, i) {
+      return el('line', {
+        key: 'p-' + i,
+        x1: px, y1: slopeY(px) - 4,
+        x2: px, y2: slopeY(px) + 38,
+        stroke: 'var(--text-primary, #1a1a2e)', strokeWidth: 1.5,
+      });
+    }),
+    // Vertical pickets between posts (4 per panel)
+    postX.slice(0, 4).map(function(px, pi) {
+      var picks = [];
+      var nextX = postX[pi + 1];
+      for (var k = 1; k <= 4; k++) {
+        var x = px + (nextX - px) * (k / 5);
+        // Picket top/bottom intersect the diagonal rails at the same x
+        var topY = slopeY(x);
+        picks.push(el('line', {
+          key: 'pk-' + pi + '-' + k,
+          x1: x, y1: topY,
+          x2: x, y2: topY + 32,
+          stroke: 'var(--text-primary, #1a1a2e)', strokeWidth: 0.8, opacity: 0.7,
+        }));
+      }
+      return picks;
+    })
+  );
+}
+
+function stairStepDiagramSvg() {
+  // Same 4 panels, same slope ground, but each panel is level (horizontal
+  // rails) and posts step up at each panel break.
+  var groundY1 = 55;
+  var groundY2 = 95;
+  var postX = [20, 70, 120, 170, 220];
+  // Each panel top is level. Step down by ~10 px per panel to produce the
+  // staircase profile on a descending grade.
+  var panelTops = [30, 40, 50, 60]; // one per panel (left to right)
+  return el('svg', {
+    viewBox: '0 0 240 100',
+    width: '100%',
+    height: 'auto',
+    xmlns: 'http://www.w3.org/2000/svg',
+    'aria-hidden': 'true',
+    style: { display: 'block' },
+  },
+    // Ground line
+    el('line', {
+      x1: 0, y1: groundY1, x2: 240, y2: groundY2,
+      stroke: 'var(--text-hint, #8e95a0)', strokeWidth: 1, strokeDasharray: '3 3',
+    }),
+    // Horizontal top + bottom rails per panel
+    panelTops.map(function(topY, i) {
+      return el('g', { key: 'panel-' + i },
+        el('line', {
+          x1: postX[i], y1: topY, x2: postX[i + 1], y2: topY,
+          stroke: 'var(--brand, #6BA3C2)', strokeWidth: 2,
+        }),
+        el('line', {
+          x1: postX[i], y1: topY + 32, x2: postX[i + 1], y2: topY + 32,
+          stroke: 'var(--brand, #6BA3C2)', strokeWidth: 2,
+        })
+      );
+    }),
+    // Posts. Each post spans from min(adjacent panel tops) - 4 to ground.
+    postX.map(function(px, i) {
+      var leftTop = i > 0 ? panelTops[i - 1] : panelTops[0];
+      var rightTop = i < panelTops.length ? panelTops[i] : panelTops[panelTops.length - 1];
+      var topMost = Math.min(leftTop, rightTop) - 4;
+      // Base the post at the slope line so the staircase sits on the ground.
+      var t = (px - 20) / 200;
+      var groundAt = groundY1 + t * (groundY2 - groundY1);
+      return el('line', {
+        key: 'p-' + i,
+        x1: px, y1: topMost,
+        x2: px, y2: groundAt,
+        stroke: 'var(--text-primary, #1a1a2e)', strokeWidth: 1.5,
+      });
+    }),
+    // Vertical pickets per panel (4 per panel)
+    panelTops.map(function(topY, pi) {
+      var picks = [];
+      var nextX = postX[pi + 1];
+      var px = postX[pi];
+      for (var k = 1; k <= 4; k++) {
+        var x = px + (nextX - px) * (k / 5);
+        picks.push(el('line', {
+          key: 'pk-' + pi + '-' + k,
+          x1: x, y1: topY,
+          x2: x, y2: topY + 32,
+          stroke: 'var(--text-primary, #1a1a2e)', strokeWidth: 0.8, opacity: 0.7,
+        }));
+      }
+      return picks;
+    })
+  );
+}
+
+// Side-by-side diagram block with captions. Stacks on mobile via CSS.
+function rackingVsStairStepDiagrams() {
+  return el('div', {
+    className: 'qb-rack-diagrams',
+    'data-test': 'qb-rack-diagrams',
+  },
+    el('figure', { className: 'qb-rack-diagram' },
+      rackingDiagramSvg(),
+      el('figcaption', { className: 'qb-rack-diagram-caption' }, 'Racking (preferred)')
+    ),
+    el('figure', { className: 'qb-rack-diagram' },
+      stairStepDiagramSvg(),
+      el('figcaption', { className: 'qb-rack-diagram-caption' }, 'Stair-step')
+    )
+  );
+}
+
 var TERRAIN_OPTIONS = [
   { id: 'flat',   name: 'Flat',   desc: 'Level ground, no grade changes', icon: Minus },
   { id: 'sloped', name: 'Sloped', desc: 'Consistent uphill or downhill grade', icon: Mountains },
   { id: 'mixed',  name: 'Mixed',  desc: 'Some flat, some sloped sections', icon: WaveSine },
 ];
 
+// Plain-language slope options shown to the buyer. The card label describes
+// what their yard looks like, not the internal tier name. The id stays
+// 'standard' | 'rackable' | 'heavy-rackable' so Ultra / PO / pricing continue
+// unchanged downstream. Grandview team can see the internal tier via the PO
+// or admin view.
 var RACKING_TIERS = [
-  { id: 'standard',       name: 'Standard',        desc: 'Follow slopes up to 6 inches per panel' },
-  { id: 'rackable',       name: 'Rackable',         desc: 'Follow slopes up to 20 inches per panel. Requires double-punched rails' },
-  { id: 'heavy-rackable', name: 'Heavy Rackable',   desc: 'Follow slopes up to 36 inches per panel. Requires double-punched rails' },
+  { id: 'standard',       name: 'No Slope',     desc: 'Most yards. Grade change is hardly noticeable.' },
+  { id: 'rackable',       name: 'Sloped',       desc: 'Yard has a visible uphill or downhill grade along the fence line.' },
+  { id: 'heavy-rackable', name: 'Heavy Slope',  desc: 'Steep drop across the run. Think a tall retaining wall or a hillside lot.' },
 ];
 
 // SLOPE_ANSWER_LABELS imported from slopeAnswers.js so the Terrain read-only
 // summary copy stays in lockstep with the SlopePopup choice values.
 
 // Labels for the auto-detected racking tier summary. Mirrors RACKING_TIERS
-// with copy tuned for the read-only "Grandview detected this" pattern.
+// with plain-language copy for the read-only "Grandview detected this" row.
 var RACKING_TIER_SUMMARY_LABELS = {
-  'standard':       'Standard panels (no racking needed)',
-  'rackable':       'Rackable panels',
-  'heavy-rackable': 'Heavy rack panels',
+  'standard':       'No Slope',
+  'rackable':       'Sloped',
+  'heavy-rackable': 'Heavy Slope',
 };
 
 // Task 16: per-segment racking breakdown. Per-segment rackingTier values come
@@ -532,43 +698,21 @@ function QuoteStep2_Layout(props) {
     ) : null,
 
     // ---- Rackability (conditional — ornamental only) ----
+    // Pass 4 Task 8 + 9 reorder:
+    //   1. Racking Tier picker (plain-language "No Slope / Sloped / Heavy Slope").
+    //      Task 15 read-only summary still applies when drawToolData pre-filled.
+    //   2. Racking vs stair-step SVG diagram block + educational copy.
+    //   3. Slope Handling choice (racked vs stair-stepped) below the diagrams
+    //      so the buyer sees the comparison first, then picks.
     hasSlope && data.fenceType !== 'privacy' ? el('div', { className: 'qb-rack-section' },
-      sectionHeader('How should panels follow the slope?', {
-        title: 'Racking vs Stair-Stepping',
-        text: 'How to check: Stand at one end of your fence line and look down its length. If the ground rises or falls, you need to decide how your panels handle the slope. Racked panels follow the ground smoothly. Stair-stepped panels stay level and step down, leaving triangular gaps at the bottom.',
-      }),
-      el('div', { className: 'qb-rack-compare' },
-        el('button', {
-          className: 'qb-rack-card' + (slopeMethod === 'racked' ? ' selected' : ''),
-          onClick: function() { syncLayout({ slopeMethod: 'racked' }); },
-        },
-          el('div', { className: 'qb-rack-img-placeholder' },
-            el('img', { src: 'assets/education/racking-standard.jpg', alt: 'Racked panels', className: 'qb-rack-img' })
-          ),
-          el('div', { className: 'qb-rack-card-title' }, 'Racked'),
-          el('div', { className: 'qb-rack-card-desc' }, 'Panels follow the slope. Pickets stay vertical. Clean, continuous look.'),
-          slopeMethod === 'racked' ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
-        ),
-        el('button', {
-          className: 'qb-rack-card' + (slopeMethod === 'stair-stepped' ? ' selected' : ''),
-          onClick: function() { syncLayout({ slopeMethod: 'stair-stepped' }); },
-        },
-          el('div', { className: 'qb-rack-img-placeholder' },
-            el('img', { src: 'assets/education/post-blank-stair.jpg', alt: 'Stair-stepped panels', className: 'qb-rack-img' })
-          ),
-          el('div', { className: 'qb-rack-card-title' }, 'Stair-Stepped'),
-          el('div', { className: 'qb-rack-card-desc' }, 'Panels stay level and step down. Gaps appear at the bottom.'),
-          slopeMethod === 'stair-stepped' ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
-        )
-      ),
 
-      // Racking tier (only if racked)
+      // 1. Racking Tier picker (plain-language).
       // Task 15: when the draw flow already detected the tier (via EPQS
       // classification in drawToolData) or slopeAnswer signals non-flat
       // terrain, render a read-only summary with a "Change racking tier"
       // affordance instead of the full tier picker. Expanded picker is still
       // one click away for buyers who want to override.
-      slopeMethod === 'racked' ? el('div', { className: 'qb-rack-tiers', 'data-test': 'qb-racking-section' },
+      el('div', { className: 'qb-rack-tiers', 'data-test': 'qb-racking-section' },
         (rackingTierDetected && !rackingExpanded)
           ? readOnlySummary({
               title: 'Racking Tier',
@@ -579,9 +723,9 @@ function QuoteStep2_Layout(props) {
               testId: 'qb-racking-readonly',
             })
           : el('div', null,
-              sectionHeader('Racking Tier', {
-                title: 'Racking Tier',
-                text: 'Racking tier is how much slope each panel can absorb without needing a step. Standard racking handles up to 6" of rise per 6-foot panel, rackable handles up to 20", and heavy-rackable up to 36". Higher tiers need double-punched rails and cost a little more per foot.',
+              sectionHeader('How much slope does your yard have?', {
+                title: 'Slope and racking',
+                text: 'Pick the option that matches what your yard looks like. Grandview uses this to decide whether your panels need standard rails or double-punched rails that bend further. Higher slope tiers cost a little more per foot.',
               }),
               RACKING_TIERS.map(function(tier) {
                 return el('button', {
@@ -595,7 +739,7 @@ function QuoteStep2_Layout(props) {
                 );
               })
             )
-      ) : null,
+      ),
 
       // Task 16: per-segment racking breakdown. Renders alongside the overall
       // Racking Tier picker so the buyer sees the mix ("4 at Standard, 2 at
@@ -604,6 +748,50 @@ function QuoteStep2_Layout(props) {
       // carries per-segment rackingTier data and there is more than one tier
       // (or any non-standard tier) represented.
       rackingBreakdownSection(rackingBreakdown),
+
+      // 2. Racking vs stair-step education block. Inline SVG diagrams side by
+      // side on desktop, stacked on mobile via CSS. Educational copy sits
+      // below so the buyer reads the comparison before making a pick.
+      rackingVsStairStepDiagrams(),
+      el('p', { className: 'qb-rack-education-copy', 'data-test': 'qb-rack-education-copy' },
+        'Racking is the preferred method for most residential installations. ',
+        'Stair-stepping is more common on large commercial applications and very ',
+        'steep slopes (greater than 30 degrees). For sloped installations, every ',
+        'fence is custom-fabricated to fit your property.'
+      ),
+
+      // 3. Slope Handling choice. Repositioned below the diagram + copy so the
+      // buyer sees the comparison first, then picks.
+      el('div', { className: 'qb-rack-slope-handling' },
+        sectionHeader('How should panels follow the slope?', {
+          title: 'Racking vs Stair-Stepping',
+          text: 'Racked panels follow the ground smoothly with pickets staying vertical. Stair-stepped panels stay level and step down, leaving triangular gaps at the bottom.',
+        }),
+        el('div', { className: 'qb-rack-compare' },
+          el('button', {
+            className: 'qb-rack-card' + (slopeMethod === 'racked' ? ' selected' : ''),
+            onClick: function() { syncLayout({ slopeMethod: 'racked' }); },
+          },
+            el('div', { className: 'qb-rack-img-placeholder' },
+              el('img', { src: 'assets/education/racking-standard.jpg', alt: 'Racked panels', className: 'qb-rack-img' })
+            ),
+            el('div', { className: 'qb-rack-card-title' }, 'Racked'),
+            el('div', { className: 'qb-rack-card-desc' }, 'Panels follow the slope. Pickets stay vertical. Clean, continuous look.'),
+            slopeMethod === 'racked' ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
+          ),
+          el('button', {
+            className: 'qb-rack-card' + (slopeMethod === 'stair-stepped' ? ' selected' : ''),
+            onClick: function() { syncLayout({ slopeMethod: 'stair-stepped' }); },
+          },
+            el('div', { className: 'qb-rack-img-placeholder' },
+              el('img', { src: 'assets/education/post-blank-stair.jpg', alt: 'Stair-stepped panels', className: 'qb-rack-img' })
+            ),
+            el('div', { className: 'qb-rack-card-title' }, 'Stair-Stepped'),
+            el('div', { className: 'qb-rack-card-desc' }, 'Panels stay level and step down. Gaps appear at the bottom.'),
+            slopeMethod === 'stair-stepped' ? el('div', { className: 'qs1-check' }, React.createElement(Check, { size: 14, weight: 'bold' })) : null
+          )
+        )
+      ),
 
       // Racking conflict warning
       hasRackingConflict ? el('div', { className: 'qb-layout-warning' },
