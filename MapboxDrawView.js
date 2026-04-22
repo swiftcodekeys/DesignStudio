@@ -757,15 +757,19 @@ function MorphingDock(props) {
       React.createElement('h4', { className: 'dy-expanded-head' }, 'Your fence line'),
       React.createElement('ol', { className: 'dy-segment-list' },
         segments.map(function(s, i) {
-          // Pass 4: rackability is no longer chosen in the draw tool. The
-          // draw tool is for measurement and geometry only. Tier selection
-          // moves to the quote page (QuoteStep2_Layout) where we present
-          // plain-language slope options. The delete affordance stays so
-          // the buyer can trim a misplaced segment before continuing.
+          // Pass 5 Task 5 (R2): Restore the per-segment racking dropdown.
+          // Plain-language labels let buyers override EPQS auto-detection
+          // before continuing to the quote. Internal values stay standard /
+          // rackable / heavy-rackable to match pricing, Ultra manufacturing
+          // payload, and the quote page Terrain picker.
           // Pass 4 Task 6: each breakdown row shows the same rainbow color
           // as the segment's stroke on the map so the buyer can reconcile
           // "that 18 ft run" to "the teal stretch along the driveway".
           var dotColor = s.color || segmentColorForIndex(i);
+          // Default to the EPQS auto-detected tier; fall back to standard.
+          var tierValue = s.rackingTier || 'standard';
+          // Capture i in a closure for the onChange handler.
+          var segIdx = i;
           return React.createElement('li', { key: i, className: 'dy-segment-item' },
             React.createElement('span', {
               className: 'dy-segment-dot',
@@ -774,6 +778,16 @@ function MorphingDock(props) {
             }),
             React.createElement('span', { className: 'dy-segment-num' }, i + 1),
             React.createElement('span', { className: 'dy-segment-len' }, Math.round(s.lengthFeet) + ' ft'),
+            React.createElement('select', {
+              className: 'dy-segment-tier',
+              value: tierValue,
+              onChange: function(ev) { props.onSetTierOverride(segIdx, ev.target.value); },
+              title: 'Slope for segment ' + (i + 1),
+            },
+              React.createElement('option', { value: 'standard' }, 'No Slope'),
+              React.createElement('option', { value: 'rackable' }, 'Sloped'),
+              React.createElement('option', { value: 'heavy-rackable' }, 'Heavy Slope')
+            ),
             React.createElement('button', {
               className: 'dy-segment-delete',
               onClick: function() { props.onDeleteSegment(i); },
