@@ -351,6 +351,20 @@ var DesignStudio = function() {
 
         var savedDesign = buildSavedDesign(scene, activeConfig);
 
+        // Pass 4: persist the annotated + raw map snapshots from the draw tool
+        // into gv_saved_design so the QB sidebar still shows the buyer's yard
+        // drawing after a reload. Without this, drawToolData state resets to
+        // null on the next mount and the sidebar falls through to the generic
+        // style thumbnail even though the drawing was just captured.
+        if (data && typeof data === 'object') {
+            if (typeof data.annotatedSnapshotUrl === 'string' && data.annotatedSnapshotUrl.length > 0) {
+                savedDesign.annotatedSnapshotUrl = data.annotatedSnapshotUrl;
+            }
+            if (typeof data.mapboxSnapshotUrl === 'string' && data.mapboxSnapshotUrl.length > 0) {
+                savedDesign.mapboxSnapshotUrl = data.mapboxSnapshotUrl;
+            }
+        }
+
         try {
             localStorage.setItem('gv_saved_design', JSON.stringify(savedDesign));
         } catch (e) {
