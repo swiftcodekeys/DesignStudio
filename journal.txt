@@ -1,79 +1,63 @@
 ================================================================================
-JOURNAL — Grandview Design Studio Fence Tool
+JOURNAL - Grandview Design Studio Fence Tool
 ================================================================================
 Archive policy: keep this file under 100 lines. Roll older entries into
 docs/journal-archive-YYYY-MM.md monthly. Previous entries:
-  docs/journal-archive-2026-04.md  (everything through 2026-04-16 Task 4)
+  docs/journal-archive-2026-04.md  (everything through Pass 3 2026-04-21)
 
 
-BRANCH SITUATION (as of 2026-04-16)
-────────────────────────────────────
-Active branch: feat/quote-redesign (local only, not pushed). It carries
-the full bug-fix batch: Tasks 1, 2, 3, and 4 are committed here on top
-of fcc108e (the prior session's review-page fixes). Tasks 5 through 8,
-plus the newly queued Task 8A (USGS elevation swap), still need to be
-executed. The sibling branch feat/quiz-hosting holds the standalone
-quiz bundle work and should be left alone while finishing the quote
-redesign.
+BRANCH SITUATION (as of 2026-04-21)
+-----------------------------------
+Active branch: feat/quote-redesign, pushed to origin.
+Preview: https://feat-quote-redesign.designstudio-csy.pages.dev
+
+Latest Pass 3 snapshot committed through ecc8afe. Today (2026-04-21 later)
+Pass 4 is in progress on top of that.
 
 
-RECENT COMPLETED ENTRIES (most recent first)
-────────────────────────────────────────────
-- TASK 4 — 3D snapshot surfaced on review, QuoteBuilder (sticky desktop),
-  and ZoneQuoteSummary; new gv_design_snapshot localStorage key. d54b7c7
-- TASK 3 — Live per-LF price range (±15%) in QuoteStep1_Style config
-  panel and QuoteStep6_Review; new estimatePerFootRange helper. 05e4193
-- TASK 2 — Pool compliance smart defaults: POOL READY / POOL CONFIGURABLE
-  / NOT RECOMMENDED badges, auto-bump min height, yellow below-min
-  warning, no styles hidden. 8db4343
-- feat(review) — Design Review page scroll fix + Continue-to-Full-Quote
-  CTA + itemized price estimate (prior session, not my commit). fcc108e
-- TASK 1 — Draw tool hydrates location state from gv_bridge_location,
-  no second address prompt after the wizard captures one. 2a765f8
+PASS 4 PROGRESS (2026-04-21)
+----------------------------
+Sarah reviewed the pushed preview and surfaced a new round of draw-tool +
+quote-page fixes. Nine task items.
+
+Done:
+- P4.1-4 batched at 2369926. Trailing dotted line gated on drawModeActive;
+  post math now returns {endPosts, corners, linePosts} with 15 degree
+  corner threshold; dock stats row redesigned with Barlow Condensed font,
+  flex-wrap, stable min-width so numbers stop colliding; Continue CTA no
+  longer duplicates the stats-row price tail.
+- P4.7 at 437c195. Per-segment rackability dropdown removed from the
+  draw tool entirely. Racking tier selection moves to the quote page.
+
+In flight (subagents dispatched in parallel):
+- P4.5 + P4.6. Color-coded posts on map (end = amber, corner = red,
+  line = blue), legend with "corners at turns greater than 15 degrees"
+  copy, and per-segment rainbow colors in the breakdown rows that match
+  the line paint on the overlay.
+- P4.8 + P4.9. Plain-language slope options on quote page (No Slope /
+  Sloped / Heavy Slope, internal SKU values unchanged), racking-vs-
+  stair-step SVG diagrams with racking-preferred framing per GreatFence.
 
 
 CURRENT STATE
-─────────────
+-------------
 Working:
-  - Wizard → Design Review → QuoteBuilder flow runs end-to-end with
-    pool compliance, live pricing, and sticky snapshot on the quote form.
-  - gv_design_snapshot is written on every "Looks good, next →" click;
-    consumed by QuoteBuilder header and ZoneQuoteSummary.
-  - Draw tool skips its own address entry when wizard already geocoded.
-  - Webpack build clean; Playwright end-to-end walks succeed for the
-    paths touched by Tasks 1–4.
+- Draw tool opens in pan/zoom mode, buyer opts in via Start Drawing.
+- Post counts split into end / corner / line with readable font.
+- CTA is clean (no duplicate price).
+- Rackability lives on the quote page only.
+- Email guard protects preview from burning GAS quota.
 
 Broken / known rough edges:
-  - Residential 72" height with .060 post wall falls back to panel-only
-    pricing (missing postLength 96" entry in POST_PRICING). Not a
-    Task 3 scope item; flagged for later.
-  - Design Studio's in-configurator StyleTab (wizard step 2, separate
-    from QuoteStep1_Style) still uses its own gate-style IDs and was
-    not updated for pool-mode guidance. Follow-up if needed.
-  - grandview-quote-system admin app is not a git repo yet; PO and
-    pricing fixes from 2026-04-15 remain in uncommitted working copy.
-    (See archive for details.)
-
-Next up:
-  - TASK 5  Escape hatch modal on every wizard step (wizard_escape CRM tag)
-  - TASK 6  Zone flow with hero + summary + inline Yes/No interstitial
-            (navy #1B3A5C, no multi-step modal). HIGHEST RISK — if it
-            breaks existing flow, revert and report.
-  - TASK 7  Driveway gate mini-flow (Drive / Estate / Cantilever),
-            walk-gate removed from this step.
-  - TASK 8A USGS EPQS elevation swap (backend only) + terrain_flag on
-            >6" rise per 6ft segment; admin CRM yellow badge.
-  - TASK 8  Build + deploy smoke test; push feat/quote-redesign; verify
-            Cloudflare Pages deploy.
+- Legend + colored post/segment overlays not yet visible (subagent P4.5
+  pending).
+- Quote page still shows technical Racking Tier names; plain-language
+  labels arriving in subagent P4.8 commit.
 
 
 OPEN DECISIONS / BLOCKERS
-─────────────────────────
-- No terrain / slope / rackability / post-calc questions in the wizard
-  this session. Deferred pending separate research.
-- Branch feat/quiz-hosting is parallel to feat/quote-redesign; keep the
-  two lines of work separate. No cross-merging without explicit ask.
-- Admin CRM repo (grandview-quote-system) needs git init before Task 8A
-  can commit the yellow-badge UI change.
-- Pool-compliant pricing for Cambridge / Haven Lite / Plus / Guard SKUs
-  still depends on Amanda's confirmation — note from archive.
+-------------------------
+- Industrial post pricing at 72" still missing the 96" postLength entry
+  in POST_PRICING. Deferred.
+- Admin CRM (grandview-quote-system) still needs git init before any
+  PO/pricing commits can be tracked.

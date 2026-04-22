@@ -931,3 +931,34 @@ FOLLOW-UP (not in this commit)
     to match the orange wizard CTA, either hoist a dedicated
     --escape-cta token or hardcode the orange.
 
+
+
+================================================================================
+PASS 2 (2026-04-20) and PASS 3 (2026-04-21) - Quote Redesign follow-up passes
+================================================================================
+
+Pass 2 landed the initial quote-redesign on feat/quote-redesign through commit 1ca84bd on 2026-04-20. Scope: data-pass-through audit, live per-LF pricing, pool-compliance defaults, shipping auto-populate, collapsible Style row, annotated drawing overlay, segment labels, Save-for-later email. See prior session notes.
+
+Pass 3 executed 2026-04-21 as an autonomous overnight run (commits 8afb9cb .. ecc8afe). Sixteen tasks landed plus one followup refactor. Highlights below. Full commit list in git log.
+
+- T1  8afb9cb  Hide parcel-fetch failures from users
+- T2  0e6c0f6  Dynamic perpendicular-outside segment label placement
+- T3  19b66b3  Explicit Start Drawing gate (cursor stays normal until opt-in)
+- T4  2feda71  "Add another line" path from Finished state
+- T5  65b67be  Slope detected acknowledgment + persistent chip
+- T6  1df4042  Cap EPQS concurrency + retry on null (stops Auto unknown cascade)
+- T7  6630d24  EPQS stable points key via useMemo (no spurious re-fires)
+- T8  4d6ba9d  Concrete estimate + "Grandview does not supply" note
+- T9  fa994ff  Widen SlopePopup to 820px
+- T10 518271d  Compact + style Mapbox attribution
+- T11 def08c1  QB sidebar preview priority chain (annotated > map > fence > thumb)
+- T12 8fcd49f  Data-passthrough regression test extension (no prod bug found)
+- T13 (folded into T11)
+- T14 0aa863e  Style & Config sidebar prefers saved 3D fence snapshot
+- T15 4e0d6e4  Terrain defers to slopeAnswer when draw flow answered
+- T16 f76f11b  Per-segment racking breakdown card with annotated-drawing link
+- T17 3f30f3f  aria-label on Terrain/Racking Change buttons
+- Followup ecc8afe  Shared tier colors + slope constants + orphan CSS removed
+
+Vitest at end of Pass 3: 233/233. Webpack clean. Branch pushed to origin.
+
