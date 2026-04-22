@@ -800,17 +800,20 @@ function MorphingDock(props) {
           React.createElement('span', { className: 'dy-material-price' }, 'included')
         ),
         (function() {
-          // Residential estimate: 3 bags of 60-lb fast-set concrete per post
-          // hole (10" diameter, 24-30" deep). Grandview does not supply
-          // concrete. Rounded to nearest 5 because buyers round up at the
-          // store anyway. If a post-grade flag (commercial/industrial) lands
-          // in the dock context, bump the multiplier to 4.
-          var totalPosts = corners + linePosts;
-          var concreteBags = Math.max(5, Math.round((totalPosts * 3) / 5) * 5);
-          var concreteTooltip = 'Rough estimate. 3 bags of 60-lb fast-set '
-            + 'concrete per post hole (10" diameter, 24-30" deep). Grandview '
-            + 'does not supply concrete. Most buyers pick it up at Home Depot '
-            + 'or Lowes.';
+          // VFP industry-standard rates (Visual Fence Pro contractor software
+          // defaults). Differentiated by post type so the estimate matches
+          // what a contractor would actually quote — no flat multiplier that
+          // over-inflates end posts and makes buyers call with objections.
+          // Rounded to nearest 5 because buyers round up at the store.
+          var gatePosts = props.gatePosts || 0;
+          var concreteBags = Math.max(5, Math.round(
+            ((endPosts || 0) * 2 + corners * 2 + linePosts * 1.5 + gatePosts * 1) / 5
+          ) * 5);
+          var concreteTooltip = 'Rough estimate based on industry-standard rates: '
+            + '2 bags per end/corner post, 1.5 bags per line post '
+            + '(60-lb fast-set, ~8-9 inch hole, 24 inch deep). '
+            + 'Grandview does not supply concrete. Most buyers pick it up at '
+            + 'Home Depot or Lowes.';
           return React.createElement('li', null,
             React.createElement('span', null,
               'Concrete: ~' + concreteBags + ' bags estimated ',

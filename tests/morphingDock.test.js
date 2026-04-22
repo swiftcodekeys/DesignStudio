@@ -274,3 +274,59 @@ describe('MorphingDock Task 5: slope-calculated acknowledgment', () => {
     expect(container.querySelector('.dy-slope-chip')).toBeNull();
   });
 });
+
+describe('MorphingDock R1: VFP concrete bag estimate', () => {
+  // VFP industry rates: end/corner = 2 bags, line = 1.5, gate = 1.
+  // Scenario: 2 end posts, 2 corner posts, 10 line posts, 0 gate posts.
+  // Raw = (2*2) + (2*2) + (10*1.5) + (0*1) = 4 + 4 + 15 = 23 bags.
+  // Rounded to nearest 5 = 25 bags.
+  //
+  // The breakdown panel renders when phase='expanded' AND segments.length > 0.
+  // Pass phase='expanded' directly and supply one dummy segment to unlock it.
+  const dummySegment = { lengthFeet: 20, color: '#aaa' };
+
+  it('concrete estimate uses VFP per-post-type rates: 2 end + 2 corner + 10 line = 25 bags', () => {
+    const { container } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({
+        phase: 'expanded',
+        endPosts: 2,
+        corners: 2,
+        linePosts: 10,
+        totalFt: 80,
+        segments: [dummySegment],
+        priceRange: { low: 5000, high: 8000, panelWidthFt: 6, panelPrice: 250 },
+      })
+    ));
+
+    const breakdown = container.querySelector('.dy-dock-breakdown');
+    expect(breakdown).toBeTruthy();
+    // Concrete estimate must show 25 bags (VFP formula), not the old flat rate.
+    // Old formula: totalPosts = corners + linePosts = 2+10 = 12; 12*3 = 36 → rounds to 35 bags.
+    expect(breakdown.textContent).toMatch(/Concrete: ~25 bags/);
+    expect(breakdown.textContent).not.toMatch(/Concrete: ~35 bags/);
+  });
+
+  it('concrete tooltip copy mentions per-post-type rates', () => {
+    const { container } = render(React.createElement(
+      MorphingDock,
+      makeReadyProps({
+        phase: 'expanded',
+        endPosts: 2,
+        corners: 2,
+        linePosts: 10,
+        segments: [dummySegment],
+        priceRange: { low: 5000, high: 8000, panelWidthFt: 6, panelPrice: 250 },
+      })
+    ));
+
+    const breakdown = container.querySelector('.dy-dock-breakdown');
+    expect(breakdown).toBeTruthy();
+    // Tooltip element carries the title attribute with rate details.
+    const infoSpan = breakdown.querySelector('.dy-material-info');
+    expect(infoSpan).toBeTruthy();
+    const tooltip = infoSpan.getAttribute('title');
+    expect(tooltip).toMatch(/2 bags per end\/corner/i);
+    expect(tooltip).toMatch(/1\.5 bags per line post/i);
+  });
+});
