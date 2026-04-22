@@ -4921,13 +4921,16 @@ html, body {
   position: sticky;
   top: 16px;
   align-self: start;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 10px;
   background: #fff;
   border: 1px solid #e8eaed;
   border-radius: 12px;
-  padding: 14px;
+  padding: 12px;
+  /* Pass 4: sidebar must fit in one viewport height without its own scroll. */
+  /* If the spec list ever outgrows the viewport on a short window, the outer */
+  /* page scrolls; the sidebar itself stays compact and visible. */
   max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  overflow-y: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -4979,7 +4982,9 @@ html, body {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  /* Pass 4: 16:10 keeps the yard drawing legible while leaving room for */
+  /* the spec list below without pushing the sidebar into scroll. */
+  aspect-ratio: 16 / 10;
   background: #f5f6f8;
   flex-shrink: 0;
 }
@@ -4993,7 +4998,7 @@ html, body {
   text-align: center; padding: 12px;
 }
 
-.qb-sidebar-details { display: flex; flex-direction: column; gap: 10px; }
+.qb-sidebar-details { display: flex; flex-direction: column; gap: 6px; }
 .qb-sidebar-title {
   font-size: 10px; font-weight: 800;
   letter-spacing: 1.5px; text-transform: uppercase;
@@ -5003,10 +5008,11 @@ html, body {
 .qb-sidebar-specs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .qb-sidebar-spec {
   display: flex; align-items: baseline; justify-content: space-between;
-  font-size: 13px;
-  padding: 6px 0;
+  font-size: 12.5px;
+  padding: 4px 0;
   gap: 8px;
   border-bottom: 1px dashed #eef0f3;
+  line-height: 1.35;
 }
 .qb-sidebar-spec:last-child { border-bottom: none; }
 .qb-sidebar-spec-label { color: #5a6270; font-weight: 500; flex-shrink: 0; }
