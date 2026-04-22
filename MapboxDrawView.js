@@ -1930,20 +1930,37 @@ function MapboxDrawView(props) {
   }
 
   function handleContinue() {
-    // Capture before any state changes. preserveDrawingBuffer:true (set on map
-    // init) keeps the last WebGL frame readable at any time — no render event
-    // or triggerRepaint() needed. Calling setDrawModeActive first was causing
-    // Mapbox to fire a fresh render cycle in a cleared state, producing a black
-    // canvas. Read the canvas now while the fence lines are still on-screen.
-    var snapshotUrl = null;
-    if (mapInstanceRef.current) {
-      try { snapshotUrl = mapInstanceRef.current.getCanvas().toDataURL('image/png'); }
-      catch (e) { /* SecurityError or context-loss — proceed without snapshot */ }
+    if (!mapInstanceRef.current) {
+      setDrawModeActive(false);
+      buildAndComplete(null);
+      return;
     }
-    // Exit draw mode after capture so the canvas isn't mutated before toDataURL().
-    // Task 3 AC4: cursor returns to pan/zoom if the user bounces back.
-    setDrawModeActive(false);
-    buildAndComplete(snapshotUrl);
+    var map = mapInstanceRef.current;
+    // Mirror the same capture pattern used by the 3D configurator in app.js:
+    // trigger a render, wait for the render event, then copy the WebGL canvas
+    // into an offscreen 2D canvas and call toDataURL() on the 2D canvas.
+    // Calling toDataURL() directly on the WebGL canvas can fail silently in
+    // some browsers; the 2D-canvas copy is always readable.
+    map.once('render', function() {
+      var snapshotUrl = null;
+      try {
+        var src = map.getCanvas();
+        var w = src.width;
+        var h = src.height;
+        if (w > 0 && h > 0) {
+          var tmp = document.createElement('canvas');
+          tmp.width = w;
+          tmp.height = h;
+          tmp.getContext('2d').drawImage(src, 0, 0, w, h);
+          snapshotUrl = tmp.toDataURL('image/png');
+        }
+      } catch (e) {}
+      // Task 3 AC4: exit draw mode after capture so the canvas isn't mutated
+      // mid-read and cursor returns to pan/zoom if user bounces back.
+      setDrawModeActive(false);
+      buildAndComplete(snapshotUrl);
+    });
+    map.triggerRepaint();
   }
 
   function handleToggleBreakdown() { setShowBreakdown(!showBreakdown); }
