@@ -403,7 +403,6 @@
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  overflow: hidden;
 }
 .dy-stat-label {
   font-size: 11px;
@@ -436,8 +435,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  align-self: center;
-  margin: 2px auto 8px;
+  align-self: flex-start;
+  margin-top: 4px;
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 11px;

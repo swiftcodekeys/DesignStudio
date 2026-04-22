@@ -572,6 +572,13 @@ function MorphingDock(props) {
   // so the numbers match the colored markers on the map.
   var totalPosts = endPosts + corners + linePosts;
   var postBreakdown = endPosts + ' end · ' + corners + ' corner · ' + linePosts + ' line';
+
+  // Slope chip must be declared before statsRow so the reference at line 590 is live.
+  var slopeChipLabel = props.epqsOverall === 'heavy-rack' ? 'heavy rack' : props.epqsOverall;
+  var slopeChip = props.epqsOverall && React.createElement('div', {
+    className: 'dy-slope-chip dy-slope-chip-' + props.epqsOverall,
+  }, 'Slope: ' + slopeChipLabel);
+
   var statsRow = React.createElement('div', { className: 'dy-stats' },
     React.createElement('div', { className: 'dy-stat' },
       React.createElement('div', { className: 'dy-stat-num' }, Math.round(totalFt)),
@@ -586,18 +593,10 @@ function MorphingDock(props) {
       React.createElement('div', { className: 'dy-stat-num dy-stat-range' },
         formatMoney(priceRange.low) + ' – ' + formatMoney(priceRange.high)
       ),
-      React.createElement('div', { className: 'dy-stat-label' }, 'est. range')
+      React.createElement('div', { className: 'dy-stat-label' }, 'est. range'),
+      slopeChip
     )
   );
-
-  // Task 5: persistent slope chip. Renders whenever the parent has published
-  // an overall EPQS classification. Unlike the transient CTA acknowledgment,
-  // the chip stays visible so the buyer always has a running indication of
-  // what slope tier was detected on the drawn line. Null when no line yet.
-  var slopeChipLabel = props.epqsOverall === 'heavy-rack' ? 'heavy rack' : props.epqsOverall;
-  var slopeChip = props.epqsOverall && React.createElement('div', {
-    className: 'dy-slope-chip dy-slope-chip-' + props.epqsOverall,
-  }, 'Slope: ' + slopeChipLabel);
 
   // "Start new line" appears only once the active line has a real segment
   // (>=2 points). Clicking pushes a fresh empty line onto `lines` so the
@@ -727,7 +726,6 @@ function MorphingDock(props) {
 
   var drawingOrReadyContent = React.createElement(React.Fragment, null,
     statsRow,
-    slopeChip,
     isFinished ? editDrawingLink : microActions,
     React.createElement('button', {
       className: 'dy-dock-cta ' + (canContinue ? 'dy-dock-cta-ready' : 'dy-dock-cta-disabled'),
@@ -952,6 +950,7 @@ function MapScreen(props) {
       maxZoom: 22,
       pitch: 0,
       attributionControl: false,
+      preserveDrawingBuffer: true,
     });
     // Mapbox requires attribution per its terms of service. The `compact: true`
     // variant collapses the full text into a small circled "i" icon that
