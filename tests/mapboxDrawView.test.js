@@ -355,6 +355,53 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(rule).toMatch(/pointer-events\s*:\s*none/);
   });
 
+  // --- R4: Stats row must stay on one horizontal line (no wrapping) -----------
+
+  it('R4: .dy-stats has flex-wrap:nowrap so the three stats stay on one line', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(
+      path.join(__dirname, '..', 'mapbox.css'),
+      'utf8'
+    );
+    // Match the first .dy-stats rule block (not inside a media query override).
+    // The rule must contain flex-wrap: nowrap so the three stats (linear feet,
+    // post count, price range) cannot spill onto separate rows at the
+    // 820-860px dock width.
+    const match = css.match(/\.dy-stats\s*\{([^}]*)\}/);
+    expect(match).toBeTruthy();
+    const rule = match[1];
+    expect(rule).toMatch(/flex-wrap\s*:\s*nowrap/);
+  });
+
+  it('R4: .dy-stat has min-width:0 so flex children can shrink below their content size', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(
+      path.join(__dirname, '..', 'mapbox.css'),
+      'utf8'
+    );
+    const match = css.match(/\.dy-stat\s*\{([^}]*)\}/);
+    expect(match).toBeTruthy();
+    const rule = match[1];
+    expect(rule).toMatch(/min-width\s*:\s*0/);
+  });
+
+  it('R4: .dy-stat-num uses clamp() for font-size so it scales down at narrow dock widths', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(
+      path.join(__dirname, '..', 'mapbox.css'),
+      'utf8'
+    );
+    const match = css.match(/\.dy-stat-num\s*\{([^}]*)\}/);
+    expect(match).toBeTruthy();
+    const rule = match[1];
+    // font-size value must use clamp() so numbers shrink at narrow dock widths
+    // rather than forcing a wrap.
+    expect(rule).toMatch(/font-size\s*:\s*clamp\(/);
+  });
+
   it('map click near existing vertex still drops a new vertex (canvas target bypasses guard)', async () => {
     // This is the behavioral test for the fix. With pointer-events:none on
     // ::before, a click that lands in the 14px ring hits the canvas, not the
