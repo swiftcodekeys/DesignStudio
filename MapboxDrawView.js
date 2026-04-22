@@ -1930,16 +1930,20 @@ function MapboxDrawView(props) {
   }
 
   function handleContinue() {
-    // Task 3 AC4: exit draw mode before continuing so if the user bounces
-    // back into the view the cursor is normal and clicks pan/zoom again.
+    // Capture before any state changes. preserveDrawingBuffer:true (set on map
+    // init) keeps the last WebGL frame readable at any time — no render event
+    // or triggerRepaint() needed. Calling setDrawModeActive first was causing
+    // Mapbox to fire a fresh render cycle in a cleared state, producing a black
+    // canvas. Read the canvas now while the fence lines are still on-screen.
+    var snapshotUrl = null;
+    if (mapInstanceRef.current) {
+      try { snapshotUrl = mapInstanceRef.current.getCanvas().toDataURL('image/png'); }
+      catch (e) { /* SecurityError or context-loss — proceed without snapshot */ }
+    }
+    // Exit draw mode after capture so the canvas isn't mutated before toDataURL().
+    // Task 3 AC4: cursor returns to pan/zoom if the user bounces back.
     setDrawModeActive(false);
-    if (!mapInstanceRef.current) { buildAndComplete(null); return; }
-    var map = mapInstanceRef.current;
-    map.once('render', function() {
-      try { buildAndComplete(map.getCanvas().toDataURL('image/png')); }
-      catch (e) { buildAndComplete(null); }
-    });
-    map.triggerRepaint();
+    buildAndComplete(snapshotUrl);
   }
 
   function handleToggleBreakdown() { setShowBreakdown(!showBreakdown); }
