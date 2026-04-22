@@ -520,7 +520,11 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(result.endPosts).toBe(2);
   });
 
-  it('per-segment tier dropdown defaults to Auto and updates on change', () => {
+  it('per-segment tier dropdown is removed from the draw tool', () => {
+    // Pass 4: rackability moved to the quote page. The draw tool is now
+    // measurement + geometry only, so the per-segment tier dropdown is
+    // gone from the expanded breakdown. Segment rows still render with
+    // their length and a delete affordance.
     localStorage.setItem('gv_draw_state', JSON.stringify({
       points: [[-83.9, 42.6], [-83.9, 42.605], [-83.905, 42.605]],
       ts: Date.now(),
@@ -529,11 +533,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
       <MapboxDrawView onComplete={() => {}} initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }} />
     );
     act(() => { fireEvent.click(container.querySelector('.dy-breakdown-toggle')); });
-    const selects = container.querySelectorAll('.dy-segment-tier');
-    expect(selects.length).toBe(2);
-    expect(selects[0].value).toBe('auto');
-    act(() => { fireEvent.change(selects[0], { target: { value: 'heavy' } }); });
-    expect(selects[0].value).toBe('heavy');
+    expect(container.querySelectorAll('.dy-segment-tier').length).toBe(0);
+    // Segment rows still render with length + delete.
+    expect(container.querySelectorAll('.dy-segment-item').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.dy-segment-delete').length).toBeGreaterThan(0);
   });
 
   it('pre-draw slope popup gates the map until answered', () => {

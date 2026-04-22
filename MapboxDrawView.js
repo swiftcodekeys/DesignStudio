@@ -739,21 +739,14 @@ function MorphingDock(props) {
       React.createElement('h4', { className: 'dy-expanded-head' }, 'Your fence line'),
       React.createElement('ol', { className: 'dy-segment-list' },
         segments.map(function(s, i) {
+          // Pass 4: rackability is no longer chosen in the draw tool. The
+          // draw tool is for measurement and geometry only. Tier selection
+          // moves to the quote page (QuoteStep2_Layout) where we present
+          // plain-language slope options. The delete affordance stays so
+          // the buyer can trim a misplaced segment before continuing.
           return React.createElement('li', { key: i, className: 'dy-segment-item' },
             React.createElement('span', { className: 'dy-segment-num' }, i + 1),
             React.createElement('span', { className: 'dy-segment-len' }, Math.round(s.lengthFeet) + ' ft'),
-            React.createElement('select', {
-              className: 'dy-segment-tier',
-              value: s.rackingSource === 'user' && s.rackingTier ? s.rackingTier : 'auto',
-              onChange: function(ev) { props.onSetTierOverride(i, ev.target.value); },
-              title: 'Racking tier for segment ' + (i + 1),
-            },
-              React.createElement('option', { value: 'auto' }, 'Auto' + (s.rackingSource === 'auto' && s.rackingTier ? ' (' + s.rackingTier + ')' : '')),
-              React.createElement('option', { value: 'standard' }, 'Standard'),
-              React.createElement('option', { value: 'rackable' }, 'Rackable'),
-              React.createElement('option', { value: 'heavy' }, 'Heavy rack'),
-              React.createElement('option', { value: 'steps' }, 'Stair-step')
-            ),
             React.createElement('button', {
               className: 'dy-segment-delete',
               onClick: function() { props.onDeleteSegment(i); },
