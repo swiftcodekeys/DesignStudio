@@ -351,8 +351,29 @@ var DesignStudio = function() {
 
         var savedDesign = buildSavedDesign(scene, activeConfig);
 
-        // Pass 4: persist the annotated + raw map snapshots from the draw tool
-        // into gv_saved_design so the QB sidebar still shows the buyer's yard
+        // Pass 4: when the buyer arrives from the draw tool, the .viewport-scene
+        // canvas is no longer in the DOM (they left the 3D view when they
+        // clicked Draw Your Yard). buildSavedDesign tries to capture the 3D
+        // canvas here and comes back with an empty snapshotDataUrl, which
+        // would clobber the real fence render that was captured when they
+        // entered the draw tool. Read the previously-persisted design and
+        // preserve its snapshotDataUrl + any config fields the draw flow
+        // can't re-derive. Other fields (styleId, color, etc.) still get
+        // refreshed from activeConfig so any final tweaks carry forward.
+        try {
+            var rawPrev = localStorage.getItem('gv_saved_design');
+            if (rawPrev) {
+                var prev = JSON.parse(rawPrev);
+                if (prev && typeof prev === 'object') {
+                    if (!savedDesign.snapshotDataUrl && prev.snapshotDataUrl) {
+                        savedDesign.snapshotDataUrl = prev.snapshotDataUrl;
+                    }
+                }
+            }
+        } catch (_) {}
+
+        // Persist the annotated + raw map snapshots from the draw tool into
+        // gv_saved_design so the QB sidebar still shows the buyer's yard
         // drawing after a reload. Without this, drawToolData state resets to
         // null on the next mount and the sidebar falls through to the generic
         // style thumbnail even though the drawing was just captured.

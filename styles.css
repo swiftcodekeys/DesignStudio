@@ -4902,18 +4902,22 @@ html, body {
    .qb-container rule in wizard.css:31 for the wizard flow. Direct-child combinator
    scopes this strictly to the QB-as-root-view case. */
 .app-shell > .qb-container {
-  overflow-y: auto;
+  /* Pass 4: outer shell scrolls, not this inner wrapper. Previously had */
+  /* overflow-y: auto which produced a second scrollbar on the right of the */
+  /* quote content. The body / app-shell already scrolls; double scrollbars */
+  /* are a UX anti-pattern. */
+  overflow: visible;
   flex: 1;
-  min-height: 0; /* flex child must opt out of min-height:auto so overflow-y:auto fires */
+  min-height: 0;
 }
 
 .qb-layout {
   display: grid;
-  /* Sidebar scales between 280px (tight laptop) and 380px (big desktop) so
-     the "Your design" preview and spec list stay legible at all widths
-     without either cramping content or burning space. Gap tracks viewport. */
-  grid-template-columns: clamp(280px, 22vw, 380px) 1fr;
-  gap: clamp(16px, 2vw, 32px);
+  /* Pass 4: fluid two-column layout. Sidebar stays between 320 and 460 so */
+  /* the yard drawing + fence render read at a useful size on every window. */
+  /* Gap tracks viewport. The main column fills the rest. */
+  grid-template-columns: clamp(320px, 28vw, 460px) 1fr;
+  gap: clamp(20px, 2.5vw, 40px);
   align-items: start;
 }
 
@@ -4921,16 +4925,17 @@ html, body {
   position: sticky;
   top: 16px;
   align-self: start;
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: column; gap: 12px;
   background: #fff;
   border: 1px solid #e8eaed;
   border-radius: 12px;
-  padding: 12px;
-  /* Pass 4: sidebar must fit in one viewport height without its own scroll. */
-  /* If the spec list ever outgrows the viewport on a short window, the outer */
-  /* page scrolls; the sidebar itself stays compact and visible. */
-  max-height: calc(100vh - 120px);
-  overflow-y: visible;
+  padding: 14px;
+  /* Pass 4: NO inner scrollbar. No max-height either. The sticky positioning */
+  /* keeps the sidebar parked at the top of the viewport while the main */
+  /* content scrolls behind it. On short viewports where the sidebar content */
+  /* would exceed the window, the outer page scrolls (same as the main */
+  /* column) and the sticky position releases at the bottom, same as any */
+  /* normal sidebar. */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -4982,9 +4987,10 @@ html, body {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
-  /* Pass 4: 16:10 keeps the yard drawing legible while leaving room for */
-  /* the spec list below without pushing the sidebar into scroll. */
-  aspect-ratio: 16 / 10;
+  /* Pass 4: 5:4 makes the yard drawing + fence render legibly large at */
+  /* 320-460px sidebar widths. The image is the first thing the buyer sees, */
+  /* it shouldn't need squinting at. */
+  aspect-ratio: 5 / 4;
   background: #f5f6f8;
   flex-shrink: 0;
 }
