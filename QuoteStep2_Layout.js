@@ -5,6 +5,8 @@ import React, { useState, useEffect } from 'react';
 import { Mountains, WaveSine, Minus, Plus, Trash, CaretDown, CaretUp, Check, Warning } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
 import { PRIVACY_RACKABLE } from './retailPricing';
+import { TIER_COLORS } from './tierColors.js';
+import { SLOPE_ANSWER_LABELS } from './slopeAnswers.js';
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -55,14 +57,8 @@ var RACKING_TIERS = [
   { id: 'heavy-rackable', name: 'Heavy Rackable',   desc: 'Follow slopes up to 36 inches per panel. Requires double-punched rails' },
 ];
 
-// Friendly labels matching the SlopePopup copy (SlopePopup.js) so the Terrain
-// read-only summary uses the same phrasing the buyer saw in the draw step.
-// Values correspond to gv_slope_answer written by MapboxDrawView.
-var SLOPE_ANSWER_LABELS = {
-  flat: 'Flat yard',
-  some: 'Some sections sloped',
-  all:  'Mostly sloped yard',
-};
+// SLOPE_ANSWER_LABELS imported from slopeAnswers.js so the Terrain read-only
+// summary copy stays in lockstep with the SlopePopup choice values.
 
 // Labels for the auto-detected racking tier summary. Mirrors RACKING_TIERS
 // with copy tuned for the read-only "Grandview detected this" pattern.
@@ -175,7 +171,11 @@ function rackingBreakdownSection(breakdown) {
           className: 'qb-rack-breakdown-row',
           'data-test': 'qb-rack-breakdown-row-' + tier,
         },
-          el('span', { className: 'qb-rack-breakdown-dot qb-rack-breakdown-dot-' + tier, 'aria-hidden': 'true' }),
+          el('span', {
+            className: 'qb-rack-breakdown-dot',
+            style: { background: TIER_COLORS[tier] || TIER_COLORS.standard },
+            'aria-hidden': 'true',
+          }),
           el('span', { className: 'qb-rack-breakdown-count' },
             bucket.count + ' ' + countWord + ' at '
           ),

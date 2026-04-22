@@ -1,6 +1,7 @@
 // SlopePopup.js — modal asking the customer about yard slope
 import React, { useState } from 'react';
 import { PlayCircle, FileText } from '@phosphor-icons/react';
+import { SLOPE_ANSWER_VALUES, SLOPE_ANSWER_EXPLAINERS } from './slopeAnswers.js';
 
 function SlopePopup(props) {
   var choiceState = useState(null);
@@ -17,12 +18,8 @@ function SlopePopup(props) {
         className: 'mbx-slope-infographic',
       }),
       React.createElement('div', { className: 'mbx-slope-options' },
-        ['flat', 'some', 'all'].map(function(val) {
-          var label = {
-            flat: 'Mostly flat. No panels need racking',
-            some: 'Some sections slope. We can mark them',
-            all:  'Very sloped throughout',
-          }[val];
+        SLOPE_ANSWER_VALUES.map(function(val) {
+          var label = SLOPE_ANSWER_EXPLAINERS[val];
           return React.createElement('label', {
             key: val, className: 'mbx-slope-option' + (choice === val ? ' selected' : ''),
           },

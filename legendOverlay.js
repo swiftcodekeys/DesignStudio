@@ -11,12 +11,7 @@
 //
 // Exports: buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) -> Promise<string>
 
-// Tier color definitions matching the spec.
-var TIER_COLORS = {
-  'standard': '#e8c547',
-  'rackable': '#4a8db7',
-  'heavy-rack': '#c2410c',
-};
+import { TIER_COLORS } from './tierColors.js';
 
 // Post-cap icon tags used in the legend.
 var CAP_LABELS = {

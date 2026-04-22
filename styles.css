@@ -5527,13 +5527,10 @@ html, body {
 .qb-rack-breakdown-dot {
   flex: 0 0 10px;
   width: 10px; height: 10px; border-radius: 50%;
-  background: #e8c547;
   transform: translateY(1px);
+  /* background is set inline from tierColors.js so the dot matches the */
+  /* same color as the annotated-drawing line paint. */
 }
-.qb-rack-breakdown-dot-standard { background: #e8c547; }
-.qb-rack-breakdown-dot-rackable { background: #4a8db7; }
-.qb-rack-breakdown-dot-heavy    { background: #c2410c; }
-.qb-rack-breakdown-dot-steps    { background: #6b7280; }
 .qb-rack-breakdown-tier { font-weight: 700; }
 .qb-rack-breakdown-lengths {
   color: var(--text-secondary, #5a6270);
