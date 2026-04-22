@@ -13,6 +13,10 @@
   --dy-bg: #f5f3ee;
   --dy-font-ui: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --dy-font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  /* Pass 4: condensed display font for dock numeric readouts (Tesla-style). */
+  /* Tall + narrow + technical so 305 ft / post counts / price ranges fit */
+  /* without overflowing the stat column. */
+  --dy-font-display: 'Barlow Condensed', 'Inter Tight', Impact, sans-serif;
   --dy-spring: cubic-bezier(0.22, 0.9, 0.28, 1.1);
 }
 
@@ -371,41 +375,56 @@
 .dy-dock-copy strong { color: var(--dy-ink); font-weight: 700; }
 .dy-dock-sep { color: var(--dy-muted); margin: 0 8px; }
 
-/* Stats cluster */
+/* Stats cluster. Pass 4 sizing: each stat column has a stable minimum */
+/* width so the numbers never collapse onto their labels or onto the */
+/* neighboring column. On narrow viewports the row wraps cleanly instead */
+/* of overlapping. */
 .dy-stats {
   display: flex;
-  align-items: center;
-  gap: 24px;
+  align-items: flex-start;
+  gap: 28px;
   flex: 1;
+  flex-wrap: wrap;
+  row-gap: 12px;
   min-width: 0;
 }
 .dy-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: 3px;
+  flex: 0 0 auto;
+  min-width: 100px;
 }
 .dy-stat-num {
-  font-family: var(--dy-font-mono);
-  font-size: 22px;
+  font-family: var(--dy-font-display);
+  font-size: 30px;
   font-weight: 700;
   color: var(--dy-ink);
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .dy-stat-label {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--dy-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.dy-stat-range {
-  font-size: 16px;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
-.dy-stat-sub { font-size: 10px; color: var(--dy-muted); margin-top: 2px; }
+.dy-stat-range {
+  font-size: 22px;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+.dy-stat-sub {
+  font-size: 11px;
+  color: var(--dy-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  font-weight: 500;
+}
 
 /* Task 5: persistent slope chip. Sits between the stats row and the
    micro-actions so it's always visible once EPQS has classified the drawn

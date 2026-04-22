@@ -169,28 +169,85 @@ export function computeSlopedPostCount(segments, panelLengthFt) {
   return count;
 }
 
-// --- Corner / line-post counting ---
-// Counts "corners" — vertices where the inbound and outbound bearings differ by
-// at least `minCornerDeg` (default 20). First and last vertex are always counted
-// as corners (they're the endpoints of the fence). Returns { corners, linePosts }
-// where linePosts is an estimate of how many auto-placed posts sit along the
-// straight runs between corners, assuming `panelLengthFt` spacing.
+// --- Corner / end / line-post counting ---
+// Returns { endPosts, corners, linePosts }:
+//   endPosts  = first and last vertex of an open line. Always 2 for any
+//               non-degenerate open run; 0 for a closed polygon (the
+//               closing vertex merges into a corner).
+//   corners   = interior vertices where the inbound and outbound bearings
+//               differ by at least `minCornerDeg` (default 15, per Pass 4
+//               spec). Gentler interior bends are absorbed into the line
+//               run because a standard panel can flex through them.
+//   linePosts = estimate of auto-placed posts along the straight runs
+//               between structural posts, assuming `panelLengthFt` spacing.
 export function countCornersAndLinePosts(points, panelLengthFt, minCornerDeg) {
-  if (!points || points.length < 2) return { corners: 0, linePosts: 0 };
-  var minDeg = minCornerDeg || 20;
-  var corners = 2; // start + end
-  for (var i = 1; i < points.length - 1; i++) {
+  if (!points || points.length < 2) return { corners: 0, linePosts: 0, endPosts: 0 };
+  var minDeg = minCornerDeg || 15;
+  var first = points[0];
+  var last = points[points.length - 1];
+  var closed = points.length >= 3 && first[0] === last[0] && first[1] === last[1];
+  var endPosts = closed ? 0 : 2;
+  var corners = 0;
+  var innerLast = closed ? points.length - 1 : points.length - 1;
+  for (var i = 1; i < innerLast; i++) {
     var a = bearingDeg(points[i-1], points[i]);
     var b = bearingDeg(points[i], points[i+1]);
     var diff = Math.abs(((b - a + 540) % 360) - 180);
     if (diff >= minDeg) corners++;
   }
+  // Closed polygon: check the wrap-around vertex (last == first) too.
+  if (closed) {
+    var a2 = bearingDeg(points[points.length - 2], last);
+    var b2 = bearingDeg(first, points[1]);
+    var diffClose = Math.abs(((b2 - a2 + 540) % 360) - 180);
+    if (diffClose >= minDeg) corners++;
+  }
   var totalFt = 0;
   for (var j = 0; j < points.length - 1; j++) {
     totalFt += haversineFeet(points[j], points[j+1]);
   }
-  var posts = Math.max(0, Math.ceil(totalFt / (panelLengthFt || 6)) - corners);
-  return { corners: corners, linePosts: posts };
+  var structural = corners + endPosts;
+  var posts = Math.max(0, Math.ceil(totalFt / (panelLengthFt || 6)) - structural);
+  return { corners: corners, linePosts: posts, endPosts: endPosts };
+}
+
+// Per-vertex classification: { type, lng, lat } for every vertex in the line.
+// Used by the map-overlay post rendering (Pass 4 Task 5) so each vertex gets
+// the correct colored marker. Mirrors the same 15 degree corner threshold as
+// countCornersAndLinePosts so the counts and the colors always agree.
+export function classifyPostsPerVertex(points, minCornerDeg) {
+  if (!points || points.length < 2) return [];
+  var minDeg = minCornerDeg || 15;
+  var first = points[0];
+  var last = points[points.length - 1];
+  var closed = points.length >= 3 && first[0] === last[0] && first[1] === last[1];
+  var out = [];
+  for (var i = 0; i < points.length; i++) {
+    var p = points[i];
+    var type;
+    if (closed) {
+      // Every vertex is interior on a closed polygon. The wrap-around vertex
+      // (index points.length - 1, which equals index 0) is rendered once.
+      if (i === points.length - 1) continue;
+      var prevIdx = (i === 0) ? points.length - 2 : i - 1;
+      var nextIdx = (i === points.length - 1) ? 1 : i + 1;
+      var diffC = bearingDelta(points[prevIdx], p, points[nextIdx]);
+      type = (diffC >= minDeg) ? 'corner' : 'line';
+    } else if (i === 0 || i === points.length - 1) {
+      type = 'end';
+    } else {
+      var diffO = bearingDelta(points[i - 1], p, points[i + 1]);
+      type = (diffO >= minDeg) ? 'corner' : 'line';
+    }
+    out.push({ lng: p[0], lat: p[1], type: type, index: i });
+  }
+  return out;
+}
+
+function bearingDelta(prev, cur, next) {
+  var a = bearingDeg(prev, cur);
+  var b = bearingDeg(cur, next);
+  return Math.abs(((b - a + 540) % 360) - 180);
 }
 
 function bearingDeg(a, b) {

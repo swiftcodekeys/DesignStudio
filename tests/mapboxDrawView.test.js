@@ -509,12 +509,15 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(pill.textContent).toContain('4820 Beacon Hill Rd');
   });
 
-  it('counts corners by direction change, not vertex count', () => {
-    // 4 points forming an L: only 1 interior direction change → 3 total corners (start + elbow + end)
+  it('counts corners by direction change, separately from end posts', () => {
+    // L shape: 3 points. 1 interior elbow (corner) + 2 end posts. Pass 4
+    // splits these so the colored post overlay + dock stats can show each
+    // type. Total structural posts at vertices stays 3.
     const { countCornersAndLinePosts } = require('../geometryUtils');
     const L = [[0,0], [0.001,0], [0.001,0.001]];
     const result = countCornersAndLinePosts(L, 6);
-    expect(result.corners).toBe(3);
+    expect(result.corners).toBe(1);
+    expect(result.endPosts).toBe(2);
   });
 
   it('per-segment tier dropdown defaults to Auto and updates on change', () => {

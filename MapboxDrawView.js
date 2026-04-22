@@ -511,6 +511,7 @@ function MorphingDock(props) {
   var totalFt = props.totalFt;
   var corners = props.corners;
   var linePosts = props.linePosts;
+  var endPosts = props.endPosts || 0;
   var priceRange = props.priceRange;
   var segments = props.segments;
   var isEmpty = phase === 'empty';
@@ -548,15 +549,20 @@ function MorphingDock(props) {
     return '$' + Math.round(n).toLocaleString();
   }
 
+  // Pass 4: surface all three post types in the dock. Total is what the
+  // buyer pays for; the sub-line breaks it down into end / corner / line
+  // so the numbers match the colored markers on the map.
+  var totalPosts = endPosts + corners + linePosts;
+  var postBreakdown = endPosts + ' end · ' + corners + ' corner · ' + linePosts + ' line';
   var statsRow = React.createElement('div', { className: 'dy-stats' },
     React.createElement('div', { className: 'dy-stat' },
       React.createElement('div', { className: 'dy-stat-num' }, Math.round(totalFt)),
       React.createElement('div', { className: 'dy-stat-label' }, 'linear feet')
     ),
     React.createElement('div', { className: 'dy-stat' },
-      React.createElement('div', { className: 'dy-stat-num' }, corners),
-      React.createElement('div', { className: 'dy-stat-label' }, 'corners'),
-      linePosts > 0 && React.createElement('div', { className: 'dy-stat-sub' }, '+' + linePosts + ' line posts')
+      React.createElement('div', { className: 'dy-stat-num' }, totalPosts),
+      React.createElement('div', { className: 'dy-stat-label' }, 'posts'),
+      totalPosts > 0 && React.createElement('div', { className: 'dy-stat-sub' }, postBreakdown)
     ),
     priceRange && React.createElement('div', { className: 'dy-stat' },
       React.createElement('div', { className: 'dy-stat-num dy-stat-range' },
@@ -682,23 +688,17 @@ function MorphingDock(props) {
     var friendly = slopeAck === 'flat' ? 'flat' : (slopeAck === 'heavy-rack' ? 'heavy rack' : 'rackable');
     ctaLabel = React.createElement('span', null, 'Slope detected: ' + friendly);
   } else if (canContinue && isFinished) {
-    var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
+    // Pass 4: drop the price tail. The dock stats row already shows the
+    // estimated range; duplicating it on the CTA is visual noise.
     ctaLabel = React.createElement(React.Fragment, null,
       React.createElement(Check, { size: 14, weight: 'bold' }),
       React.createElement('span', null, 'Continue to Quote'),
-      priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
-        '· ~' + formatMoney(mid)
-      ),
       React.createElement(ArrowRight, { size: 14, weight: 'bold' })
     );
   } else if (canContinue) {
-    var mid = priceRange ? (priceRange.low + priceRange.high) / 2 : 0;
     ctaLabel = React.createElement(React.Fragment, null,
       React.createElement(Check, { size: 14, weight: 'bold' }),
       React.createElement('span', null, 'Done. Continue'),
-      priceRange && React.createElement('span', { className: 'dy-dock-cta-price' },
-        '\u00B7 ~' + formatMoney(mid)
-      ),
       React.createElement(ArrowRight, { size: 14, weight: 'bold' })
     );
   } else {
@@ -921,8 +921,12 @@ function MapScreen(props) {
       setHoverPoint(null);
     });
 
-    // Hover ghost preview after first point
+    // Hover ghost preview after first point. Gated on drawModeActiveRef so
+    // after Finish / Add another line / Continue the dotted preview line
+    // disappears until the user explicitly re-enters draw mode. Otherwise
+    // the ghost would track the cursor forever between committed points.
     map.on('mousemove', function(e) {
+      if (!drawModeActiveRef.current) { setHoverPoint(null); return; }
       if (pointsRef.current.length === 0) { setHoverPoint(null); return; }
       setHoverPoint([e.lngLat.lng, e.lngLat.lat]);
     });
@@ -1058,12 +1062,14 @@ function MapScreen(props) {
     else mapRef.current.once && mapRef.current.once('style.load', apply);
   }, [props.lines]);
 
-  // Dashed ghost segment from last point to hover
+  // Dashed ghost segment from last point to hover. Only renders during
+  // active draw mode so the preview line disappears after Finish / Add
+  // another line / Continue to Quote.
   useEffect(function() {
     if (!mapRef.current) return;
     var empty = { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } };
     var coords = [];
-    if (props.points.length > 0 && props.hoverPoint) {
+    if (props.drawModeActive && props.points.length > 0 && props.hoverPoint) {
       coords = [props.points[props.points.length - 1], props.hoverPoint];
     }
     var geoj = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
@@ -1090,7 +1096,7 @@ function MapScreen(props) {
     }
     if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
     else mapRef.current.once && mapRef.current.once('style.load', apply);
-  }, [props.points, props.hoverPoint]);
+  }, [props.points, props.hoverPoint, props.drawModeActive]);
 
   // Vertex markers (draggable, right-click to delete)
   useEffect(function() {
@@ -1223,9 +1229,11 @@ function MapScreen(props) {
     return function() { labels.forEach(function(m) { m.remove(); }); };
   }, [props.points, props.lines, zoomTick]);
 
-  // Live ghost distance label ("+42 ft")
+  // Live ghost distance label ("+42 ft"). Gated on drawModeActive so the
+  // floating "+N ft" tag disappears together with the dashed line.
   useEffect(function() {
     if (!mapRef.current || !mapboxgl || !mapboxgl.Marker) return;
+    if (!props.drawModeActive) return;
     if (props.points.length === 0 || !props.hoverPoint) return;
     var map = mapRef.current;
     var last = props.points[props.points.length - 1];
@@ -1266,7 +1274,7 @@ function MapScreen(props) {
       .setLngLat([midLng, midLat])
       .addTo(map);
     return function() { marker.remove(); };
-  }, [props.points, props.hoverPoint]);
+  }, [props.points, props.hoverPoint, props.drawModeActive]);
 
   return React.createElement('div', {
     ref: mapContainerRef,
@@ -1517,10 +1525,12 @@ function MapboxDrawView(props) {
   // fence run counted as its own geometry.
   var corners = 0;
   var linePosts = 0;
+  var endPosts = 0;
   for (var lineIdx_cs = 0; lineIdx_cs < lines.length; lineIdx_cs++) {
     var lineStats = countCornersAndLinePosts(lines[lineIdx_cs], 6);
     corners += lineStats.corners;
     linePosts += lineStats.linePosts;
+    endPosts += lineStats.endPosts || 0;
   }
 
   var per = estimatePerFootRange(DEFAULT_ESTIMATE_INPUTS);
@@ -1874,6 +1884,7 @@ function MapboxDrawView(props) {
       totalFt: totalFt,
       corners: corners,
       linePosts: linePosts,
+      endPosts: endPosts,
       priceRange: priceRange,
       segments: dockSegments,
       epqsLoading: epqsLoading,
