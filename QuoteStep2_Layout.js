@@ -854,21 +854,11 @@ function QuoteStep2_Layout(props) {
           onChange: function(e) { syncLayout({ sharpAngles: parseInt(e.target.value, 10) || 0 }); },
         })
       ),
-      // Gentle curves
-      el('div', { className: 'qb-layout-shape-field' },
-        el('label', { className: 'qb-layout-shape-label qb-layout-curve-label' },
-          el('input', {
-            type: 'checkbox',
-            checked: gentleCurves,
-            onChange: function(e) { syncLayout({ gentleCurves: e.target.checked }); },
-          }),
-          'Gentle Curves',
-          React.createElement(InfoPopup, {
-            title: 'Gentle Curves',
-            text: 'If your fence line follows a gentle curve (like around a pool or garden), check this box. Curved sections use shorter panel widths and angled posts.',
-          })
-        )
-      )
+      // Gentle curves checkbox removed: "shorter panel widths" copy was
+      // inaccurate -- Ultra panels are 6' standard and are angled at the post
+      // joint for bends. Bends under ~10° need no special hardware; sharper
+      // bends need angle brackets (different SKU). This will be replaced with
+      // a proper bend-angle selector when SKU-selection is implemented.
     ),
 
     // ---- Post Summary ----

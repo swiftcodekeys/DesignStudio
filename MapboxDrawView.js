@@ -1936,12 +1936,13 @@ function MapboxDrawView(props) {
       return;
     }
     var map = mapInstanceRef.current;
-    // Mirror the same capture pattern used by the 3D configurator in app.js:
-    // trigger a render, wait for the render event, then copy the WebGL canvas
-    // into an offscreen 2D canvas and call toDataURL() on the 2D canvas.
-    // Calling toDataURL() directly on the WebGL canvas can fail silently in
-    // some browsers; the 2D-canvas copy is always readable.
-    map.once('render', function() {
+    // Wait for idle (all satellite tiles fully composited) before capturing.
+    // Using 'render' fires too early -- on the first GPU frame after triggerRepaint,
+    // before tiles have loaded -- producing a capture of the dark map background.
+    // 'idle' fires only once all visible tiles are fetched and painted, giving a
+    // full-fidelity satellite + fence-line image. triggerRepaint() nudges the map
+    // so idle fires even when the map is already at rest.
+    map.once('idle', function() {
       var snapshotUrl = null;
       try {
         var src = map.getCanvas();
@@ -1955,8 +1956,6 @@ function MapboxDrawView(props) {
           snapshotUrl = tmp.toDataURL('image/png');
         }
       } catch (e) {}
-      // Task 3 AC4: exit draw mode after capture so the canvas isn't mutated
-      // mid-read and cursor returns to pan/zoom if user bounces back.
       setDrawModeActive(false);
       buildAndComplete(snapshotUrl);
     });
