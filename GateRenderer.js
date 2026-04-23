@@ -81,6 +81,8 @@ function GateRenderer(container) {
     // Gate group
     this.gate = new THREE.Object3D();
     this.scene.add(this.gate);
+    this._stagingGate = null;
+    this._isBuilding = false;
 
     // Environment map — PMREM-processed HDR (matches Ultra exactly)
     this._envMap = null;
@@ -202,9 +204,8 @@ GateRenderer.prototype._loadGeo = function(path, callback) {
         callback(self._geoCache[path].clone());
         self._pendingLoads--;
         setTimeout(function() {
-            if (self._pendingLoads === 0) {
-                self._needsRender = true;
-                if (self._onReady) self._onReady();
+            if (self._pendingLoads === 0 && self._isBuilding) {
+                self._swapStagingToLive();
             }
         }, 0);
         return;
@@ -214,11 +215,35 @@ GateRenderer.prototype._loadGeo = function(path, callback) {
         self._geoCache[path] = geo;
         self._pendingLoads--;
         callback(geo.clone());
-        if (self._pendingLoads === 0) {
-            self._needsRender = true;
-            if (self._onReady) self._onReady();
+        if (self._pendingLoads === 0 && self._isBuilding) {
+            self._swapStagingToLive();
         }
     });
+};
+
+GateRenderer.prototype._swapStagingToLive = function() {
+    if (!this._isBuilding) return;
+    this._isBuilding = false;
+    var stagingGate = this._stagingGate;
+    this._stagingGate = null;
+
+    // Dispose and remove old children from live gate
+    var self = this;
+    var oldChildren = this.gate.children.slice();
+    oldChildren.forEach(function(child) {
+        self.gate.remove(child);
+        if (child.geometry) child.geometry.dispose();
+    });
+
+    // Move new children from staging into live gate
+    var newChildren = stagingGate.children.slice();
+    newChildren.forEach(function(child) {
+        stagingGate.remove(child);
+        self.gate.add(child);
+    });
+
+    this._needsRender = true;
+    if (this._onReady) this._onReady();
 };
 
 // ============================================================
@@ -262,18 +287,20 @@ GateRenderer.prototype.buildGate = function(config) {
     if (this._onLoading) this._onLoading();
     var THREE = window.THREE;
     var self = this;
-    var gate = this.gate;
     var clips = this.clips;
 
-    // Helper to add mesh and flag for render
+    // Build new gate into staging group — swap when all loads complete
+    this._stagingGate = new THREE.Object3D();
+    this._isBuilding = true;
+
     function addMesh(mesh) {
-        gate.add(mesh);
+        self._stagingGate.add(mesh);
         self._needsRender = true;
     }
 
-    // Clear existing meshes
-    while (gate.children.length > 0) gate.remove(gate.children[0]);
     if (!config) {
+        this._isBuilding = false;
+        this._stagingGate = null;
         if (this._onReady) this._onReady();
         return;
     }
