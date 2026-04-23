@@ -166,6 +166,29 @@ function buildCrmPayload(state, intent) {
         }
     });
 
+    // Extract EPQS and snapshot from the first zone that has drawToolData
+    var epqsData = null;
+    var mapboxSnapshotUrl = null;
+    Object.keys(zoneQuotes).forEach(function(zoneId) {
+        var zq = zoneQuotes[zoneId] || {};
+        var dtd = zq.drawToolData;
+        if (dtd && !epqsData && dtd.epqsOverall) {
+            epqsData = {
+                overall: dtd.epqsOverall,
+                confidence: dtd.epqsConfidence || null,
+                maxDeltaInches: dtd.epqsMaxDeltaInches || null,
+            };
+        }
+        if (dtd && !mapboxSnapshotUrl && dtd.mapboxSnapshotUrl) {
+            mapboxSnapshotUrl = dtd.mapboxSnapshotUrl;
+        }
+    });
+
+    var terrainFlag = null;
+    if (epqsData && (epqsData.overall === 'sloped' || epqsData.overall === 'steep' || epqsData.overall === 'steps')) {
+        terrainFlag = 'possible_slope';
+    }
+
     var contactInfo = s.contactInfo || {};
     var shippingAddress = s.shippingAddress || null;
 
@@ -182,6 +205,10 @@ function buildCrmPayload(state, intent) {
         grandTotal: grandTotal,
         snapshotDataUrl: primarySnapshot,
         source: 'quote-builder-wizard',
+        epqs_data: epqsData,
+        mapbox_snapshot_url: mapboxSnapshotUrl || primarySnapshot,
+        terrain_flag: terrainFlag,
+        stripe_payment_intent_id: s.stripePaymentIntentId || null,
     };
 
     if (intent) payload.submitAction = intent;
