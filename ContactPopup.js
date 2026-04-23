@@ -1,10 +1,4 @@
-// ============================================================================
-// ContactPopup.js — Contact form modal
-// POSTs to Google Apps Script endpoint (GAS_ENDPOINT env var).
-// Falls back to phone number if endpoint not configured.
-// ============================================================================
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { postToEmailWorker } from './emailWorkerClient';
 
 var TOPICS = [
@@ -49,9 +43,25 @@ var ContactPopup = function(props) {
   var errorMsg = errorMsgState[0];
   var setErrorMsg = errorMsgState[1];
 
-  var cooldownState = useState(false);
+  var cooldownState = useState(0); // seconds remaining
   var cooldown = cooldownState[0];
   var setCooldown = cooldownState[1];
+
+  // Count down cooldown one second at a time
+  useEffect(function() {
+    if (cooldown <= 0) return;
+    var t = setTimeout(function() {
+      setCooldown(function(s) { return Math.max(0, s - 1); });
+    }, 1000);
+    return function() { clearTimeout(t); };
+  }, [cooldown]);
+
+  // Auto-close after success
+  useEffect(function() {
+    if (status !== 'success') return;
+    var t = setTimeout(function() { onClose(); }, 3000);
+    return function() { clearTimeout(t); };
+  }, [status]);
 
   if (!isOpen) return null;
 
@@ -59,13 +69,7 @@ var ContactPopup = function(props) {
 
   var handleSubmit = function(e) {
     e.preventDefault();
-    if (!isValid || status === 'sending' || cooldown) return;
-
-    if (!GAS_ENDPOINT) {
-      setStatus('error');
-      setErrorMsg('not-configured');
-      return;
-    }
+    if (!isValid || status === 'sending' || cooldown > 0) return;
 
     setStatus('sending');
     setErrorMsg('');
@@ -86,8 +90,7 @@ var ContactPopup = function(props) {
     postToEmailWorker(payload)
       .then(function() {
         setStatus('success');
-        setCooldown(true);
-        setTimeout(function() { setCooldown(false); }, 30000);
+        setCooldown(30);
       })
       .catch(function(err) {
         setStatus('error');
@@ -99,6 +102,15 @@ var ContactPopup = function(props) {
   var handleClose = function() {
     if (status !== 'sending') {
       onClose();
+    }
+  };
+
+  var handlePhoneBlur = function(e) {
+    var digits = e.target.value.replace(/\D/g, '');
+    if (digits.length === 10) {
+      setPhone('(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6));
+    } else if (digits.length === 11 && digits[0] === '1') {
+      setPhone('(' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7));
     }
   };
 
@@ -164,6 +176,7 @@ var ContactPopup = function(props) {
                 type="tel"
                 value={phone}
                 onChange={function(e) { setPhone(e.target.value); }}
+                onBlur={handlePhoneBlur}
                 placeholder="(555) 555-5555"
               />
             </div>
@@ -192,9 +205,9 @@ var ContactPopup = function(props) {
             <button
               className="contact-submit"
               type="submit"
-              disabled={!isValid || status === 'sending' || cooldown}
+              disabled={!isValid || status === 'sending' || cooldown > 0}
             >
-              {status === 'sending' ? 'Sending...' : cooldown ? 'Sent, wait 30s' : 'Send Message'}
+              {status === 'sending' ? 'Sending...' : cooldown > 0 ? 'Try again in ' + cooldown + 's…' : 'Send Message'}
             </button>
           </form>
         )}
