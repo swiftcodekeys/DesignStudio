@@ -1954,7 +1954,7 @@ function MapboxDrawView(props) {
 
     // Capture with idle + timeout fallback.
     var captured = false;
-    function doCapture(source) {
+    function doCapture() {
       if (captured) return;
       captured = true;
       var snapshotUrl = null;
@@ -1962,30 +1962,23 @@ function MapboxDrawView(props) {
         var src = map.getCanvas();
         var w = src.width;
         var h = src.height;
-        console.log('[R5-diag] capture via', source, '| canvas:', w, 'x', h, '| loaded:', map.loaded(), '| areTilesLoaded:', map.areTilesLoaded && map.areTilesLoaded());
         if (w > 0 && h > 0) {
           var tmp = document.createElement('canvas');
           tmp.width = w;
           tmp.height = h;
-          var ctx2d = tmp.getContext('2d');
-          ctx2d.drawImage(src, 0, 0, w, h);
-          var px = ctx2d.getImageData(w >> 1, h >> 1, 1, 1).data;
-          console.log('[R5-diag] center pixel RGBA:', px[0], px[1], px[2], px[3]);
+          tmp.getContext('2d').drawImage(src, 0, 0, w, h);
           snapshotUrl = tmp.toDataURL('image/png');
-          console.log('[R5-diag] dataUrl length:', snapshotUrl ? snapshotUrl.length : 0);
-        } else {
-          console.warn('[R5-diag] canvas is 0x0 -- skipping capture');
         }
       } catch (e) {
-        console.error('[R5-diag] capture threw:', e);
+        console.error('[snapshot] canvas capture failed:', e);
       }
       setDrawModeActive(false);
       buildAndComplete(snapshotUrl);
     }
-    map.once('idle', function() { doCapture('idle'); });
-    // 4-second safety net: if the map never reaches idle (stuck parcel layer,
-    // network hang, etc.), capture whatever is currently on the canvas.
-    setTimeout(function() { doCapture('timeout-fallback'); }, 4000);
+    map.once('idle', doCapture);
+    // 4-second safety net: if the map never reaches idle (e.g. stuck parcel
+    // layer retrying after a network error), capture whatever is on the canvas.
+    setTimeout(doCapture, 4000);
     map.triggerRepaint();
   }
 
