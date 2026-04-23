@@ -5,7 +5,7 @@ var el = React.createElement;
 function TrustSignals() {
   return el('div', { className: 'co-trust' },
     el('div', { className: 'co-trust-badges' },
-      el('span', { className: 'co-trust-badge' }, '🛡 Every order reviewed by Sarah within 24h'),
+      el('span', { className: 'co-trust-badge' }, '🛡 Every order reviewed by a Grandview rep within 24h'),
       el('span', { className: 'co-trust-badge' }, '🇺🇸 Veteran-owned SDVOSB'),
       el('span', { className: 'co-trust-badge' }, '↩ 24h cancel window')
     ),
