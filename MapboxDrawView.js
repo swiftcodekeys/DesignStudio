@@ -856,7 +856,7 @@ function MorphingDock(props) {
   // initial "Ready when you are" prompt doesn't compete with an explanation
   // of markers that aren't on the map yet. Matches the frosted-white dock
   // aesthetic and renders as a thin horizontal strip directly under the
-  // dock so the three colors and the 15-degree corner threshold are always
+  // dock so the three colors and the 10-degree corner threshold are always
   // in the buyer's peripheral vision while they draw.
   var postLegend = !isEmpty && React.createElement('div', {
     className: 'dy-post-legend',
@@ -877,7 +877,7 @@ function MorphingDock(props) {
         style: { background: POST_COLOR_CORNER },
         'aria-hidden': 'true',
       }),
-      React.createElement('span', { className: 'dy-legend-label' }, 'Corner posts (turns > 15°)')
+      React.createElement('span', { className: 'dy-legend-label' }, 'Corner posts (turns > 10°)')
     ),
     React.createElement('span', { className: 'dy-legend-item' },
       React.createElement('span', {
@@ -888,7 +888,7 @@ function MorphingDock(props) {
       React.createElement('span', { className: 'dy-legend-label' }, 'Line posts')
     ),
     React.createElement('span', { className: 'dy-legend-hint' },
-      'Turns under 15° don’t need a corner post. Panels flex through.'
+      ‘Turns under 10° don’t need a corner post. Panels flex through.’
     )
   );
 
@@ -1187,7 +1187,7 @@ function MapScreen(props) {
       for (var li = 0; li < linesArr.length; li++) {
         var linePoints = linesArr[li] || [];
         if (linePoints.length < 2) continue;
-        var vertices = classifyPostsPerVertex(linePoints, 15);
+        var vertices = classifyPostsPerVertex(linePoints, 10);
         for (var vi = 0; vi < vertices.length; vi++) {
           var v = vertices[vi];
           features.push({

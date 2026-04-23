@@ -149,8 +149,11 @@ function buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) {
         img.onerror = onImageError;
         img.src = baseImageDataUrl;
 
-        // Fallback: if jsdom (or any environment) never fires onload/onerror,
-        // proceed after one macrotask so the promise always resolves.
+        // Fallback for jsdom: onload/onerror never fire for data: URLs in jsdom.
+        // Use a long timeout so real browsers (where decoding a 1MB+ PNG takes
+        // 50-500ms) always win the race via onload. setTimeout(0) fired before
+        // the image decoded, blocking onload with settled=true and producing a
+        // dark canvas.
         setTimeout(function() {
           if (!settled) {
             settled = true;
@@ -158,7 +161,7 @@ function buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) {
             ctx.fillRect(0, 0, W, H);
             addAnnotations();
           }
-        }, 0);
+        }, 8000);
       } else {
         ctx.fillStyle = '#1a2a3a';
         ctx.fillRect(0, 0, W, H);
