@@ -18,6 +18,9 @@ import WizardShell from './WizardShell';
 import DesignReviewPage from './DesignReviewPage';
 import AreaReturnPage from './AreaReturnPage';
 import HowToMeasurePage from './HowToMeasurePage';
+import CheckoutPage from './CheckoutPage';
+import CheckoutSuccessPage from './CheckoutSuccessPage';
+import './checkout.css';
 
 var STORAGE_KEY = 'gv_config';
 var USE_MAPBOX = process.env.USE_MAPBOX_DRAW;
@@ -607,6 +610,8 @@ var App = function() {
             <Route path="/fence-quiz" element={<QuizPage />} />
             <Route path="/studio" element={<DesignStudio />} />
             <Route path="/how-to-measure-your-yard" element={<HowToMeasurePage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
             <Route path="/*" element={<DesignStudio />} />
         </Routes>
     );

@@ -1,0 +1,296 @@
+/* checkout.css — styles for /checkout and /checkout/success */
+
+.co-page {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.co-grid {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(300px, 40%) 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.co-col-summary {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+  position: sticky;
+  top: 1rem;
+}
+
+.co-col-pay {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+}
+
+.co-pay-heading {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 1.25rem;
+}
+
+/* Order Summary */
+.co-map-thumb {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+
+.co-zone-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 0.25rem;
+}
+
+.co-config {
+  color: #5a6270;
+  font-size: 13px;
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+}
+
+.co-items {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  border-top: 1px solid #e8eaed;
+  padding-top: 0.75rem;
+}
+
+.co-items li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+  font-size: 14px;
+  color: #5a6270;
+}
+
+.co-subtotal,
+.co-shipping {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  font-size: 14px;
+  color: #5a6270;
+}
+
+.co-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  margin-top: 0.5rem;
+  border-top: 2px solid #e8eaed;
+  font-size: 18px;
+}
+
+/* Trust signals */
+.co-trust {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.co-trust-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.co-trust-badge {
+  color: #5a6270;
+}
+
+.co-trust-stars {
+  margin-bottom: 0.25rem;
+}
+
+.co-trust-quote {
+  margin: 0 0 0.25rem;
+  font-style: italic;
+  color: #1a1a2e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.co-trust-cite {
+  color: #6BA3C2;
+  font-size: 12px;
+}
+
+/* Payment form */
+.co-pay-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.co-pay-btn {
+  width: 100%;
+  background: #d4753a;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 48px;
+  margin-top: 0.5rem;
+}
+
+.co-pay-btn:hover:not(:disabled) {
+  background: #c0662e;
+}
+
+.co-pay-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.co-error {
+  color: #dc2626;
+  font-size: 14px;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border-radius: 6px;
+  border-left: 3px solid #dc2626;
+}
+
+.co-pay-error {
+  color: #dc2626;
+  padding: 1rem;
+  background: #fef2f2;
+  border-radius: 8px;
+}
+
+.co-pay-loading {
+  color: #5a6270;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* CYA disclaimer */
+.co-cya {
+  display: flex;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  font-size: 12px;
+  color: #5a6270;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.co-cya input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.co-attorney-todo {
+  color: #d97706;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Mobile collapsible summary */
+.co-mobile-summary {
+  display: none;
+}
+
+/* Back button */
+.co-back-btn {
+  background: none;
+  border: 1px solid #e8eaed;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #5a6270;
+  font-size: 14px;
+  margin-top: 1rem;
+}
+
+/* Success page */
+.co-success-container {
+  max-width: 600px;
+  margin: 5rem auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.co-success-icon {
+  font-size: 64px;
+  margin-bottom: 1rem;
+}
+
+.co-success-heading {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .co-grid {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+    margin: 0;
+    gap: 0;
+    border-radius: 0;
+  }
+
+  .co-col-summary {
+    display: none; /* shown via .co-mobile-summary on mobile */
+  }
+
+  .co-col-pay {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+
+  .co-mobile-summary {
+    display: block;
+    background: white;
+    padding: 0 1rem;
+    border-bottom: 1px solid #e8eaed;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .co-mobile-summary-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 0;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    min-height: 48px;
+    list-style: none;
+  }
+
+  .co-pay-btn,
+  .co-cya input[type="checkbox"] {
+    min-height: 48px;
+  }
+}
