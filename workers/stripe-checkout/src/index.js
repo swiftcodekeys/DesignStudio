@@ -70,6 +70,30 @@ export default {
       }
     }
 
+    if (url.pathname === '/api/capture' && request.method === 'POST') {
+      var auth = request.headers.get('authorization') || '';
+      var token = auth.replace(/^Bearer\s+/i, '');
+      if (!env.ADMIN_API_KEY || token !== env.ADMIN_API_KEY) {
+        return json({ error: 'Unauthorized' }, { status: 401, headers: cors });
+      }
+      var captureBody;
+      try {
+        captureBody = await request.json();
+      } catch (e) {
+        return json({ error: 'Invalid JSON' }, { status: 400, headers: cors });
+      }
+      try {
+        var stripeCapture = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' });
+        var captured = await stripeCapture.paymentIntents.capture(captureBody.paymentIntentId, {
+          amount_to_capture: Math.round(Number(captureBody.amountCents)),
+        });
+        return json({ ok: true, status: captured.status, amount: captured.amount_received }, { headers: cors });
+      } catch (e) {
+        console.error('Stripe capture failed:', e);
+        return json({ error: 'Capture failed', detail: e.message }, { status: 502, headers: cors });
+      }
+    }
+
     return json({ error: 'Not found' }, { status: 404, headers: cors });
   },
 };

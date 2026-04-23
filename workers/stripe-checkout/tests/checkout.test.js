@@ -54,3 +54,25 @@ describe('POST /api/checkout', () => {
     expect(resp.status).toBe(204);
   });
 });
+
+describe('POST /api/capture', () => {
+  it('requires admin API key in Authorization header', async () => {
+    const req = new Request('https://x/api/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentIntentId: 'pi_test', amountCents: 300000 }),
+    });
+    const resp = await worker.fetch(req, { ADMIN_API_KEY: 'secret', STRIPE_SECRET_KEY: 'sk_test', ALLOWED_ORIGINS: '*' });
+    expect(resp.status).toBe(401);
+  });
+
+  it('rejects wrong API key', async () => {
+    const req = new Request('https://x/api/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer wrong' },
+      body: JSON.stringify({ paymentIntentId: 'pi_test', amountCents: 300000 }),
+    });
+    const resp = await worker.fetch(req, { ADMIN_API_KEY: 'secret', STRIPE_SECRET_KEY: 'sk_test', ALLOWED_ORIGINS: '*' });
+    expect(resp.status).toBe(401);
+  });
+});
