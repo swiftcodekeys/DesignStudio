@@ -195,6 +195,11 @@ GateRenderer.prototype.dispose = function() {
 // ============================================================
 GateRenderer.prototype.updateMaterials = function(config) {
     this._needsRender = true;
+    // Dispose cached materials before clearing to prevent GPU resource leak
+    var cachedKeys = Object.keys(this._matCache);
+    for (var i = 0; i < cachedKeys.length; i++) {
+        this._matCache[cachedKeys[i]].dispose();
+    }
     this._matCache = {};
     var THREE = window.THREE;
     var color = config.color || { threeHex: 0x080808, metalness: 0.9, roughness: 0.1 };
@@ -368,6 +373,7 @@ GateRenderer.prototype.buildGate = function(config) {
         return mat;
     };
 
+    // planeKey must be a unique string per clip plane — it is part of the cache key
     var makeClipMat = function(plane, planeKey) {
         var cacheKey = 'clip_' + planeKey + '_' + (color.id || color.threeHex);
         if (self._matCache[cacheKey]) return self._matCache[cacheKey];
