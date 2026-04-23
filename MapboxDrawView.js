@@ -1936,16 +1936,23 @@ function MapboxDrawView(props) {
       return;
     }
     var map = mapInstanceRef.current;
-    // Wait for idle (all satellite tiles fully composited) before capturing.
-    // Using 'render' fires too early -- on the first GPU frame after triggerRepaint,
-    // before tiles have loaded -- producing a capture of the dark map background.
-    // 'idle' fires only once all visible tiles are fetched and painted, giving a
-    // full-fidelity satellite + fence-line image. triggerRepaint() nudges the map
-    // so idle fires even when the map is already at rest.
+
+    // Fit the viewport to the full fence before capturing so nothing is cut off.
+    // Flatten all drawn lines into a single point list, compute the bounding box,
+    // then snap the camera to it with padding. animate:false is instant so the
+    // idle event fires after the new tile set loads, not during a pan animation.
+    var allPts = lines.reduce(function(acc, l) { return acc.concat(l); }, []);
+    if (allPts.length >= 2) {
+      var lngs = allPts.map(function(p) { return p[0]; });
+      var lats  = allPts.map(function(p) { return p[1]; });
+      map.fitBounds(
+        [[Math.min.apply(null, lngs), Math.min.apply(null, lats)],
+         [Math.max.apply(null, lngs), Math.max.apply(null, lats)]],
+        { padding: 80, animate: false, maxZoom: 19 }
+      );
+    }
+
     // Capture with idle + timeout fallback.
-    // idle fires when all tiles have composited. The timeout fires if idle
-    // never arrives (e.g. the parcel boundary layer is stuck retrying after
-    // a network error, which can block Mapbox from reaching idle state).
     var captured = false;
     function doCapture(source) {
       if (captured) return;
