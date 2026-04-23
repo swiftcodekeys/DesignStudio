@@ -201,10 +201,12 @@ GateRenderer.prototype._loadGeo = function(path, callback) {
     if (self._geoCache[path]) {
         callback(self._geoCache[path].clone());
         self._pendingLoads--;
-        if (self._pendingLoads === 0) {
-            self._needsRender = true;
-            if (self._onReady) self._onReady();
-        }
+        setTimeout(function() {
+            if (self._pendingLoads === 0) {
+                self._needsRender = true;
+                if (self._onReady) self._onReady();
+            }
+        }, 0);
         return;
     }
     var loader = new THREE.JSONLoader();
