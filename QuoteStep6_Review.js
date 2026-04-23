@@ -2,6 +2,7 @@
 // React.createElement, var, function declarations, vanilla CSS
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PencilSimple, Warning, ShieldCheck, Package } from '@phosphor-icons/react';
 import { calculateZoneQuote } from './priceCalculator';
 import { estimatePerFootRange } from './retailPricing';
@@ -62,8 +63,36 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1).replace(/-/g, ' ');
 }
 
+function buildQuoteForCheckout(data, result, zoneName, snapshotUrl) {
+  var subtotal = result.subtotal || 0;
+  var shippingCents = 8000; // $80 default; replaced by actual freight in later phase
+  var totalCents = Math.round(subtotal * 100) + shippingCents;
+  return {
+    id: null,
+    zoneName: zoneName || 'Your fence',
+    config: {
+      style: data.style || '',
+      height: data.height || '',
+      color: data.color || '',
+      grade: data.grade || '',
+    },
+    mapboxSnapshotUrl: snapshotUrl || null,
+    items: (result.items || []).map(function(item) {
+      return {
+        label: item.label || item.description || '',
+        qty: item.qty || 0,
+        total: item.total || (item.qty * item.unitPrice) || 0,
+      };
+    }),
+    subtotal: subtotal,
+    shippingCents: shippingCents,
+    totalCents: totalCents,
+  };
+}
+
 function QuoteStep6_Review(props) {
   var data = props.data;
+  var nav = useNavigate();
   var onEditStep = props.onEditStep;
   var zoneName = props.zoneName || 'This Zone';
 
@@ -376,14 +405,23 @@ function QuoteStep6_Review(props) {
     ),
 
     // ======== CTA ========
-    el('button', {
-      className: 'qb-review-cta',
-      onClick: function() {
-        if (props.onComplete) {
-          props.onComplete(data, result);
-        }
-      },
-    }, 'Get Quote for ' + zoneName)
+    el('div', { className: 'qb-review-cta-row' },
+      el('button', {
+        className: 'qb-review-cta qb-review-cta--secondary',
+        onClick: function() {
+          if (props.onComplete) {
+            props.onComplete(data, result);
+          }
+        },
+      }, 'Get Quote for ' + zoneName),
+      el('button', {
+        className: 'qb-review-cta qb-review-cta--pay',
+        onClick: function() {
+          var quoteObj = buildQuoteForCheckout(data, result, zoneName, props.annotatedSnapshotUrl);
+          nav('/checkout', { state: { quote: quoteObj } });
+        },
+      }, 'Pay & Reserve →')
+    )
   );
 }
 

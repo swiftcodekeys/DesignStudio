@@ -6133,6 +6133,28 @@ html, body {
 .qb-review-cta:hover { background: var(--cta-hover); transform: translateY(-1px); }
 .qb-review-cta:active { transform: translateY(0); }
 
+.qb-review-cta-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-direction: column;
+}
+
+.qb-review-cta--pay {
+  background: #d4753a;
+  color: white;
+  font-weight: 700;
+}
+
+.qb-review-cta--pay:hover {
+  background: #c0662e;
+}
+
+.qb-review-cta--secondary {
+  background: white;
+  color: #6BA3C2;
+  border: 1.5px solid #6BA3C2;
+}
+
 /* ============================================================
    ZoneTransitionPage — "Same fence?" between zone configs
    ============================================================ */
