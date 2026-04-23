@@ -50,6 +50,7 @@ module.exports = {
     new webpack.DefinePlugin({
       'process.env.GAS_ENDPOINT': JSON.stringify(''),
       'process.env.STRIPE_PUBLISHABLE_KEY': JSON.stringify(''),
+      'process.env.STRIPE_CHECKOUT_WORKER_URL': JSON.stringify(process.env.STRIPE_CHECKOUT_WORKER_URL || 'https://grandview-stripe-checkout.sarah-13a.workers.dev'),
       'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || ''),
       'process.env.ANTHROPIC_API_KEY': JSON.stringify(''),
       'process.env.USE_MAPBOX_DRAW': JSON.stringify(process.env.USE_MAPBOX_DRAW !== 'false'),
