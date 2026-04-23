@@ -348,10 +348,10 @@
   gap: 12px;
 }
 
-.dy-dock-empty    { width: 420px; }
-.dy-dock-drawing  { width: 720px; }
-.dy-dock-ready    { width: 860px; }
-.dy-dock-expanded { width: 900px; }
+.dy-dock-empty    { width: min(420px,  calc(100vw - 24px)); }
+.dy-dock-drawing  { width: min(720px,  calc(100vw - 24px)); }
+.dy-dock-ready    { width: min(860px,  calc(100vw - 24px)); }
+.dy-dock-expanded { width: min(900px,  calc(100vw - 24px)); }
 
 .dy-dock-main {
   display: flex;
@@ -375,34 +375,37 @@
 .dy-dock-copy strong { color: var(--dy-ink); font-weight: 700; }
 .dy-dock-sep { color: var(--dy-muted); margin: 0 8px; }
 
-/* Stats cluster. R4: flex-wrap:nowrap keeps all three stats (linear feet,
-   post count, price range) on one horizontal line at the 860-900px dock
-   width. clamp()-based font-sizes let numbers scale down gracefully at
-   narrow viewports instead of forcing a row break. */
+/* Stats cluster. flex-wrap:wrap lets the 3 stats reflow to 2 rows when the
+   dock is narrower than ~700px (DevTools open, tablet, etc.) instead of
+   overflowing or overlapping. min-width on each stat prevents squeeze-to-zero.
+   clamp() font-sizes scale continuously so nothing clips at any width. */
 .dy-stats {
   display: flex;
   align-items: flex-start;
-  gap: clamp(16px, 2vw, 28px);
+  gap: clamp(12px, 2vw, 28px);
   flex: 1;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
 }
 .dy-stat {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 120px;
+  min-width: 100px;
+  max-width: 260px;
 }
 .dy-stat-num {
   font-family: var(--dy-font-display);
-  font-size: clamp(22px, 2.4vw, 30px);
+  font-size: clamp(18px, 2.4vw, 30px);
   font-weight: 700;
   color: var(--dy-ink);
   line-height: 1;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .dy-stat-label {
   font-size: 11px;
@@ -413,12 +416,14 @@
   white-space: nowrap;
 }
 .dy-stat-range {
-  font-size: clamp(16px, 1.6vw, 22px);
+  font-size: clamp(14px, 1.6vw, 22px);
   white-space: nowrap;
   letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .dy-stat-sub {
-  font-size: clamp(10px, 0.9vw, 11px);
+  font-size: 10px;
   color: var(--dy-muted);
   margin-top: 1px;
   white-space: nowrap;

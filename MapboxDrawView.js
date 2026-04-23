@@ -888,7 +888,7 @@ function MorphingDock(props) {
       React.createElement('span', { className: 'dy-legend-label' }, 'Line posts')
     ),
     React.createElement('span', { className: 'dy-legend-hint' },
-      ‘Turns under 10° don’t need a corner post. Panels flex through.’
+      "Turns under 10° don’t need a corner post. Panels flex through."
     )
   );
 
