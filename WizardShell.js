@@ -1209,6 +1209,10 @@ var WizardShell = function() {
                     // (address entry + manual linear-feet input) and is not wired to
                     // MapboxDrawView's onComplete. The draw-tool path goes through
                     // app.js → handleGetQuote → QuoteBuilder.
+                    // KNOWN GAP: Because drawToolData is null, buildCrmPayload will always
+                    // produce terrain_flag=null and epqs_data=null for wizard-submitted leads.
+                    // TerrainSection and SlopePill only show data for draw-tool path leads.
+                    // Wiring EPQS into the wizard path is deferred to a future phase.
                     drawToolData={null}
                 />
             )}
