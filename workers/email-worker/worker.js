@@ -333,6 +333,7 @@ function buildSalesEmailHtml(p) {
           '</tr></table>',
           '</div>',
         ].join('') : '',
+        buildTerrainHtml(p),
         footer,
       ].join('');
     }
@@ -375,6 +376,7 @@ function buildSalesEmailHtml(p) {
         '<span style="font-size:28px;font-weight:800;color:#1a2332;">$' + Number(p.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2 }) + '</span>',
         '</div>',
       ].join('') : '',
+      buildTerrainHtml(p),
       footer,
     ].join('');
   }
@@ -540,4 +542,51 @@ function formatDate(ts) {
   var d = new Date(ts);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
     + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// Returns an HTML string with terrain / EPQS rows for the internal sales email.
+// Returns an empty string when no EPQS data is present (graceful no-op).
+function buildTerrainHtml(p) {
+  var terrain = p.epqs_data || {};
+  if (!terrain.overall) return '';
+
+  var customerTier = (
+    (p.zones && p.zones.length > 0 && p.zones[0].config && p.zones[0].config.rackingTier)
+      ? p.zones[0].config.rackingTier
+      : (p.rackingTier || 'standard')
+  );
+
+  var epqsSloped = (terrain.overall === 'sloped' || terrain.overall === 'steep' || terrain.overall === 'steps');
+  var disagree = epqsSloped && customerTier === 'standard';
+
+  var maxDelta = terrain.maxDeltaInches != null
+    ? ' | max delta: ' + terrain.maxDeltaInches + '"'
+    : '';
+
+  var html = [
+    '<div style="margin:0 24px 16px;">',
+    '<h3 style="margin:0 0 8px;color:#1a2332;font-size:15px;text-transform:uppercase;letter-spacing:1px;">Terrain / EPQS</h3>',
+    '<table style="width:100%;border-collapse:collapse;">',
+    '<tr>',
+    '<td style="padding:6px 0;font-size:13px;color:#888;width:130px;vertical-align:top;">EPQS classification</td>',
+    '<td style="padding:6px 0;font-size:14px;color:#1a2332;">' + terrain.overall + ' (' + (terrain.confidence || 'unknown') + ')' + maxDelta + '</td>',
+    '</tr>',
+    '<tr>',
+    '<td style="padding:6px 0;font-size:13px;color:#888;width:130px;vertical-align:top;">Customer racking</td>',
+    '<td style="padding:6px 0;font-size:14px;color:#1a2332;">' + customerTier + '</td>',
+    '</tr>',
+  ];
+
+  if (disagree) {
+    html.push(
+      '<tr>',
+      '<td colspan="2" style="padding:10px 12px;background:#fee2e2;color:#991b1b;font-size:13px;font-weight:700;border-left:4px solid #dc2626;line-height:1.4;">',
+      '&#9888; EPQS detected slope/steps but customer selected Standard racking — verify site conditions before production.',
+      '</td>',
+      '</tr>'
+    );
+  }
+
+  html.push('</table>', '</div>');
+  return html.join('');
 }
