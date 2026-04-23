@@ -61,3 +61,5 @@ OPEN DECISIONS / BLOCKERS
   in POST_PRICING. Deferred.
 - Admin CRM (grandview-quote-system) still needs git init before any
   PO/pricing commits can be tracked.
+
+2026-04-22: Phase 2 Stripe checkout built on feat/phase2-stripe. Attorney review of §CYA checkbox language still pending before production launch. capture_method is 'manual' throughout — Sarah must explicitly capture from admin CRM within 7 days of authorization. Worker secrets (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, ADMIN_API_KEY) must be set via wrangler secret put before deploying worker. E2E spec requires dev server + stripe worker running locally.
