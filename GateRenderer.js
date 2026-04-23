@@ -317,7 +317,11 @@ GateRenderer.prototype.buildGate = function(config) {
     }
 
     if (!config) {
-        this._swapStagingToLive(stagingGate);  // swaps in empty gate, calls _onReady
+        if (buildId === this._buildGeneration) {
+            this._swapStagingToLive(stagingGate);
+        } else {
+            this._stagingGate = null;
+        }
         return;
     }
 
