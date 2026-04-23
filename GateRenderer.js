@@ -217,6 +217,12 @@ GateRenderer.prototype.buildGate = function(config) {
     var gate = this.gate;
     var clips = this.clips;
 
+    // Helper to add mesh and flag for render
+    function addMesh(mesh) {
+        gate.add(mesh);
+        self._needsRender = true;
+    }
+
     // Clear existing meshes
     while (gate.children.length > 0) gate.remove(gate.children[0]);
     if (!config) return;
@@ -365,7 +371,7 @@ GateRenderer.prototype.buildGate = function(config) {
             var mesh = new THREE.Mesh(geo, makeMat());
             var hingeM = (idx <= 1) ? offsetY(m, 0, hOff) : m;
             snap(mesh, hingeM);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     });
 
@@ -376,7 +382,7 @@ GateRenderer.prototype.buildGate = function(config) {
         loader.load(getModelPath(outerPostModel, config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
             snap(mesh, M_IDENTITY);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     }
 
@@ -386,13 +392,13 @@ GateRenderer.prototype.buildGate = function(config) {
         loader.load(getModelPath('po14', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
             snap(mesh, M_IDENTITY);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     } else {
         loader.load(getModelPath('po12', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
             snap(mesh, M_IDENTITY);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     }
 
@@ -402,7 +408,7 @@ GateRenderer.prototype.buildGate = function(config) {
         loader.load(getModelPath('po23', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post23));
             snap(mesh, M_IDENTITY);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     }
 
@@ -424,7 +430,7 @@ GateRenderer.prototype.buildGate = function(config) {
                 } else {
                     snap(mesh, offsetY(m, 0, hOff));
                 }
-                gate.add(mesh);
+                addMesh(mesh);
             });
         });
     }
@@ -444,7 +450,7 @@ GateRenderer.prototype.buildGate = function(config) {
         [railT0, railT1Final].forEach(function(m) {
             var mesh = new THREE.Mesh(geo, makeMat());
             snap(mesh, m);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     });
 
@@ -452,18 +458,18 @@ GateRenderer.prototype.buildGate = function(config) {
     loader.load(getModelPath('railBot', config), function(geo) {
         var meshB = new THREE.Mesh(geo, makeMat());
         snap(meshB, railB2);
-        gate.add(meshB);
+        addMesh(meshB);
 
         if (config.accessories && config.accessories.mdr) {
             var meshM = new THREE.Mesh(geo, makeMat());
             snap(meshM, railB0);
-            gate.add(meshM);
+            addMesh(meshM);
         }
 
         if (config.accessories && config.accessories.xlr) {
             var meshX = new THREE.Mesh(geo, makeMat());
             snap(meshX, railB1);
-            gate.add(meshX);
+            addMesh(meshX);
         }
 
         // PUPPY RAIL — positioned per puppy type
@@ -471,7 +477,7 @@ GateRenderer.prototype.buildGate = function(config) {
         if (hasPuppy) {
             var meshP = new THREE.Mesh(geo, makeMat());
             snap(meshP, [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,puppyRailY,0,1]);
-            gate.add(meshP);
+            addMesh(meshP);
         }
     });
 
@@ -484,24 +490,24 @@ GateRenderer.prototype.buildGate = function(config) {
     loader.load(getModelPath('ptEven', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
         snap(mesh, picketTop);
-        gate.add(mesh);
+        addMesh(mesh);
     });
     loader.load(getModelPath('pbEven', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb));
         snap(mesh, M_IDENTITY);
-        gate.add(mesh);
+        addMesh(mesh);
     });
 
     // Odd pickets
     loader.load(getModelPath('ptOdd', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
         snap(mesh, ptOddTransform);
-        gate.add(mesh);
+        addMesh(mesh);
     });
     loader.load(getModelPath('pbOdd', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb));
         snap(mesh, M_IDENTITY);
-        gate.add(mesh);
+        addMesh(mesh);
     });
 
     // Res/extra pickets — visible only for Pro spacing (pi=201, pi=101).
@@ -535,7 +541,7 @@ GateRenderer.prototype.buildGate = function(config) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
         snap(mesh, ptResTransform);
         mesh.visible = isProSpacing;
-        gate.add(mesh);
+        addMesh(mesh);
     });
     loader.load(getModelPath('pbRes', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pbRes));
@@ -544,7 +550,7 @@ GateRenderer.prototype.buildGate = function(config) {
         // When puppy is active, these bottom extra pickets fill the gap
         // between the bottom rail and the puppy rail (clipped by pbRes plane)
         mesh.visible = !!(isProSpacing || hasPuppy);
-        gate.add(mesh);
+        addMesh(mesh);
     });
 
     // PUPPY FINIALS — classic puppy variants get decorative finials on the extra pickets
@@ -564,7 +570,7 @@ GateRenderer.prototype.buildGate = function(config) {
                 pfPositions.forEach(function(pos) {
                     var mesh = new THREE.Mesh(geo, makeMat());
                     mesh.position.set(pos[0], pfBaseY + pos[1], pos[2]);
-                    gate.add(mesh);
+                    addMesh(mesh);
                 });
             });
         }
@@ -575,7 +581,7 @@ GateRenderer.prototype.buildGate = function(config) {
         loader.load(getModelPath('ufr', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeMat());
             snap(mesh, M_IDENTITY);
-            gate.add(mesh);
+            addMesh(mesh);
         });
     }
 
@@ -596,7 +602,7 @@ GateRenderer.prototype.buildGate = function(config) {
                 finPositions.forEach(function(pos) {
                     var mesh = new THREE.Mesh(geo, makeMat());
                     snap(mesh, [1,0,0,0, 0,1,0,0, 0,0,1,0, pos[0], finBaseY + pos[1] + hOff, pos[2], 1]);
-                    gate.add(mesh);
+                    addMesh(mesh);
                 });
             });
         }
@@ -627,7 +633,7 @@ GateRenderer.prototype.buildGate = function(config) {
                 scrollPositions.forEach(function(pos) {
                     var mesh = new THREE.Mesh(geo, makeMat());
                     snap(mesh, [1,0,0,0, 0,1,0,0, 0,0,1,0, pos[0],scrollY,0,1]);
-                    gate.add(mesh);
+                    addMesh(mesh);
                 });
             });
         }
@@ -640,7 +646,7 @@ GateRenderer.prototype.buildGate = function(config) {
                     circlePositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_BASE_Y.circle + pos[1] + accentTopOffset, pos[2]);
-                        gate.add(mesh);
+                        addMesh(mesh);
                     });
                 });
             }
@@ -653,7 +659,7 @@ GateRenderer.prototype.buildGate = function(config) {
                     circleBasePositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_CIRCLE_BOTTOM_Y, pos[2]);
-                        gate.add(mesh);
+                        addMesh(mesh);
                     });
                 });
             }
@@ -666,7 +672,7 @@ GateRenderer.prototype.buildGate = function(config) {
                     butterflyPositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_BASE_Y.butterfly + pos[1] + accentTopOffset, pos[2]);
-                        gate.add(mesh);
+                        addMesh(mesh);
                     });
                 });
             }
@@ -679,7 +685,7 @@ GateRenderer.prototype.buildGate = function(config) {
                     butterflyBasePositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_BUTTERFLY_BOTTOM_Y, pos[2]);
-                        gate.add(mesh);
+                        addMesh(mesh);
                     });
                 });
             }
