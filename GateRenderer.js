@@ -38,6 +38,7 @@ function GateRenderer(container) {
     this._onLoading = null;
     this._onReady = null;
     this._pendingLoads = 0;
+    this._matCache = {};
 
     // Scene
     this.scene = new THREE.Scene();
@@ -181,6 +182,11 @@ GateRenderer.prototype.dispose = function() {
     if (this._container && this.renderer.domElement) {
         this._container.removeChild(this.renderer.domElement);
     }
+    var self = this;
+    Object.keys(this._matCache).forEach(function(k) {
+        self._matCache[k].dispose();
+    });
+    this._matCache = {};
     this.renderer.dispose();
 };
 
@@ -189,6 +195,7 @@ GateRenderer.prototype.dispose = function() {
 // ============================================================
 GateRenderer.prototype.updateMaterials = function(config) {
     this._needsRender = true;
+    this._matCache = {};
     var THREE = window.THREE;
     var color = config.color || { threeHex: 0x080808, metalness: 0.9, roughness: 0.1 };
     var gate = this.gate;
@@ -344,7 +351,9 @@ GateRenderer.prototype.buildGate = function(config) {
     var color = config.color || { threeHex: 0x080808 };
 
     var makeMat = function() {
-        return new THREE.MeshStandardMaterial({
+        var cacheKey = 'base_' + (color.id || color.threeHex);
+        if (self._matCache[cacheKey]) return self._matCache[cacheKey];
+        var mat = new THREE.MeshStandardMaterial({
             color: color.threeHex,
             roughness: color.roughness !== undefined ? color.roughness : 0.1,
             metalness: color.metalness !== undefined ? color.metalness : 0.9,
@@ -355,10 +364,14 @@ GateRenderer.prototype.buildGate = function(config) {
             shading: THREE.FlatShading,
             side: THREE.FrontSide,
         });
+        self._matCache[cacheKey] = mat;
+        return mat;
     };
 
-    var makeClipMat = function(plane) {
-        return new THREE.MeshStandardMaterial({
+    var makeClipMat = function(plane, planeKey) {
+        var cacheKey = 'clip_' + planeKey + '_' + (color.id || color.threeHex);
+        if (self._matCache[cacheKey]) return self._matCache[cacheKey];
+        var mat = new THREE.MeshStandardMaterial({
             color: color.threeHex,
             roughness: color.roughness !== undefined ? color.roughness : 0.1,
             metalness: color.metalness !== undefined ? color.metalness : 0.9,
@@ -370,6 +383,8 @@ GateRenderer.prototype.buildGate = function(config) {
             side: THREE.FrontSide,
             clippingPlanes: [plane],
         });
+        self._matCache[cacheKey] = mat;
+        return mat;
     };
 
     // Mount type: 'p' = post mount (default), 'd' = direct mount
@@ -400,7 +415,7 @@ GateRenderer.prototype.buildGate = function(config) {
     if (isPostMount) {
         var outerPostModel = isDoubleLeaf ? 'po40d' : 'po40s';
         trackedLoad(getModelPath(outerPostModel, config), function(geo) {
-            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
+            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post, 'post'));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
         });
@@ -410,13 +425,13 @@ GateRenderer.prototype.buildGate = function(config) {
     // Ultra: pob14.visible=true (double) or pob12.visible=true (single) regardless of mntI
     if (isDoubleLeaf) {
         trackedLoad(getModelPath('po14', config), function(geo) {
-            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
+            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post, 'post'));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
         });
     } else {
         trackedLoad(getModelPath('po12', config), function(geo) {
-            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
+            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post, 'post'));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
         });
@@ -426,7 +441,7 @@ GateRenderer.prototype.buildGate = function(config) {
     // Single gate has no center seam posts (Ultra viz(): pob23.visible = false when lfI=1)
     if (isDoubleLeaf) {
         trackedLoad(getModelPath('po23', config), function(geo) {
-            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post23));
+            var mesh = new THREE.Mesh(geo, makeClipMat(clips.post23, 'post23'));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
         });
@@ -508,24 +523,24 @@ GateRenderer.prototype.buildGate = function(config) {
 
     // Even pickets
     trackedLoad(getModelPath('ptEven', config), function(geo) {
-        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
+        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt, 'pt'));
         snap(mesh, picketTop);
         addMesh(mesh);
     });
     trackedLoad(getModelPath('pbEven', config), function(geo) {
-        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb));
+        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb, 'pb'));
         snap(mesh, M_IDENTITY);
         addMesh(mesh);
     });
 
     // Odd pickets
     trackedLoad(getModelPath('ptOdd', config), function(geo) {
-        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
+        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt, 'pt'));
         snap(mesh, ptOddTransform);
         addMesh(mesh);
     });
     trackedLoad(getModelPath('pbOdd', config), function(geo) {
-        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb));
+        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb, 'pb'));
         snap(mesh, M_IDENTITY);
         addMesh(mesh);
     });
@@ -558,13 +573,13 @@ GateRenderer.prototype.buildGate = function(config) {
         ptResTransform = picketTop;
     }
     trackedLoad(getModelPath('ptRes', config), function(geo) {
-        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
+        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt, 'pt'));
         snap(mesh, ptResTransform);
         mesh.visible = isProSpacing;
         addMesh(mesh);
     });
     trackedLoad(getModelPath('pbRes', config), function(geo) {
-        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pbRes));
+        var mesh = new THREE.Mesh(geo, makeClipMat(clips.pbRes, 'pbRes'));
         snap(mesh, M_IDENTITY);
         // Ultra: grpbx visible for Pro spacing OR puppy pickets
         // When puppy is active, these bottom extra pickets fill the gap
