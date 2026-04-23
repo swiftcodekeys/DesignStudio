@@ -1,0 +1,10 @@
+[
+  { "nam": "Textured Khaki",  "val": "#cdbeaf", "hx": 13483695, "ao": 0.8, "rfn": 0.4, "mtl": 0.2, "ei": 2.6,  "bmp": 0.002 },
+  { "nam": "Gloss Bronze",    "val": "#42382c", "hx": 4339756,  "ao": 0.8, "rfn": 0.1, "mtl": 0.3, "ei": 4.0,  "bmp": 0.0001 },
+  { "nam": "Textured Bronze", "val": "#42382c", "hx": 4339756,  "ao": 0.8, "rfn": 0.4, "mtl": 0.3, "ei": 5.5,  "bmp": 0.0015 },
+  { "nam": "Gloss White",     "val": "#f4f4f4", "hx": 16315894, "ao": 0.5, "rfn": 0.2, "mtl": 0.2, "ei": 2.5,  "bmp": 0.0001 },
+  { "nam": "Textured White",  "val": "#f2f2f2", "hx": 16315894, "ao": 0.3, "rfn": 0.2, "mtl": 0.1, "ei": 2.5,  "bmp": 0.002 },
+  { "nam": "Gloss Black",     "val": "#090909", "hx": 526344,   "ao": 1.0, "rfn": 0.2, "mtl": 0.2, "ei": 8.0,  "bmp": 0.0001 },
+  { "nam": "Textured Black",  "val": "#0c0c0c", "hx": 789516,   "ao": 1.0, "rfn": 0.4, "mtl": 0.2, "ei": 9.0,  "bmp": 0.0015 },
+  { "nam": "Silver",          "val": "#c8c8c8", "hx": 16709874, "ao": 0.6, "rfn": 0.2, "mtl": 0.8, "ei": 5.5,  "bmp": 0.0002 }
+]

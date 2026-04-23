@@ -1,0 +1,198 @@
+{
+  "scraped": "2026-03-17 via Playwright from https://www.ultrafence.com/design-studio/gates/index.html",
+  "threeVersion": "r86",
+
+  "camera": {
+    "type": "PerspectiveCamera",
+    "fov": 40,
+    "zoom": 1.788,
+    "near": 1,
+    "far": 100,
+    "position": { "x": 0.82, "y": 1.27, "z": 7.2 },
+    "rotation": { "x": 0, "y": 6, "z": 0, "order": "YXZ" },
+    "note": "rotation.y is 6 degrees (0.10472 radians)"
+  },
+
+  "renderer": {
+    "shadowMapEnabled": false,
+    "toneMapping": 1,
+    "toneMappingNote": "1 = LinearToneMapping (default, NO fancy tone mapping)",
+    "toneMappingExposure": 1,
+    "gammaOutput": false,
+    "gammaFactor": 2,
+    "gammaInput": false,
+    "localClippingEnabled": true,
+    "alpha": true,
+    "pixelRatio": 1,
+    "clearColor": 0,
+    "clearAlpha": 0
+  },
+
+  "lights": [
+    {
+      "type": "AmbientLight",
+      "color": "0xffffff",
+      "intensity": 0.5,
+      "note": "ONLY light in the scene — no directional, no shadows"
+    }
+  ],
+
+  "materials": {
+    "type": "MeshStandardMaterial",
+    "shading": 1,
+    "shadingNote": "1 = FlatShading — Ultra DOES use FlatShading",
+    "side": 0,
+    "sideNote": "0 = FrontSide",
+    "transparent": false,
+    "opacity": 1,
+    "hasEnvMap": true,
+    "envMapNote": "PMREM-processed HDR, mapping=306 (CubeUVReflectionMapping)",
+    "hasBumpMap": true,
+    "bumpMapNote": "2048x2048, generated on Canvas element (not loaded directly from file)",
+    "hasAoMap": false,
+    "hasNormalMap": false,
+    "hasRoughnessMap": false,
+    "hasMetalnessMap": false,
+    "castShadow": false,
+    "receiveShadow": false
+  },
+
+  "colors": [
+    {
+      "name": "Textured Khaki",
+      "grandviewName": "Beige",
+      "cssValue": "#cdbeaf",
+      "threeHex": "0xCDBEAF",
+      "threeHexDecimal": 13483695,
+      "roughness": 0.4,
+      "metalness": 0.2,
+      "envMapIntensity": 2.6,
+      "bumpScale": 0.002,
+      "ao": 0.8
+    },
+    {
+      "name": "Gloss Bronze",
+      "grandviewName": "Bronze",
+      "cssValue": "#42382c",
+      "threeHex": "0x42382C",
+      "threeHexDecimal": 4339756,
+      "roughness": 0.1,
+      "metalness": 0.3,
+      "envMapIntensity": 4.0,
+      "bumpScale": 0.0001,
+      "ao": 0.8
+    },
+    {
+      "name": "Textured Bronze",
+      "grandviewName": "Satin Bronze",
+      "cssValue": "#42382c",
+      "threeHex": "0x42382C",
+      "threeHexDecimal": 4339756,
+      "roughness": 0.4,
+      "metalness": 0.3,
+      "envMapIntensity": 5.5,
+      "bumpScale": 0.0015,
+      "ao": 0.8
+    },
+    {
+      "name": "Gloss White",
+      "grandviewName": "White",
+      "cssValue": "#f4f4f4",
+      "threeHex": "0xF8F5F6",
+      "threeHexDecimal": 16315894,
+      "roughness": 0.2,
+      "metalness": 0.2,
+      "envMapIntensity": 2.5,
+      "bumpScale": 0.0001,
+      "ao": 0.5
+    },
+    {
+      "name": "Textured White",
+      "grandviewName": "Satin White",
+      "cssValue": "#f2f2f2",
+      "threeHex": "0xF8F5F6",
+      "threeHexDecimal": 16315894,
+      "roughness": 0.2,
+      "metalness": 0.1,
+      "envMapIntensity": 2.5,
+      "bumpScale": 0.002,
+      "ao": 0.3
+    },
+    {
+      "name": "Gloss Black",
+      "grandviewName": "Black",
+      "cssValue": "#090909",
+      "threeHex": "0x080808",
+      "threeHexDecimal": 526344,
+      "roughness": 0.2,
+      "metalness": 0.2,
+      "envMapIntensity": 8.0,
+      "bumpScale": 0.0001,
+      "ao": 1.0
+    },
+    {
+      "name": "Textured Black",
+      "grandviewName": "Satin Black",
+      "cssValue": "#0c0c0c",
+      "threeHex": "0x0C0C0C",
+      "threeHexDecimal": 789516,
+      "roughness": 0.4,
+      "metalness": 0.2,
+      "envMapIntensity": 9.0,
+      "bumpScale": 0.0015,
+      "ao": 1.0
+    },
+    {
+      "name": "Silver",
+      "grandviewName": "Silver",
+      "cssValue": "#c8c8c8",
+      "threeHex": "0xFEF8F2",
+      "threeHexDecimal": 16709874,
+      "roughness": 0.2,
+      "metalness": 0.8,
+      "envMapIntensity": 5.5,
+      "bumpScale": 0.0002,
+      "ao": 0.6
+    }
+  ],
+
+  "envMap": {
+    "globalVar": "envr",
+    "mapping": 306,
+    "mappingName": "CubeUVReflectionMapping",
+    "format": 1023,
+    "type": 1009,
+    "source": "HDR cube map processed via PMREMGenerator + PMREMCubeUVPacker",
+    "hdrFiles": "gate_tool/t/hdr/px.hdr, nx.hdr, py.hdr, ny.hdr, pz.hdr, nz.hdr",
+    "loaders": ["RGBELoader.js", "PMREMGenerator.js", "PMREMCubeUVPacker.js", "HDRCubeTextureLoader.js"]
+  },
+
+  "bumpMap": {
+    "globalVar": "bImg",
+    "size": "2048x2048",
+    "sourceNote": "Generated on Canvas element — Ultra loads bm.jpg then likely processes it into a canvas texture",
+    "wrapS": 1001,
+    "wrapT": 1001,
+    "wrapNote": "1001 = ClampToEdgeWrapping"
+  },
+
+  "textures": {
+    "mnMp": { "note": "Unknown purpose, canvas-generated, mapping=300 (UVMapping)" },
+    "bImg": { "note": "Bump map, canvas-generated 2048x2048" },
+    "envr": { "note": "PMREM env map, mapping=306" }
+  },
+
+  "groundPlane": "NONE — Ultra has no ground plane or shadow receiver",
+
+  "styles": [
+    { "name": "UAF-200 Flat Top", "st": "f2", "cat": "f", "mod": "200", "pi": "200", "fin": false },
+    { "name": "UAF-250 Flat Top w/ Spears", "st": "f2", "cat": "f", "mod": "250", "pi": "250", "fin": true },
+    { "name": "UAF-201 Flat Top 1.5\" Spacing", "st": "f2", "cat": "f", "mod": "201", "pi": "201", "fin": false },
+    { "name": "UAB-200 Flat Top Flush", "st": "b2", "cat": "b", "mod": "200", "pi": "200", "fin": false },
+    { "name": "UAS-100 Spear Top", "st": "s1", "cat": "s", "mod": "100", "pi": "100", "fin": true },
+    { "name": "UAS-150 Staggered Spear", "st": "s1", "cat": "s", "mod": "150", "pi": "100", "fin": true },
+    { "name": "UAS-101 Spear Top 1.5\" Spacing", "st": "s1", "cat": "s", "mod": "100", "pi": "101", "fin": true }
+  ],
+
+  "keyInsight": "Ultra's realistic 3D look comes almost entirely from the PMREM environment map with per-color envMapIntensity (2.5-9.0). NOT from lighting, shadows, tone mapping, or gamma correction. Single ambient light, FlatShading, no directional lights."
+}

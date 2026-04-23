@@ -1,0 +1,148 @@
+{
+  "scraped_from": "https://www.ifenceusa.com/fencestudio/ and https://www.ifenceusa.com/gatestudio/",
+  "scraped_date": "2026-03-18",
+  "description": "Tooltip/popup preview images from the iFence iDesign Fence Studio and Gate Studio. These appear on hover over menu items via a #cursor div.",
+  "style_mappings": {
+    "Boca Grande": "Haven (Grandview)",
+    "San Marino": "Horizon (Grandview)",
+    "Santa Monica": "Horizon Pro (Grandview)",
+    "Sanibel": "Vanguard (Grandview)",
+    "Bella Vista": "Charleston (Grandview)",
+    "Bella Terra": "Savannah (Grandview)"
+  },
+  "fence_studio": {
+    "base_url": "https://www.ifenceusa.com/fencestudio/images/",
+    "styles": {
+      "contemporary_classic": [
+        {"name": "Ventura", "file": "styles/ventura_1.png", "src_id": "1", "url": "https://www.ifenceusa.com/fencestudio/images/1.png"},
+        {"name": "Boca Grande", "file": "styles/boca_grande_44.png", "src_id": "44", "url": "https://www.ifenceusa.com/fencestudio/images/44.png", "grandview_equiv": "Haven"},
+        {"name": "San Marino", "file": "styles/san_marino_14.png", "src_id": "14", "url": "https://www.ifenceusa.com/fencestudio/images/14.png", "grandview_equiv": "Horizon"},
+        {"name": "Santa Monica", "file": "styles/santa_monica_8.png", "src_id": "8", "url": "https://www.ifenceusa.com/fencestudio/images/8.png", "grandview_equiv": "Horizon Pro"},
+        {"name": "Sanibel", "file": "styles/sanibel_11.png", "src_id": "11", "url": "https://www.ifenceusa.com/fencestudio/images/11.png", "grandview_equiv": "Vanguard"},
+        {"name": "New Orleans", "file": "styles/new_orleans_20.png", "src_id": "20", "url": "https://www.ifenceusa.com/fencestudio/images/20.png"},
+        {"name": "Excelsior", "file": "styles/excelsior_29.png", "src_id": "29", "url": "https://www.ifenceusa.com/fencestudio/images/29.png"},
+        {"name": "Napa Valley", "file": "styles/napa_valley_23.png", "src_id": "23", "url": "https://www.ifenceusa.com/fencestudio/images/23.png"},
+        {"name": "Amarillo", "file": "styles/amarillo_53.png", "src_id": "53", "url": "https://www.ifenceusa.com/fencestudio/images/53.png"},
+        {"name": "Camarillo", "file": "styles/camarillo_41.png", "src_id": "41", "url": "https://www.ifenceusa.com/fencestudio/images/41.png"}
+      ],
+      "ornamental": [
+        {"name": "Bella Vista", "file": "styles/bella_vista_47.png", "src_id": "47", "url": "https://www.ifenceusa.com/fencestudio/images/47.png", "grandview_equiv": "Charleston"},
+        {"name": "Bella Terra", "file": "styles/bella_terra_50.png", "src_id": "50", "url": "https://www.ifenceusa.com/fencestudio/images/50.png", "grandview_equiv": "Savannah"},
+        {"name": "Mission Point", "file": "styles/mission_point_26.png", "src_id": "26", "url": "https://www.ifenceusa.com/fencestudio/images/26.png"},
+        {"name": "Charlemagne", "file": "styles/charlemagne_32.png", "src_id": "32", "url": "https://www.ifenceusa.com/fencestudio/images/32.png"},
+        {"name": "Camelot", "file": "styles/camelot_38.png", "src_id": "38", "url": "https://www.ifenceusa.com/fencestudio/images/38.png"},
+        {"name": "Providence", "file": "styles/providence_17.png", "src_id": "17", "url": "https://www.ifenceusa.com/fencestudio/images/17.png"},
+        {"name": "Castile", "file": "styles/castile_35.png", "src_id": "35", "url": "https://www.ifenceusa.com/fencestudio/images/35.png"},
+        {"name": "Valencia", "file": "styles/valencia_5.png", "src_id": "5", "url": "https://www.ifenceusa.com/fencestudio/images/5.png"}
+      ]
+    },
+    "colors": [
+      {"name": "Matte Sandstone", "file": "colors/matte_sandstone.png", "src_id": "sandstone", "url": "https://www.ifenceusa.com/fencestudio/images/sandstone.png"},
+      {"name": "Bronze / Matte Bronze", "file": "colors/bronze.png", "src_id": "bronze", "url": "https://www.ifenceusa.com/fencestudio/images/bronze.png"},
+      {"name": "White", "file": "colors/white.png", "src_id": "white", "url": "https://www.ifenceusa.com/fencestudio/images/white.png"},
+      {"name": "Matte Black", "file": "colors/matte_black.png", "src_id": "matte", "url": "https://www.ifenceusa.com/fencestudio/images/matte.png"},
+      {"name": "Black", "file": "colors/black.png", "src_id": "black", "url": "https://www.ifenceusa.com/fencestudio/images/black.png"}
+    ],
+    "post_caps": [
+      {"name": "Flat Cap", "file": "post_caps/flat_cap_71.png", "src_id": "71", "url": "https://www.ifenceusa.com/fencestudio/images/71.png"},
+      {"name": "Ball Cap", "file": "post_caps/ball_cap_74.png", "src_id": "74", "url": "https://www.ifenceusa.com/fencestudio/images/74.png"}
+    ],
+    "config_options": [
+      {"name": "Resort (Flush Bottom)", "file": "config_options/resort_flush_bottom_93.png", "src_id": "93", "url": "https://www.ifenceusa.com/fencestudio/images/93.png"},
+      {"name": "Extreme Spacing", "file": "config_options/extreme_spacing_116.png", "src_id": "116", "url": "https://www.ifenceusa.com/fencestudio/images/116.png"},
+      {"name": "Nouveau Puppies", "file": "config_options/nouveau_puppies_106.png", "src_id": "106", "url": "https://www.ifenceusa.com/fencestudio/images/106.png"},
+      {"name": "Flush Puppies", "file": "config_options/flush_puppies_100.png", "src_id": "100", "url": "https://www.ifenceusa.com/fencestudio/images/100.png"},
+      {"name": "Classic Puppies", "file": "config_options/classic_puppies_103.png", "src_id": "103", "url": "https://www.ifenceusa.com/fencestudio/images/103.png"},
+      {"name": "Estate Scrolls", "file": "config_options/estate_scrolls_129.png", "src_id": "129", "url": "https://www.ifenceusa.com/fencestudio/images/129.png"},
+      {"name": "Additional Lower Rail", "file": "config_options/additional_lower_rail_125.png", "src_id": "125", "url": "https://www.ifenceusa.com/fencestudio/images/125.png"},
+      {"name": "Staggered Spear Top Peaks", "file": "config_options/staggered_spear_top_90.png", "src_id": "90", "url": "https://www.ifenceusa.com/fencestudio/images/90.png"},
+      {"name": "Convex Spear Top Peaks", "file": "config_options/convex_spear_top_119.png", "src_id": "119", "url": "https://www.ifenceusa.com/fencestudio/images/119.png"},
+      {"name": "Concave Spear Top Peaks", "file": "config_options/concave_spear_top_122.png", "src_id": "122", "url": "https://www.ifenceusa.com/fencestudio/images/122.png"},
+      {"name": "Nouveau", "file": "config_options/nouveau_113.png", "src_id": "113", "url": "https://www.ifenceusa.com/fencestudio/images/113.png"},
+      {"name": "Butterfly Scrolls", "file": "config_options/butterfly_scrolls_35.png", "src_id": "35", "url": "https://www.ifenceusa.com/fencestudio/images/35.png"},
+      {"name": "Circles", "file": "config_options/circles_132.png", "src_id": "132", "url": "https://www.ifenceusa.com/fencestudio/images/132.png"}
+    ],
+    "gates": [
+      {"name": "Standard Gate", "file": "gates/standard_3.png", "src_id": "3", "url": "https://www.ifenceusa.com/fencestudio/images/3.png"},
+      {"name": "Arched Gate", "file": "gates/arched_4.png", "src_id": "4", "url": "https://www.ifenceusa.com/fencestudio/images/4.png"}
+    ],
+    "views": [
+      {"name": "Classic View", "file": "views/classic_view_62.png", "src_id": "62", "url": "https://www.ifenceusa.com/fencestudio/images/62.png"},
+      {"name": "Resort View", "file": "views/resort_view_65.png", "src_id": "65", "url": "https://www.ifenceusa.com/fencestudio/images/65.png"}
+    ]
+  },
+  "gate_studio": {
+    "base_url": "https://www.ifenceusa.com/gatestudio/images/",
+    "styles": [
+      {"name": "Ventura", "file": "gate_styles/ventura_3.png", "src_id": "3", "url": "https://www.ifenceusa.com/gatestudio/images/3.png"},
+      {"name": "Boca Grande", "file": "gate_styles/boca_grande_45.png", "src_id": "45", "url": "https://www.ifenceusa.com/gatestudio/images/45.png", "grandview_equiv": "Haven"},
+      {"name": "San Marino", "file": "gate_styles/san_marino_15.png", "src_id": "15", "url": "https://www.ifenceusa.com/gatestudio/images/15.png", "grandview_equiv": "Horizon"},
+      {"name": "Santa Monica", "file": "gate_styles/santa_monica_9.png", "src_id": "9", "url": "https://www.ifenceusa.com/gatestudio/images/9.png", "grandview_equiv": "Horizon Pro"},
+      {"name": "Sanibel", "file": "gate_styles/sanibel_12.png", "src_id": "12", "url": "https://www.ifenceusa.com/gatestudio/images/12.png", "grandview_equiv": "Vanguard"},
+      {"name": "New Orleans", "file": "gate_styles/new_orleans_21.png", "src_id": "21", "url": "https://www.ifenceusa.com/gatestudio/images/21.png"},
+      {"name": "Excelsior", "file": "gate_styles/excelsior_30.png", "src_id": "30", "url": "https://www.ifenceusa.com/gatestudio/images/30.png"},
+      {"name": "Napa Valley", "file": "gate_styles/napa_valley_24.png", "src_id": "24", "url": "https://www.ifenceusa.com/gatestudio/images/24.png"},
+      {"name": "Amarillo", "file": "gate_styles/amarillo_56.png", "src_id": "56", "url": "https://www.ifenceusa.com/gatestudio/images/56.png"},
+      {"name": "Camarillo", "file": "gate_styles/camarillo_42.png", "src_id": "42", "url": "https://www.ifenceusa.com/gatestudio/images/42.png"},
+      {"name": "Bella Vista", "file": "gate_styles/bella_vista_48.png", "src_id": "48", "url": "https://www.ifenceusa.com/gatestudio/images/48.png", "grandview_equiv": "Charleston"},
+      {"name": "Bella Terra", "file": "gate_styles/bella_terra_51.png", "src_id": "51", "url": "https://www.ifenceusa.com/gatestudio/images/51.png", "grandview_equiv": "Savannah"},
+      {"name": "Mission Point", "file": "gate_styles/mission_point_27.png", "src_id": "27", "url": "https://www.ifenceusa.com/gatestudio/images/27.png"},
+      {"name": "Charlemagne", "file": "gate_styles/charlemagne_33.png", "src_id": "33", "url": "https://www.ifenceusa.com/gatestudio/images/33.png"},
+      {"name": "Camelot", "file": "gate_styles/camelot_39.png", "src_id": "39", "url": "https://www.ifenceusa.com/gatestudio/images/39.png"},
+      {"name": "Providence", "file": "gate_styles/providence_18.png", "src_id": "18", "url": "https://www.ifenceusa.com/gatestudio/images/18.png"},
+      {"name": "Castile", "file": "gate_styles/castile_36.png", "src_id": "36", "url": "https://www.ifenceusa.com/gatestudio/images/36.png"},
+      {"name": "Valencia", "file": "gate_styles/valencia_6.png", "src_id": "6", "url": "https://www.ifenceusa.com/gatestudio/images/6.png"}
+    ],
+    "leaf_configuration": [
+      {"name": "Double-leaf with Posts", "file": "gate_leaf_config/double_leaf_posts_112.png", "src_id": "112", "url": "https://www.ifenceusa.com/gatestudio/images/112.png"},
+      {"name": "Double-leaf Direct-mount", "file": "gate_leaf_config/double_leaf_direct_115.png", "src_id": "115", "url": "https://www.ifenceusa.com/gatestudio/images/115.png"},
+      {"name": "Single-leaf with Posts", "file": "gate_leaf_config/single_leaf_posts_118.png", "src_id": "118", "url": "https://www.ifenceusa.com/gatestudio/images/118.png"},
+      {"name": "Single-leaf Direct-mount", "file": "gate_leaf_config/single_leaf_direct_121.png", "src_id": "121", "url": "https://www.ifenceusa.com/gatestudio/images/121.png"}
+    ],
+    "arch_types": [
+      {"name": "Regal Wave", "file": "gate_arch_types/regal_wave_133.png", "src_id": "133", "url": "https://www.ifenceusa.com/gatestudio/images/133.png", "note": "= Estate arch in Ultra/Grandview"},
+      {"name": "StoneCliff Sunrise", "file": "gate_arch_types/stonecliff_sunrise_127.png", "src_id": "127", "url": "https://www.ifenceusa.com/gatestudio/images/127.png", "note": "= Arched/Arena in Ultra/Grandview"},
+      {"name": "StoneCliff Sunset", "file": "gate_arch_types/stonecliff_sunset_130.png", "src_id": "130", "url": "https://www.ifenceusa.com/gatestudio/images/130.png", "note": "= Reverse arch in Ultra/Grandview"},
+      {"name": "Horizon (Straight)", "file": "gate_arch_types/horizon_straight_124.png", "src_id": "124", "url": "https://www.ifenceusa.com/gatestudio/images/124.png", "note": "= Standard/flat top in Ultra/Grandview"}
+    ],
+    "colors": [
+      {"name": "Matte Sandstone", "file": "gate_colors/matte_sandstone.png", "src_id": "sandstone", "url": "https://www.ifenceusa.com/gatestudio/images/sandstone.png"},
+      {"name": "Bronze", "file": "gate_colors/bronze.png", "src_id": "bronze", "url": "https://www.ifenceusa.com/gatestudio/images/bronze.png"},
+      {"name": "White", "file": "gate_colors/white.png", "src_id": "white", "url": "https://www.ifenceusa.com/gatestudio/images/white.png"},
+      {"name": "Matte Black", "file": "gate_colors/matte_black.png", "src_id": "matte", "url": "https://www.ifenceusa.com/gatestudio/images/matte.png"},
+      {"name": "Black", "file": "gate_colors/black.png", "src_id": "black", "url": "https://www.ifenceusa.com/gatestudio/images/black.png"}
+    ],
+    "feature_options": [
+      {"name": "Resort (Flush Bottom)", "file": "gate_feature_options/resort_flush_bottom_70.png", "src_id": "70", "url": "https://www.ifenceusa.com/gatestudio/images/70.png"},
+      {"name": "U-Frame", "file": "gate_feature_options/u_frame_64.png", "src_id": "64", "url": "https://www.ifenceusa.com/gatestudio/images/64.png"},
+      {"name": "Mid Rail", "file": "gate_feature_options/mid_rail_103.png", "src_id": "103", "url": "https://www.ifenceusa.com/gatestudio/images/103.png"},
+      {"name": "Extra Lower Rail", "file": "gate_feature_options/extra_lower_rail_53.png", "src_id": "53", "url": "https://www.ifenceusa.com/gatestudio/images/53.png"},
+      {"name": "Extreme Spacing", "file": "gate_feature_options/extreme_spacing_60.png", "src_id": "60", "url": "https://www.ifenceusa.com/gatestudio/images/60.png"},
+      {"name": "Staggered Spear Peaks", "file": "gate_feature_options/staggered_spear_67.png", "src_id": "67", "url": "https://www.ifenceusa.com/gatestudio/images/67.png"},
+      {"name": "Convex Spear Peaks", "file": "gate_feature_options/convex_spear_106.png", "src_id": "106", "url": "https://www.ifenceusa.com/gatestudio/images/106.png"},
+      {"name": "Concave Spear Peaks", "file": "gate_feature_options/concave_spear_109.png", "src_id": "109", "url": "https://www.ifenceusa.com/gatestudio/images/109.png"}
+    ],
+    "puppy_pickets": [
+      {"name": "Flush Puppies", "file": "gate_puppy_pickets/flush_puppies_97.png", "src_id": "97", "url": "https://www.ifenceusa.com/gatestudio/images/97.png"},
+      {"name": "Classic Puppies", "file": "gate_puppy_pickets/classic_puppies_100.png", "src_id": "100", "url": "https://www.ifenceusa.com/gatestudio/images/100.png"},
+      {"name": "Nouveau Puppies", "file": "gate_puppy_pickets/nouveau_puppies_94.png", "src_id": "94", "url": "https://www.ifenceusa.com/gatestudio/images/94.png"},
+      {"name": "Nouveau Puppies Staggered", "file": "gate_puppy_pickets/nouveau_puppies_staggered_91.png", "src_id": "91", "url": "https://www.ifenceusa.com/gatestudio/images/91.png"},
+      {"name": "Excelsior Puppies", "file": "gate_puppy_pickets/excelsior_puppies_88.png", "src_id": "88", "url": "https://www.ifenceusa.com/gatestudio/images/88.png"},
+      {"name": "Excelsior Puppies Staggered", "file": "gate_puppy_pickets/excelsior_puppies_staggered_85.png", "src_id": "85", "url": "https://www.ifenceusa.com/gatestudio/images/85.png"},
+      {"name": "Fleur de Lis Puppies", "file": "gate_puppy_pickets/fleur_de_lis_puppies_76.png", "src_id": "76", "url": "https://www.ifenceusa.com/gatestudio/images/76.png"},
+      {"name": "Fleur de Lis Puppies Staggered", "file": "gate_puppy_pickets/fleur_de_lis_puppies_staggered_73.png", "src_id": "73", "url": "https://www.ifenceusa.com/gatestudio/images/73.png"},
+      {"name": "Bella Puppies", "file": "gate_puppy_pickets/bella_puppies_82.png", "src_id": "82", "url": "https://www.ifenceusa.com/gatestudio/images/82.png"},
+      {"name": "Bella Puppies Staggered", "file": "gate_puppy_pickets/bella_puppies_staggered_79.png", "src_id": "79", "url": "https://www.ifenceusa.com/gatestudio/images/79.png"}
+    ],
+    "accent_choices": [
+      {"name": "Ball Caps", "file": "gate_accent_choices/ball_caps_160.png", "src_id": "160", "url": "https://www.ifenceusa.com/gatestudio/images/160.png"},
+      {"name": "Estate Scrolls", "file": "gate_accent_choices/estate_scrolls_136.png", "src_id": "136", "url": "https://www.ifenceusa.com/gatestudio/images/136.png"},
+      {"name": "Circles at Base", "file": "gate_accent_choices/circles_at_base_151.png", "src_id": "151", "url": "https://www.ifenceusa.com/gatestudio/images/151.png"},
+      {"name": "Butterflies at Base", "file": "gate_accent_choices/butterflies_at_base_154.png", "src_id": "154", "url": "https://www.ifenceusa.com/gatestudio/images/154.png"},
+      {"name": "Butterflies Lite at Base", "file": "gate_accent_choices/butterflies_lite_at_base_157.png", "src_id": "157", "url": "https://www.ifenceusa.com/gatestudio/images/157.png"},
+      {"name": "Butterfly Scrolls Lite", "file": "gate_accent_choices/butterfly_scrolls_lite_148.png", "src_id": "148", "url": "https://www.ifenceusa.com/gatestudio/images/148.png"},
+      {"name": "Butterfly Scrolls", "file": "gate_accent_choices/butterfly_scrolls_145.png", "src_id": "145", "url": "https://www.ifenceusa.com/gatestudio/images/145.png"},
+      {"name": "Nouveau Picket Caps", "file": "gate_accent_choices/nouveau_picket_caps_139.png", "src_id": "139", "url": "https://www.ifenceusa.com/gatestudio/images/139.png"}
+    ]
+  }
+}

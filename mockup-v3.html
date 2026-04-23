@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grandview Design Studio — v3 Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #6BA3C2;
+    --sky-light: #78AFCF;
+    --sky-dark: #5A8FAD;
+    --accent: #d4753a;
+    --accent-hover: #c06830;
+    --accent-glow: rgba(212,117,58,0.25);
+    --dark: #0c1018;
+    --dark-panel: rgba(12,16,24,0.94);
+    --text: #f0f2f5;
+    --text-muted: rgba(240,242,245,0.45);
+    --text-dim: rgba(240,242,245,0.25);
+    --border: rgba(255,255,255,0.06);
+    --glass: rgba(255,255,255,0.04);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,-apple-system,sans-serif; background:var(--dark); color:var(--text); overflow:hidden; height:100vh; }
+  .app { display:flex; flex-direction:column; height:100vh; }
+
+  /* ══════ TOP NAV — Sky Blue ══════ */
+  .topnav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px; height:52px; min-height:52px;
+    background:linear-gradient(180deg, var(--sky), var(--sky-dark));
+    box-shadow:0 2px 12px rgba(0,0,0,0.15);
+    z-index:100; position:relative;
+  }
+  .topnav-left { display:flex; align-items:center; gap:12px; }
+  .topnav-logo { width:34px; height:34px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.15); backdrop-filter:blur(8px); }
+  .topnav-logo img { width:100%; height:100%; object-fit:contain; filter:brightness(10); }
+  .topnav-brand { display:flex; flex-direction:column; line-height:1.1; }
+  .topnav-brand .name { font-weight:800; font-size:13px; color:#fff; letter-spacing:-0.2px; }
+  .topnav-brand .tool-name { font-size:9px; font-weight:700; color:rgba(255,255,255,0.7); letter-spacing:2px; text-transform:uppercase; }
+
+  .topnav-tabs { display:flex; gap:0; position:absolute; left:50%; transform:translateX(-50%); }
+  .topnav-tab {
+    padding:15px 16px; font-size:12px; font-weight:600; color:rgba(255,255,255,0.65);
+    border-bottom:2px solid transparent; cursor:pointer; transition:all 0.25s;
+    white-space:nowrap;
+  }
+  .topnav-tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
+  .topnav-tab.active { color:#fff; border-bottom-color:#fff; }
+  .topnav-tab .badge {
+    display:inline-block; font-size:7px; padding:2px 5px; border-radius:3px;
+    background:rgba(255,255,255,0.2); color:#fff; font-weight:800; margin-left:5px;
+    vertical-align:middle; letter-spacing:0.5px;
+  }
+
+  .topnav-right { display:flex; align-items:center; gap:10px; }
+  .btn-quote {
+    padding:8px 18px; background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;
+    backdrop-filter:blur(8px); transition:all 0.25s; letter-spacing:0.2px;
+  }
+  .btn-quote:hover { background:rgba(255,255,255,0.28); border-color:rgba(255,255,255,0.4); }
+
+  /* ══════ VIEWPORT — Full image, never cropped ══════ */
+  .viewport {
+    flex:1; position:relative; overflow:hidden;
+    background:var(--dark);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .viewport-bg {
+    width:100%; height:100%; object-fit:contain; /* CONTAIN not cover — never crop */
+    position:absolute; top:0; left:0;
+  }
+  .viewport-overlay {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .gate-placeholder {
+    color:rgba(255,255,255,0.1); font-size:16px; font-weight:600; letter-spacing:3px;
+    text-transform:uppercase;
+  }
+
+  /* ══════ FLYOUT PANEL ══════ */
+  .flyout {
+    background:var(--dark-panel); backdrop-filter:blur(20px);
+    border-top:1px solid var(--border);
+    padding:18px 28px 14px;
+    min-height:240px; max-height:240px;
+    overflow-y:auto; overflow-x:hidden;
+    z-index:50;
+    position:relative;
+  }
+  .flyout::-webkit-scrollbar { width:3px; }
+  .flyout::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+
+  .flyout-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .flyout-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--text-dim); }
+  .flyout-selected { font-size:15px; font-weight:700; color:#fff; margin-top:4px; }
+  .flyout-selected span { color:var(--accent); font-weight:600; }
+
+  /* Slide animation for tab content */
+  .flyout-content {
+    animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes slideInRight {
+    from { opacity:0; transform:translateX(40px); }
+    to { opacity:1; transform:translateX(0); }
+  }
+  @keyframes slideOutLeft {
+    from { opacity:1; transform:translateX(0); }
+    to { opacity:0; transform:translateX(-40px); }
+  }
+
+  /* Thumbnail cards with real images */
+  .thumb-grid { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-behavior:smooth; }
+  .thumb-grid::-webkit-scrollbar { height:3px; }
+  .thumb-grid::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+  .thumb-card {
+    min-width:120px; max-width:120px; border-radius:10px; overflow:hidden;
+    border:2px solid var(--border); cursor:pointer;
+    background:var(--glass); flex-shrink:0;
+    transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position:relative;
+  }
+  .thumb-card:hover {
+    border-color:rgba(255,255,255,0.15);
+    transform:translateY(-3px);
+    box-shadow:0 12px 32px rgba(0,0,0,0.4);
+  }
+  .thumb-card.active {
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent-glow), 0 8px 24px rgba(0,0,0,0.3);
+  }
+  /* Hover image swap effect */
+  .thumb-img-wrap {
+    height:72px; position:relative; overflow:hidden;
+    background:linear-gradient(135deg,#141c28,#1e2a3a);
+  }
+  .thumb-img-wrap img {
+    width:100%; height:100%; object-fit:cover;
+    transition:transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+  }
+  .thumb-card:hover .thumb-img-wrap img {
+    transform:scale(1.08);
+  }
+  .thumb-label { padding:7px 8px; text-align:center; }
+  .thumb-label .name { font-size:11px; font-weight:700; color:var(--text); }
+  .thumb-label .sub { font-size:8px; color:var(--text-muted); font-weight:500; margin-top:1px; }
+  /* "Most Popular" badge */
+  .thumb-badge {
+    position:absolute; top:4px; right:4px; font-size:7px; font-weight:800;
+    padding:2px 5px; border-radius:3px;
+    background:var(--accent); color:#fff; letter-spacing:0.3px;
+    text-transform:uppercase;
+  }
+
+  /* Color swatches */
+  .swatch-row { display:flex; gap:14px; flex-wrap:wrap; }
+  .swatch-group { display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; transition:transform 0.2s; }
+  .swatch-group:hover { transform:scale(1.08); }
+  .swatch {
+    width:40px; height:40px; border-radius:50%; border:2.5px solid rgba(255,255,255,0.08);
+    transition:all 0.25s; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+  }
+  .swatch.active { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-glow); }
+  .swatch-name { font-size:8px; color:var(--text-muted); font-weight:600; text-align:center; width:48px; }
+
+  /* Size controls */
+  .flyout-section { margin-bottom:14px; }
+  .flyout-section-title { font-size:9px; font-weight:700; color:var(--text-dim); letter-spacing:1.2px; text-transform:uppercase; margin-bottom:8px; }
+  .size-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .size-btn {
+    padding:8px 16px; border-radius:8px; border:1px solid var(--border);
+    background:var(--glass); color:rgba(255,255,255,0.6);
+    font-weight:700; font-size:12px; cursor:pointer; transition:all 0.2s;
+  }
+  .size-btn:hover { border-color:rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:var(--text); }
+  .size-btn.active { background:rgba(212,117,58,0.12); border-color:rgba(212,117,58,0.4); color:var(--accent); }
+
+  /* Option cards */
+  .option-grid { display:flex; gap:8px; flex-wrap:wrap; }
+  .option-card {
+    width:100px; padding:10px 8px; border-radius:10px; text-align:center;
+    border:1px solid var(--border); background:var(--glass);
+    cursor:pointer; transition:all 0.25s;
+  }
+  .option-card:hover { border-color:rgba(255,255,255,0.12); transform:translateY(-1px); }
+  .option-card.active { border-color:rgba(212,117,58,0.4); background:rgba(212,117,58,0.08); }
+  .option-card .icon { font-size:18px; margin-bottom:4px; }
+  .option-card .label { font-size:9px; font-weight:600; color:var(--text-muted); }
+  .option-card.active .label { color:var(--accent); }
+
+  /* Quote panel */
+  .quote-panel { display:flex; gap:24px; align-items:flex-start; }
+  .quote-summary { flex:1; }
+  .quote-summary-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .quote-summary-row .qlabel { color:var(--text-muted); }
+  .quote-summary-row .qvalue { color:var(--text); font-weight:600; }
+  .quote-cta { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:200px; gap:8px; }
+  .btn-instant-quote {
+    padding:12px 28px; background:linear-gradient(135deg,var(--accent),#c06830); color:#fff;
+    border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer;
+    box-shadow:0 4px 16px var(--accent-glow); transition:all 0.25s; letter-spacing:0.2px;
+  }
+  .btn-instant-quote:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(212,117,58,0.35); }
+  .quote-phone { font-size:11px; color:var(--text-muted); }
+  .quote-phone strong { color:var(--text); }
+
+  /* ══════ BOTTOM STRIP — Sky Blue ══════ */
+  .bottom-strip {
+    display:flex; align-items:stretch; justify-content:center; gap:0;
+    height:44px; min-height:44px;
+    background:linear-gradient(0deg, var(--sky-dark), var(--sky));
+    z-index:100;
+  }
+  .strip-tab {
+    padding:0 20px; font-size:10px; font-weight:700; color:rgba(255,255,255,0.55);
+    cursor:pointer; border-top:2px solid transparent; transition:all 0.25s;
+    text-transform:uppercase; letter-spacing:1.2px;
+    display:flex; align-items:center; gap:5px;
+  }
+  .strip-tab:hover { color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.06); }
+  .strip-tab.active { color:#fff; border-top-color:#fff; background:rgba(255,255,255,0.1); }
+
+  /* ══════ BACKLINKS — Extensive ══════ */
+  .backlinks {
+    display:flex; justify-content:center; gap:10px; padding:5px 16px;
+    background:var(--dark); font-size:8px; flex-wrap:wrap;
+  }
+  .backlinks a { color:var(--text-dim); text-decoration:none; font-weight:500; transition:color 0.2s; white-space:nowrap; }
+  .backlinks a:hover { color:var(--text-muted); }
+  .backlinks .sep { color:rgba(255,255,255,0.06); }
+
+  /* Product link in flyout */
+  .product-link {
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10px; color:var(--sky-light); text-decoration:none; font-weight:600;
+    margin-top:6px; transition:color 0.2s;
+  }
+  .product-link:hover { color:#fff; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════ TOP NAV — Sky Blue ══════ -->
+  <nav class="topnav">
+    <div class="topnav-left">
+      <div class="topnav-logo"><img src="assets/logo.png" alt="Grandview"></div>
+      <div class="topnav-brand">
+        <span class="name">Grandview Fence</span>
+        <span class="tool-name">Design Studio</span>
+      </div>
+    </div>
+    <div class="topnav-tabs">
+      <div class="topnav-tab active">Driveway Gates</div>
+      <div class="topnav-tab">Front Yard</div>
+      <div class="topnav-tab">Back Yard</div>
+      <div class="topnav-tab">Draw Your Yard <span class="badge">NEW</span></div>
+    </div>
+    <div class="topnav-right">
+      <button class="btn-quote">Get Instant Quote →</button>
+    </div>
+  </nav>
+
+  <!-- ══════ 3D VIEWPORT — object-fit:contain, never crop ══════ -->
+  <div class="viewport">
+    <img class="viewport-bg" src="assets/backgrounds/tool-background-gate_1960x1096.png" alt="">
+    <div class="viewport-overlay">
+      <div class="gate-placeholder">3D Gate Renders Here</div>
+    </div>
+  </div>
+
+  <!-- ══════ FLYOUT PANEL ══════ -->
+  <div class="flyout" id="flyout">
+    <div class="flyout-content" id="flyout-content">
+      <div class="flyout-header">
+        <div>
+          <div class="flyout-title">Choose Your Gate Style</div>
+          <div class="flyout-selected">Horizon™ — <span>Flat Top, 3-Rail</span></div>
+        </div>
+        <a href="https://grandviewfence.com/fencing/horizon" class="product-link" target="_blank">View Product Page →</a>
+      </div>
+      <div class="thumb-grid">
+        <div class="thumb-card active">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uaf_200.jpg" alt="Horizon"></div>
+          <div class="thumb-label"><div class="name">Horizon™</div><div class="sub">Flat Top</div></div>
+          <div class="thumb-badge">Popular</div>
+        </div>
+        <div class="thumb-card">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uaf_201.jpg" alt="Horizon Pro"></div>
+          <div class="thumb-label"><div class="name">Horizon Pro™</div><div class="sub">Pro Spacing</div></div>
+        </div>
+        <div class="thumb-card">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uaf_250.jpg" alt="Vanguard"></div>
+          <div class="thumb-label"><div class="name">Vanguard™</div><div class="sub">Spear Top</div></div>
+        </div>
+        <div class="thumb-card">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uab_200.jpg" alt="Haven"></div>
+          <div class="thumb-label"><div class="name">Haven™</div><div class="sub">Pool-Safe</div></div>
+        </div>
+        <div class="thumb-card">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uas_100.jpg" alt="Charleston"></div>
+          <div class="thumb-label"><div class="name">Charleston™</div><div class="sub">Classic Spear</div></div>
+        </div>
+        <div class="thumb-card">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uas_101.jpg" alt="Charleston Pro"></div>
+          <div class="thumb-label"><div class="name">Charleston Pro™</div><div class="sub">Pro Spacing</div></div>
+        </div>
+        <div class="thumb-card">
+          <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uas_150.jpg" alt="Savannah"></div>
+          <div class="thumb-label"><div class="name">Savannah™</div><div class="sub">Staggered</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ BOTTOM STRIP — Sky Blue ══════ -->
+  <div class="bottom-strip">
+    <div class="strip-tab active">Style</div>
+    <div class="strip-tab">Color</div>
+    <div class="strip-tab">Size</div>
+    <div class="strip-tab">Options</div>
+    <div class="strip-tab">Details</div>
+    <div class="strip-tab">Quote</div>
+  </div>
+
+  <!-- ══════ BACKLINKS — Every product type ══════ -->
+  <div class="backlinks">
+    <a href="https://grandviewfence.com">Home</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing">All Fencing</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/residential-commercial">Residential</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/pool-safety">Pool & Safety</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/privacy">Privacy</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/walk-drive-gates">Gates</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/accessories">Accessories</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/horizon">Horizon™</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/horizon-pro">Horizon Pro™</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/vanguard">Vanguard™</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/haven">Haven™</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/charleston">Charleston™</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/savannah">Savannah™</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/quick-quote">Get a Quote</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/blog">Blog</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/about">About</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/pet-aluminum-fence">Pet-Safe</a>
+  </div>
+</div>
+
+<script>
+const tabs = document.querySelectorAll('.strip-tab');
+const flyoutContent = document.getElementById('flyout-content');
+
+const contents = {
+  0: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Choose Your Gate Style</div>
+        <div class="flyout-selected">Horizon™ — <span>Flat Top, 3-Rail</span></div>
+      </div>
+      <a href="https://grandviewfence.com/fencing/horizon" class="product-link" target="_blank">View Product Page →</a>
+    </div>
+    <div class="thumb-grid">
+      <div class="thumb-card active">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uaf_200.jpg" alt="Horizon"></div>
+        <div class="thumb-label"><div class="name">Horizon™</div><div class="sub">Flat Top</div></div>
+        <div class="thumb-badge">Popular</div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uaf_201.jpg" alt="Horizon Pro"></div>
+        <div class="thumb-label"><div class="name">Horizon Pro™</div><div class="sub">Pro Spacing</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uaf_250.jpg" alt="Vanguard"></div>
+        <div class="thumb-label"><div class="name">Vanguard™</div><div class="sub">Spear Top</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uab_200.jpg" alt="Haven"></div>
+        <div class="thumb-label"><div class="name">Haven™</div><div class="sub">Pool-Safe</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uas_100.jpg" alt="Charleston"></div>
+        <div class="thumb-label"><div class="name">Charleston™</div><div class="sub">Classic Spear</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uas_101.jpg" alt="Charleston Pro"></div>
+        <div class="thumb-label"><div class="name">Charleston Pro™</div><div class="sub">Pro Spacing</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img-wrap"><img src="gate_tool/th/th_st_uas_150.jpg" alt="Savannah"></div>
+        <div class="thumb-label"><div class="name">Savannah™</div><div class="sub">Staggered</div></div>
+      </div>
+    </div>`,
+  1: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">ProCoat Powder Coat Finish</div>
+        <div class="flyout-selected">Gloss Black — <span>Premium Finish</span></div>
+      </div>
+      <a href="https://grandviewfence.com/accessories" class="product-link" target="_blank">All Finishes →</a>
+    </div>
+    <div class="swatch-row">
+      <div class="swatch-group"><div class="swatch active" style="background:#090909"></div><div class="swatch-name">Black</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#1a1a1a"></div><div class="swatch-name">Satin Black</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#42382c"></div><div class="swatch-name">Bronze</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#5a4d3e"></div><div class="swatch-name">Satin Bronze</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#f4f4f4;border-color:rgba(255,255,255,0.15)"></div><div class="swatch-name">White</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#e8e8e8;border-color:rgba(255,255,255,0.15)"></div><div class="swatch-name">Satin White</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#cdbeaf"></div><div class="swatch-name">Beige</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#c8c8c8"></div><div class="swatch-name">Silver</div></div>
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:var(--text-dim);line-height:1.5">
+      Every component individually coated before assembly for complete coverage. <strong style="color:var(--text-muted)">Limited Lifetime Warranty.</strong>
+    </div>`,
+  2: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Gate Dimensions</div>
+        <div class="flyout-selected">60" Height — <span>Double Gate</span></div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Height</div>
+      <div class="size-row">
+        <div class="size-btn">48"</div><div class="size-btn">54"</div><div class="size-btn active">60"</div><div class="size-btn">72"</div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Gate Type</div>
+      <div class="size-row">
+        <div class="size-btn">Single Gate</div><div class="size-btn active">Double Gate</div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Mount</div>
+      <div class="size-row">
+        <div class="size-btn active">Post Mount</div><div class="size-btn">Direct Mount</div>
+      </div>
+    </div>`,
+  3: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Gate Options</div>
+        <div class="flyout-selected">Customize Your Gate</div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Arch Style</div>
+      <div class="option-grid">
+        <div class="option-card active"><div class="thumb-img-wrap" style="height:50px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_so_ares.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Estate</div></div>
+        <div class="option-card"><div class="thumb-img-wrap" style="height:50px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_so_arar.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Arched</div></div>
+        <div class="option-card"><div class="thumb-img-wrap" style="height:50px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_so_arst.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Standard</div></div>
+        <div class="option-card"><div class="thumb-img-wrap" style="height:50px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_so_arrv.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Reverse</div></div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Add-Ons</div>
+      <div class="size-row">
+        <div class="size-btn">Mid Rail</div><div class="size-btn">Flush Bottom</div><div class="size-btn">Upper Finial Rail</div>
+      </div>
+    </div>`,
+  4: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Fine Details</div>
+        <div class="flyout-selected">Post Caps, Finials & Accents</div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Post Caps</div>
+      <div class="option-grid">
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_pstcp_flat.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Flat</div></div>
+        <div class="option-card active" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_pstcp_ball.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Ball</div></div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Finials</div>
+      <div class="option-grid">
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_pc_spe.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Spear</div></div>
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_pc_tri.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Trident</div></div>
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_pc_qua.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Quad</div></div>
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_pc_plg.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Plug</div></div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Decorative Accents</div>
+      <div class="option-grid">
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_acc_cir.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Circle</div></div>
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_acc_but.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Butterfly</div></div>
+        <div class="option-card" style="width:80px"><div class="thumb-img-wrap" style="height:45px;border-radius:6px;overflow:hidden"><img src="gate_tool/th/th_acc_scr.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="label" style="margin-top:4px">Scroll</div></div>
+      </div>
+    </div>`,
+  5: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Your Configuration</div>
+        <div class="flyout-selected">Ready to Order? <span>Get your instant quote</span></div>
+      </div>
+    </div>
+    <div class="quote-panel">
+      <div class="quote-summary">
+        <div class="quote-summary-row"><span class="qlabel">Style</span><span class="qvalue">Horizon™ — Flat Top</span></div>
+        <div class="quote-summary-row"><span class="qlabel">Color</span><span class="qvalue">Gloss Black (ProCoat)</span></div>
+        <div class="quote-summary-row"><span class="qlabel">Size</span><span class="qvalue">60" Double Gate · Post Mount</span></div>
+        <div class="quote-summary-row"><span class="qlabel">Arch</span><span class="qvalue">Estate</span></div>
+        <div class="quote-summary-row"><span class="qlabel">Details</span><span class="qvalue">Ball Cap · No Finials</span></div>
+      </div>
+      <div class="quote-cta">
+        <button class="btn-instant-quote">Get Instant Quote →</button>
+        <div class="quote-phone">or call <strong>(855)-Fence-30</strong></div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:1px">sales@grandviewfence.com</div>
+      </div>
+    </div>`
+};
+
+tabs.forEach((tab, i) => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    // Slide animation
+    flyoutContent.style.animation = 'none';
+    flyoutContent.offsetHeight; // trigger reflow
+    flyoutContent.innerHTML = contents[i] || contents[0];
+    flyoutContent.style.animation = 'slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+  });
+});
+</script>
+</body>
+</html>

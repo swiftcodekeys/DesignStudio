@@ -1,0 +1,75 @@
+{
+  "_comment": "All constants extracted from Ultra's gate design studio runtime",
+
+  "height_constants": {
+    "y48": -0.915,
+    "y60": -0.61,
+    "y72": -0.305,
+    "_48": 1.219,
+    "_60": 1.524,
+    "_72": 1.829,
+    "_comment_y": "yXX = tY value (vertical translate for that height). _XX = htY value (clipping plane threshold)"
+  },
+
+  "dimension_constants": {
+    "_2": 0.0508,
+    "_2_5": 0.0635,
+    "_3_625": 0.092,
+    "_4_125": 0.105,
+    "_5": 0.127,
+    "_6": 0.152,
+    "_7_5": 0.1905,
+    "_12": 0.3048,
+    "_16": 0.4064,
+    "_18": 0.457,
+    "_comment": "Named as inches, values in meters. _2 = 2 inches = 0.0508m, etc."
+  },
+
+  "rail_constants": {
+    "bY": 0.155,
+    "rH": -0.035,
+    "pcY": -0.015,
+    "_comment": "bY = normal bottom rail Y. rH = rail height offset. pcY = post cap Y offset."
+  },
+
+  "arch_constants": {
+    "midY_standard": 0,
+    "midY_arched": 0.3048,
+    "midY_estate": 0.3048,
+    "midY_reverse": -0.3048
+  },
+
+  "hinge_positions": [
+    { "xS": -1.823, "xD": -1.778, "y": 1.4, "z": 0, "r": -90, "_comment": "Left top hinge" },
+    { "xS": 1.823, "xD": 1.778, "y": 1.4, "z": 0, "r": 90, "_comment": "Right top hinge" },
+    { "xS": -1.823, "xD": -1.778, "y": 0.12, "z": 0, "r": -90, "_comment": "Left bottom hinge" },
+    { "xS": 1.823, "xD": 1.778, "y": 0.12, "z": 0, "r": 90, "_comment": "Right bottom hinge" }
+  ],
+
+  "post_cap_positions": [
+    { "xS": -1.873, "xD": -1.829, "y": 0, "z": 0, "r": 0, "_comment": "pc0 - Left outer" },
+    { "xS": 1.873, "xD": 1.829, "y": 0, "z": 0, "r": 0, "_comment": "pc1 - Right outer" },
+    { "xS": -1.689, "xD": -1.645, "y": 0, "z": 0, "r": 0, "_comment": "pc2 - Left inner" },
+    { "xS": 1.689, "xD": 1.645, "y": 0, "z": 0, "r": 0, "_comment": "pc3 - Right inner" },
+    { "xS": -1.828, "xD": -0.044, "y": 0, "z": 0, "r": 0, "_comment": "pc4 - Center left (double only)" },
+    { "xS": 1.828, "xD": 0.044, "y": 0, "z": 0, "r": 0, "_comment": "pc5 - Center right (double only)" }
+  ],
+
+  "camera": {
+    "fov": 40,
+    "zoom": 1.788,
+    "near": 1,
+    "far": 100,
+    "position": { "x": 0.82, "y": 1.27, "z": 7.2 },
+    "rotation": { "x": 0, "y": 6, "z": 0, "_comment": "degrees, converted to radians in code" },
+    "rotationOrder": "YXZ"
+  },
+
+  "viewport": {
+    "width": 1960,
+    "height": 1096,
+    "canvasTextureSize": 2048
+  },
+
+  "texture_manifest": "t/mnao.jpg,t/shrl.jpg,t/shpo.jpg,t/r1ae.jpg,t/r1ao.jpg,t/r1ax.jpg,t/r1ee.jpg,t/r1eo.jpg,t/r1ex.jpg,t/r1re.jpg,t/r1ro.jpg,t/r1rx.jpg,t/r1se.jpg,t/r1so.jpg,t/r1sx.jpg,t/r2ae.jpg,t/r2ao.jpg,t/r2ax.jpg,t/r2ee.jpg,t/r2eo.jpg,t/r2ex.jpg,t/r2re.jpg,t/r2ro.jpg,t/r2rx.jpg,t/r2se.jpg,t/r2so.jpg,t/r2sx.jpg,t/hing.jpg,t/grdv.jpg,t/bm.jpg,t/dd4l.jpg,t/dd4r.jpg,t/dd5l.jpg,t/dd5r.jpg,t/dd6l.jpg,t/dd6r.jpg,t/dp4l.jpg,t/dp4r.jpg,t/dp5l.jpg,t/dp5r.jpg,t/dp6l.jpg,t/dp6r.jpg,t/sd4l.jpg,t/sd4r.jpg,t/sd5l.jpg,t/sd5r.jpg,t/sd6l.jpg,t/sd6r.jpg,t/sp4l.jpg,t/sp4r.jpg,t/sp5l.jpg,t/sp5r.jpg,t/sp6l.jpg,t/sp6r.jpg,t/fgdp.png,t/fgsp.png,t/sigr.png"
+}

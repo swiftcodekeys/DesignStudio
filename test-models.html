@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Loading Test</title>
+</head>
+<body>
+    <h1>Testing Model File Access</h1>
+    <div id="results"></div>
+    <script>
+        const models = [
+            'gate_tool/m/0/po12.json',
+            'gate_tool/m/0/po14.json',
+            'gate_tool/m/0/po23.json',
+            'gate_tool/m/0/po40d.json',
+            'gate_tool/m/0/po40s.json',
+            'gate_tool/m/1/rb1.json',
+            'gate_tool/m/1/rb2.json',
+            'gate_tool/m/2/pc4.json',
+            'gate_tool/m/2/pc5.json',
+            'gate_tool/m/2/pc6.json',
+            'gate_tool/m/3/hng.json',
+            'gate_tool/m/3/acs.json'
+        ];
+        
+        const results = document.getElementById('results');
+        
+        models.forEach(path => {
+            fetch(path)
+                .then(r => {
+                    const status = r.ok ? '✅' : '❌';
+                    results.innerHTML += `<div>${status} ${path} - ${r.status}</div>`;
+                })
+                .catch(e => {
+                    results.innerHTML += `<div>❌ ${path} - ERROR: ${e.message}</div>`;
+                });
+        });
+    </script>
+</body>
+</html>

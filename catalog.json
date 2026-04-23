@@ -1,0 +1,146 @@
+{
+  "brand": {
+    "name": "Grandview Fence",
+    "logo": "assets/logo.png",
+    "export_watermark": {
+      "enabled": true,
+      "position": "bottom-right",
+      "padding": 24,
+      "max_width": 340,
+      "opacity": 0.88
+    }
+  },
+  "canvas": {
+    "width": 1960,
+    "height": 1096
+  },
+  "scenes": [
+    {
+      "id": "front",
+      "label": "Front Yard",
+      "background": "assets/backgrounds/tool-background-front_1960x1096_1960x1096.png"
+    },
+    {
+      "id": "back",
+      "label": "Back Yard",
+      "background": "assets/backgrounds/tool-background-back_1960x1096_1960x1096.png"
+    },
+    {
+      "id": "gate",
+      "label": "Gate",
+      "background": "assets/backgrounds/tool-background-gate_1960x1096.png"
+    }
+  ],
+  "gate_styles": [
+    {
+      "id": "gate_uaf_200",
+      "code": "UAF-200",
+      "label": "Grandview Horizon™ Gate"
+    },
+    {
+      "id": "gate_uaf_201",
+      "code": "UAF-201",
+      "label": "Grandview Horizon Pro™ Gate"
+    },
+    {
+      "id": "gate_uaf_250",
+      "code": "UAF-250",
+      "label": "Grandview Vanguard™ Gate"
+    },
+    {
+      "id": "gate_uab_200",
+      "code": "UAB-200",
+      "label": "Grandview Haven™ Gate"
+    },
+    {
+      "id": "gate_uas_100",
+      "code": "UAS-100",
+      "label": "Grandview Charleston™ Gate"
+    },
+    {
+      "id": "gate_uas_101",
+      "code": "UAS-101",
+      "label": "Grandview Charleston Pro™ Gate"
+    },
+    {
+      "id": "gate_uas_150",
+      "code": "UAS-150",
+      "label": "Grandview Savannah™ Gate"
+    }
+  ],
+  "styles": [
+    {
+      "id": "uab_200",
+      "code": "uab-200",
+      "label": "Haven™"
+    },
+    {
+      "id": "uaf_200",
+      "code": "uaf-200",
+      "label": "Horizon™"
+    },
+    {
+      "id": "uaf_201",
+      "code": "uaf-201",
+      "label": "Horizon Pro™"
+    },
+    {
+      "id": "uaf_250",
+      "code": "uaf-250",
+      "label": "Vanguard™"
+    },
+    {
+      "id": "uas_100",
+      "code": "uas-100",
+      "label": "Charleston™"
+    },
+    {
+      "id": "uas_101",
+      "code": "uas-101",
+      "label": "Charleston Pro™"
+    },
+    {
+      "id": "uas_150",
+      "code": "uas-150",
+      "label": "Savannah™"
+    },
+    {
+      "id": "uas_300",
+      "code": "uas-300",
+      "label": "Eclipse™"
+    },
+    {
+      "id": "uas_350",
+      "code": "uas-350",
+      "label": "Lexington™"
+    }
+  ],
+  "overlays": {
+    "front": {
+      "uab-200": "assets/overlays/uab-200-front.png",
+      "uaf-200": "assets/overlays/uaf-200-front.png",
+      "uaf-201": "assets/overlays/uaf-201-front.png",
+      "uaf-250": "assets/overlays/uaf-250-front.png",
+      "uas-100": "assets/overlays/uas-100-front.png",
+      "uas-101": "assets/overlays/uas-101-front.png",
+      "uas-150": "assets/overlays/uas-150-front.png",
+      "uas-300": "assets/overlays/uas-300-front.png",
+      "uas-350": "assets/overlays/uas-350-front.png"
+    },
+    "back": {
+      "uab-200": "assets/overlays/uab-200-back.png",
+      "uaf-200": "assets/overlays/uaf-200-back.png",
+      "uaf-201": "assets/overlays/uaf-201-back.png",
+      "uaf-250": "assets/overlays/uaf-250-back.png",
+      "uas-100": "assets/overlays/uas-100-back.png",
+      "uas-101": "assets/overlays/uas-101-back.png",
+      "uas-150": "assets/overlays/uas-150-back.png",
+      "uas-300": "assets/overlays/uas-300-back.png",
+      "uas-350": "assets/overlays/uas-350-back.png"
+    },
+    "gate": {
+      "gate-uaf-200": "assets/overlays/gate-uaf-200.png",
+      "gate-uaf-250": "assets/overlays/gate-uaf-250.png"
+    }
+  }
+}

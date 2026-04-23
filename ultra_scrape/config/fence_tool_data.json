@@ -1,0 +1,77 @@
+{
+  "_comment": "Data extracted from Ultra's fence design studio at /design-studio/fence/index.html",
+  "_js_bundle": "ultra_dsf_min.js (fence version, separate from gate's ultra_dsg_min.js)",
+
+  "styles": [
+    { "_divider": "200 Series" },
+    { "th": "th_st_uaf_200", "nam": "UAF-200 Flat Top", "st": "f2", "cat": "f", "mod": "200", "pi": "200", "fin": false, "acc": "cir,but,scr,pup" },
+    { "th": "th_st_uaf_250", "nam": "UAF-250 Flat Top w/ Spears", "st": "f2", "cat": "f", "mod": "250", "pi": "250", "fin": true, "acc": "scr,pup" },
+    { "th": "th_st_uaf_201", "nam": "UAF-201 Flat Top 1-1/2\" Spacing", "st": "f2", "cat": "f", "mod": "201", "pi": "201", "fin": false, "acc": "cir,but" },
+    { "th": "th_st_uab_200", "nam": "UAB-200 Flat Top Flush", "cat": "b", "st": "b2", "mod": "200", "pi": "200", "fin": false, "acc": "" },
+    { "_divider": "100 Series" },
+    { "th": "th_st_uas_100", "nam": "UAS-100 Spear Top", "st": "s1", "cat": "s", "mod": "100", "pi": "100", "fin": true, "acc": "cir,but,scr,pup" },
+    { "th": "th_st_uas_150", "nam": "UAS-150 Staggered Spear", "st": "s1", "cat": "s", "mod": "150", "pi": "100", "fin": true, "acc": "cir,but,scr,pup" },
+    { "th": "th_st_uas_101", "nam": "UAS-101 Spear Top 1-1/2\" Spacing", "st": "s1", "cat": "s", "mod": "100", "pi": "101", "fin": true, "acc": "" },
+    { "_divider": "300 Series (FENCE ONLY - not in gate tool)" },
+    { "th": "th_st_uas_300", "nam": "UAS-300 Concave (Cambridge)", "st": "s1", "cat": "s", "mod": "300", "pi": "100", "fin": true, "acc": "cir,but,scr,pup" },
+    { "th": "th_st_uas_350", "nam": "UAS-350 Convex (Lexington)", "st": "s1", "cat": "s", "mod": "350", "pi": "100", "fin": true, "acc": "cir,but,scr,pup" },
+    { "_divider": "Privacy (FENCE ONLY)" },
+    { "th": "th_prv_2ra", "nam": "Ultra Aluminum Privacy", "prvid": "prval", "st": "p", "cat": "p", "mod": "p", "fin": false, "acc": "" },
+    { "th": "th_prv_2rv", "nam": "Ultra Vinyl 2-Rail Privacy", "prvid": "prv2", "st": "p", "cat": "p", "mod": "p", "fin": false, "acc": "" },
+    { "th": "th_prv_3rv", "nam": "Ultra Vinyl 3-Rail Privacy", "prvid": "prv3", "st": "p", "cat": "p", "mod": "p", "fin": false, "acc": "" }
+  ],
+
+  "models": {
+    "posts": ["m/0/pot.json", "m/0/pob.json"],
+    "post_caps": ["m/8/pcf.json"],
+    "rails": ["m/1/rtf2.json", "m/1/gsrtf2.json"],
+    "bottom_rails": ["m/2/rbs.json", "m/2/grbs.json"],
+    "bottom_pickets": ["m/4/pbs.json", "m/4/gpbs.json"],
+    "top_pickets": ["m/3/ptf200.json", "m/3/gsptf200.json"],
+    "_note": "Models use different naming than gate tool. 'gs' prefix = gate section variant. Naming pattern: {component}{style_type}{mod}.json"
+  },
+
+  "textures": {
+    "hdr_front_yard": ["t/hdr_fr/px.hdr", "t/hdr_fr/nx.hdr", "t/hdr_fr/py.hdr", "t/hdr_fr/ny.hdr", "t/hdr_fr/pz.hdr", "t/hdr_fr/nz.hdr"],
+    "hdr_back_yard": ["t/hdr_ba/px.hdr", "t/hdr_ba/nx.hdr", "t/hdr_ba/py.hdr", "t/hdr_ba/ny.hdr", "t/hdr_ba/pz.hdr", "t/hdr_ba/nz.hdr"],
+    "backgrounds": { "front": "t/fb.jpg", "back": "t/bb.jpg" },
+    "foreground_overlays": {
+      "front": ["t/ffs.png", "t/ffd.png", "t/fff.png", "t/ffp.png", "t/ffplt.png"],
+      "back": ["t/bfp.png", "t/bff.png"]
+    },
+    "logo": "t/ulg.png"
+  },
+
+  "camera": {
+    "front_yard": { "position": { "x": -7.05, "y": 1.42, "z": -1.85 }, "rotation_degrees": { "y": -120 } },
+    "back_yard": { "position": { "x": 7.7, "y": 1.5, "z": 10 }, "rotation_degrees": { "y": 45 } },
+    "common": { "fov": 40, "zoom": 1.788, "rotation_order": "YXZ" }
+  },
+
+  "privacy_textures": {
+    "m/9/pneg.jpg": "Privacy panel - eggshell",
+    "m/9/pngt.jpg": "Privacy panel - gate",
+    "m/9/pnmw.jpg": "Privacy panel - midway",
+    "m/9/prv.jpg": "Privacy panel texture",
+    "m/9/wht.jpg": "White texture for privacy",
+    "m/8/wht.jpg": "White texture for post cap",
+    "m/8/act.jpg": "Accent texture for post cap"
+  },
+
+  "additional_thumbnails_not_in_gate_tool": [
+    "th/th_st_uas_300.jpg",
+    "th/th_st_uas_350.jpg",
+    "th/th_st_uab_400.jpg",
+    "th/th_prv.jpg",
+    "th/th_prv_2ra.jpg",
+    "th/th_prv_2rv.jpg",
+    "th/th_prv_3rv.jpg",
+    "th/th_v_fr.jpg",
+    "th/th_v_ba.jpg",
+    "th/th_gar.jpg",
+    "th/th_gst.jpg",
+    "th/ppn_eg.jpg",
+    "th/ppn_gt.jpg",
+    "th/ppn_mw.jpg"
+  ]
+}

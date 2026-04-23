@@ -1,0 +1,132 @@
+{
+  "_source": "Extracted from Ultra's live fence tool at /design-studio/fence/index.html via Playwright on 2026-03-31",
+  "_verified_date": "2026-03-31",
+
+  "panel_width_meters": 1.8288,
+  "_panel_width_note": "72 inches = 6 feet standard fence panel",
+
+  "poArr": [
+    { "r": 0,   "x": 1.8288, "y": 0, "z": 0 },
+    { "r": 0,   "x": 0,      "y": 0, "z": 0 },
+    { "r": -90, "x": 0,      "y": 0, "z": 0 },
+    { "r": -90, "x": 0,      "y": 0, "z": 1.8288 },
+    { "r": -90, "x": 0,      "y": 0, "z": 4.9911 }
+  ],
+  "_poArr_note": "5 post positions. Indices 0-1 are front-facing (r=0), indices 2-4 are side-facing (r=-90). Each component is cloned to all positions.",
+
+  "pcPo": [
+    { "r": 0,   "x": 1.8288, "y": 0, "z": 0 },
+    { "r": 0,   "x": 0,      "y": 0, "z": 0 },
+    { "r": -90, "x": 0,      "y": 0, "z": 1.8288 },
+    { "r": -90, "x": 0,      "y": 0, "z": 3.6576 },
+    { "r": -90, "x": 0,      "y": 0, "z": 3.7465 },
+    { "r": -90, "x": 0,      "y": 0, "z": 4.9022 },
+    { "r": -90, "x": 0,      "y": 0, "z": 4.9911 }
+  ],
+  "_pcPo_note": "7 post cap positions. Includes positions on both sides of gate section gap.",
+
+  "gate_section": {
+    "z": 3.7465,
+    "rotation_deg": -90,
+    "prefix": "gs",
+    "_note": "Gate section is a separate model variant loaded at z=3.7465 with -90 degree rotation"
+  },
+
+  "clipping": {
+    "normal_magnitude": 0.9144,
+    "_note": "36 inches = 0.9144m. Non-normalized normals, same pattern as gate tool (which uses 0.735). Three.js r86 does NOT auto-normalize.",
+    "post_top": { "normal": [0, 0.9144, 0], "constant": -0.9144 },
+    "post_bottom": { "normal": [0, -0.9144, 0], "constant": 0.9144 },
+    "picket_top": { "normal": [0, 0.9144, 0], "constant": -0.9144 },
+    "picket_bottom": { "normal": [0, -0.9144, 0], "constant": 0.9144 }
+  },
+
+  "heights": {
+    "48": -0.6096,
+    "54": -0.4572,
+    "60": -0.3048,
+    "72": 0,
+    "_note": "tY values. At 72 inches, tY=0 and clipping is disabled entirely."
+  },
+
+  "cameras": {
+    "front": {
+      "position": { "x": -7.05, "y": 1.42, "z": -1.85 },
+      "rotation_y_deg": -120,
+      "fov": 40,
+      "zoom": 1.788,
+      "near": 1,
+      "far": 100,
+      "rotation_order": "YXZ"
+    },
+    "back": {
+      "position": { "x": 7.7, "y": 1.5, "z": 10 },
+      "rotation_y_deg": 45,
+      "fov": 40,
+      "zoom": 1.788,
+      "near": 1,
+      "far": 100,
+      "rotation_order": "YXZ"
+    }
+  },
+
+  "bottom_rail_y": {
+    "front_default": 0,
+    "back_or_flush": -0.099,
+    "_note": "Bottom rail group drops 0.099m for back yard view OR flush style (UAB-200)"
+  },
+
+  "group_y_positioning": {
+    "_note": "From mvY() function extracted via Playwright",
+    "top_groups_at_tY": ["grpot", "grpc", "grrt", "grpt", "grf"],
+    "bottom_groups_at_0": ["grpob", "grpb"],
+    "bottom_rail_conditional": "grrb.position.y = (view=='ba' || stlI=='b2') ? -0.099 : 0",
+    "accent_y": {
+      "flat_circles_butterflies": "tY",
+      "spear_circles_butterflies": "tY - 0.1524",
+      "flat_scrolls_front_no_circles": "(tY/2) - 0.035",
+      "flat_scrolls_front_with_circles": "(tY/2) - 0.015",
+      "spear_scrolls_front_no_circles": "(tY/2) - 0.125",
+      "spear_scrolls_front_with_circles": "(tY/2) - 0.100",
+      "back_yard_additional_scroll_offset": -0.030
+    },
+    "finial_y_offset": 0.025,
+    "finial_y_vanguard": 0,
+    "puppy_finial_group_y": 0.025
+  },
+
+  "style_definitions": {
+    "UAF-200": { "fN": 1,  "stlI": "f2", "cat": "f", "mod": "200", "pi": "200", "fin": false, "acc": "cir,but,scr,pup" },
+    "UAF-250": { "fN": 2,  "stlI": "f2", "cat": "f", "mod": "250", "pi": "250", "fin": true,  "acc": "scr,pup" },
+    "UAF-201": { "fN": 3,  "stlI": "f2", "cat": "f", "mod": "201", "pi": "201", "fin": false, "acc": "cir,but" },
+    "UAB-200": { "fN": 4,  "stlI": "b2", "cat": "b", "mod": "200", "pi": "200", "fin": false, "acc": "" },
+    "UAS-100": { "fN": 6,  "stlI": "s1", "cat": "s", "mod": "100", "pi": "100", "fin": true,  "acc": "cir,but,scr,pup" },
+    "UAS-150": { "fN": 7,  "stlI": "s1", "cat": "s", "mod": "150", "pi": "100", "fin": true,  "acc": "cir,but,scr,pup" },
+    "UAS-101": { "fN": 8,  "stlI": "s1", "cat": "s", "mod": "100", "pi": "101", "fin": true,  "acc": "" },
+    "UAS-300": { "fN": 10, "stlI": "s1", "cat": "s", "mod": "300", "pi": "100", "fin": true,  "acc": "cir,but,scr,pup" },
+    "UAS-350": { "fN": 11, "stlI": "s1", "cat": "s", "mod": "350", "pi": "100", "fin": true,  "acc": "cir,but,scr,pup" }
+  },
+
+  "model_id_rules": {
+    "rails_top": "rtI = 'rt' + stlI [+ 'c' if circles]",
+    "rails_bottom": "rbI = 'rbs' always",
+    "picket_top": "ptI = 'pt' + cat + pi [+ 'c' if circles and pi=201]",
+    "picket_bottom": "pbI = (pi==201 || pi==101) ? 'pbd' : 'pbs'",
+    "finials": "finI = 'fn' + mod + finT where finT = s|t|q",
+    "finials_gate_section": "gfinI = (mod==150||300||350) ? 'fn100'+finT : finI",
+    "puppy": "pupI = 'pupcl' | 'pupst'",
+    "post_caps": "pcI = 'pcf'",
+    "accents": "accir | acbut | acscr"
+  },
+
+  "fence_colors": [
+    { "id": 0, "name": "Textured Khaki",  "hx": "0xB8AC9F", "rfn": 0.05, "mtl": 0.2, "ei": 2,   "bmp": 0.002 },
+    { "id": 1, "name": "Gloss Bronze",    "hx": "0x382F25", "rfn": 0.1,  "mtl": 0.3, "ei": 3.5, "bmp": 0.0002 },
+    { "id": 2, "name": "Textured Bronze", "hx": "0x382F25", "rfn": 0.05, "mtl": 0.2, "ei": 3.5, "bmp": 0.002 },
+    { "id": 3, "name": "Gloss White",     "hx": "0xE4E4E4", "rfn": 0.1,  "mtl": 0.2, "ei": 1.5, "bmp": 0.0001 },
+    { "id": 4, "name": "Textured White",  "hx": "0xF2F2F2", "rfn": 0.1,  "mtl": 0.2, "ei": 1.5, "bmp": 0.002 },
+    { "id": 5, "name": "Gloss Black",     "hx": "0x020202", "rfn": 0.02, "mtl": 0.05,"ei": 12,  "bmp": 0.0001 },
+    { "id": 6, "name": "Textured Black",  "hx": "0x0C0C0C", "rfn": 0.06, "mtl": 0.05,"ei": 6,   "bmp": 0.0003 },
+    { "id": 7, "name": "Silver",          "hx": "0xFFFFFF", "rfn": 0.2,  "mtl": 0.7, "ei": 3.2, "bmp": 0.001 }
+  ]
+}

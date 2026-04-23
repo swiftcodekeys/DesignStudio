@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gate Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+    #log { white-space: pre-wrap; }
+    iframe { width: 100%; height: 600px; border: 2px solid #0f0; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Gate Tool Debug</h1>
+  <div id="log"></div>
+  <button onclick="testMessage()">Send Test Message</button>
+  <button onclick="resetGate()">Reset Gate</button>
+  <button onclick="setStyle('UAF-250')">Set UAF-250</button>
+  <iframe id="gateFrame" src="gate_tool/index.html"></iframe>
+  
+  <script>
+    const log = document.getElementById('log');
+    const frame = document.getElementById('gateFrame');
+    
+    function addLog(msg) {
+      const time = new Date().toLocaleTimeString();
+      log.textContent += `[${time}] ${msg}\n`;
+      console.log(msg);
+    }
+    
+    // Listen for messages from iframe
+    window.addEventListener('message', (e) => {
+      addLog('Received from iframe: ' + JSON.stringify(e.data));
+    });
+    
+    // Listen for iframe load
+    frame.addEventListener('load', () => {
+      addLog('Iframe loaded successfully');
+    });
+    
+    function testMessage() {
+      addLog('Sending test message to iframe...');
+      frame.contentWindow.postMessage({ type: 'TEST' }, '*');
+    }
+    
+    function resetGate() {
+      addLog('Sending RESET_GATE message...');
+      frame.contentWindow.postMessage({ type: 'RESET_GATE' }, '*');
+    }
+    
+    function setStyle(code) {
+      addLog('Sending SET_GATE_STYLE: ' + code);
+      frame.contentWindow.postMessage({ type: 'SET_GATE_STYLE', code: code }, '*');
+    }
+    
+    addLog('Debug page loaded. Waiting for iframe...');
+  </script>
+</body>
+</html>

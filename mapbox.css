@@ -1,0 +1,1425 @@
+/* mapbox.css — Draw Your Yard styles (pen-tool + morphing dock) */
+
+/* ===== Design tokens ===== */
+:root {
+  --dy-ink: #1a1917;
+  --dy-ink-2: #3b3936;
+  --dy-muted: #6b6760;
+  --dy-rule: #e3dfd6;
+  --dy-accent: #c2410c;
+  --dy-accent-2: #a8370a;
+  --dy-accent-bg: #fef2ec;
+  --dy-cream: #faf7f0;
+  --dy-bg: #f5f3ee;
+  --dy-font-ui: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --dy-font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  /* Pass 4: condensed display font for dock numeric readouts (Tesla-style). */
+  /* Tall + narrow + technical so 305 ft / post counts / price ranges fit */
+  /* without overflowing the stat column. */
+  --dy-font-display: 'Barlow Condensed', 'Inter Tight', Impact, sans-serif;
+  --dy-spring: cubic-bezier(0.22, 0.9, 0.28, 1.1);
+}
+
+/* ===== Layout ===== */
+.dy-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--dy-bg);
+  font-family: var(--dy-font-ui);
+}
+
+.dy-map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+/* ===== Cold-start address entry ===== */
+.dy-address-entry {
+  max-width: 480px;
+  margin: 14vh auto 0;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(27, 58, 92, 0.1);
+}
+.dy-address-entry h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--dy-ink);
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.dy-address-hint {
+  font-size: 14px;
+  color: var(--dy-muted);
+  margin: 0 0 20px;
+}
+.dy-address-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--dy-ink);
+  border: 1.5px solid var(--dy-rule);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.dy-address-input:focus { border-color: var(--dy-accent); }
+.dy-address-submit {
+  padding: 0.85rem 1.75rem;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--dy-accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.dy-address-submit:hover:not(:disabled) { background: var(--dy-accent-2); transform: translateY(-1px); }
+.dy-address-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.dy-address-error {
+  color: #b84233;
+  padding: 0.5rem 0.75rem;
+  background: #fde7e7;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 13px;
+}
+
+/* Address suggestions (cold-start form) */
+.dy-address-wrap { position: relative; }
+.dy-address-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--dy-rule);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+  z-index: 40;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.dy-address-suggestion {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid var(--dy-rule);
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--dy-ink-2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dy-address-suggestion:last-child { border-bottom: none; }
+.dy-address-suggestion:hover { background: var(--dy-cream); color: var(--dy-ink); }
+
+/* Pill-dropdown suggestions */
+.dy-pill-suggestions {
+  background: var(--dy-cream);
+  border: 1px solid var(--dy-rule);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.dy-pill-suggestion {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--dy-rule);
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--dy-ink-2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dy-pill-suggestion:last-child { border-bottom: none; }
+.dy-pill-suggestion:hover { background: #fff; color: var(--dy-ink); }
+
+/* ===== Top overlay (address pill + save-for-later) ===== */
+.dy-top-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+  z-index: 20;
+}
+.dy-top-overlay > * { pointer-events: auto; }
+
+/* Address pill */
+.dy-pill-wrap { position: relative; }
+.dy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--dy-rule);
+  border-radius: 999px;
+  color: var(--dy-ink);
+  font-family: var(--dy-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+.dy-pill:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); transform: translateY(-1px); }
+.dy-pill-pin { font-size: 14px; }
+.dy-pill-addr { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dy-pill-caret { font-size: 10px; color: var(--dy-muted); margin-left: 2px; }
+
+.dy-pill-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--dy-rule);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  width: 320px;
+  z-index: 30;
+}
+.dy-pill-dropdown form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dy-pill-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--dy-ink);
+  border: 1.5px solid var(--dy-rule);
+  border-radius: 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+.dy-pill-input:focus { border-color: var(--dy-accent); }
+.dy-pill-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.dy-pill-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+.dy-pill-btn-ghost { background: transparent; color: var(--dy-muted); }
+.dy-pill-btn-ghost:hover { color: var(--dy-ink); }
+.dy-pill-btn-primary { background: var(--dy-accent); color: white; }
+.dy-pill-btn-primary:hover:not(:disabled) { background: var(--dy-accent-2); }
+.dy-pill-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.dy-pill-error {
+  font-size: 12px;
+  color: #b84233;
+  margin-top: 8px;
+}
+
+/* Save-for-later button */
+.dy-save-btn {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--dy-rule);
+  border-radius: 999px;
+  color: var(--dy-ink);
+  font-family: var(--dy-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.dy-save-btn:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); transform: translateY(-1px); }
+
+/* ===== Empty-state hero overlay ===== */
+.dy-empty-overlay {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 15;
+  padding: 0 20px;
+  max-width: 640px;
+}
+.dy-empty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(26, 25, 23, 0.85);
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+}
+.dy-empty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+  animation: dy-dot-pulse 1.8s ease-out infinite;
+}
+@keyframes dy-dot-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); opacity: 1; }
+  50% { box-shadow: 0 0 16px rgba(239, 68, 68, 1); opacity: 0.85; }
+}
+.dy-empty-title {
+  font-size: 44px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.dy-empty-sub {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.5;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== Morphing dock ===== */
+.dy-dock {
+  position: absolute;
+  bottom: 68px;  /* leaves space for signed note below */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--dy-rule);
+  border-radius: 20px;
+  padding: 16px 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  z-index: 20;
+  transition: width 420ms var(--dy-spring),
+              min-height 420ms var(--dy-spring),
+              padding 420ms var(--dy-spring);
+  font-family: var(--dy-font-ui);
+  color: var(--dy-ink);
+  width: 420px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dy-dock-empty    { width: min(420px,  calc(100vw - 24px)); }
+.dy-dock-drawing  { width: min(720px,  calc(100vw - 24px)); }
+.dy-dock-ready    { width: min(860px,  calc(100vw - 24px)); }
+.dy-dock-expanded { width: min(900px,  calc(100vw - 24px)); }
+
+.dy-dock-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/* Empty-state inner */
+.dy-dock-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.dy-dock-copy {
+  flex: 1;
+  font-size: 14px;
+  color: var(--dy-ink-2);
+  line-height: 1.4;
+}
+.dy-dock-copy strong { color: var(--dy-ink); font-weight: 700; }
+.dy-dock-sep { color: var(--dy-muted); margin: 0 8px; }
+
+/* Stats cluster. flex-wrap:wrap lets the 3 stats reflow to 2 rows when the
+   dock is narrower than ~700px (DevTools open, tablet, etc.) instead of
+   overflowing or overlapping. min-width on each stat prevents squeeze-to-zero.
+   clamp() font-sizes scale continuously so nothing clips at any width. */
+.dy-stats {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(12px, 2vw, 28px);
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.dy-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 120px;
+  min-width: 100px;
+  max-width: 260px;
+}
+.dy-stat-num {
+  font-family: var(--dy-font-display);
+  font-size: clamp(18px, 2.4vw, 30px);
+  font-weight: 700;
+  color: var(--dy-ink);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dy-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dy-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.dy-stat-range {
+  font-size: clamp(14px, 1.6vw, 22px);
+  white-space: nowrap;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dy-stat-sub {
+  font-size: 10px;
+  color: var(--dy-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Task 5: persistent slope chip. Sits between the stats row and the
+   micro-actions so it's always visible once EPQS has classified the drawn
+   line. Colors match existing intent: rackable/flat = positive (green),
+   heavy-rack = caution (amber), unknown = neutral (gray). */
+.dy-slope-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #eef1f4;
+  color: #5a6270;
+}
+.dy-slope-chip-flat,
+.dy-slope-chip-rackable { background: #e8f5ec; color: #15803d; }
+.dy-slope-chip-heavy-rack { background: #fff4e6; color: #b45309; }
+.dy-slope-chip-unknown { background: #f0f0f0; color: #6b7280; }
+
+/* Micro actions (undo / reset) */
+.dy-micro {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.dy-micro-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dy-cream);
+  border: 1px solid var(--dy-rule);
+  border-radius: 8px;
+  color: var(--dy-ink-2);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+.dy-micro-btn:hover { background: #fff; border-color: var(--dy-muted); color: var(--dy-ink); }
+
+/* Finished-state micro row ("Edit drawing" + "Add another line"). Secondary
+   actions that sit beside the Continue CTA and must not outweigh it. */
+.dy-micro-finished { gap: 6px; align-items: center; flex-wrap: wrap; }
+.dy-edit-drawing-link,
+.dy-add-line-btn {
+  background: var(--dy-cream);
+  color: var(--dy-ink-2);
+  border: 1px solid var(--dy-rule);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.dy-edit-drawing-link:hover,
+.dy-add-line-btn:hover {
+  background: #fff;
+  border-color: var(--dy-muted);
+  color: var(--dy-ink);
+}
+
+/* CTA button */
+.dy-dock-cta {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+.dy-dock-cta-disabled {
+  background: var(--dy-rule);
+  color: var(--dy-muted);
+  cursor: not-allowed;
+}
+.dy-dock-cta-ready {
+  background: var(--dy-accent);
+  color: white;
+  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.3);
+}
+.dy-dock-cta-ready:hover {
+  background: var(--dy-accent-2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(194, 65, 12, 0.4);
+}
+
+/* Breakdown toggle link */
+.dy-breakdown-toggle {
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: var(--dy-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.dy-breakdown-toggle:hover { color: var(--dy-accent); }
+
+/* Expanded panel (inner breakdown — distinct from the outer .dy-dock-expanded
+   phase modifier, which only sets the outer wrapper width on line 350). */
+.dy-dock-breakdown {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding-top: 16px;
+  margin-top: 4px;
+  border-top: 1px solid var(--dy-rule);
+  max-height: min(60vh, 420px);
+  overflow: hidden;
+  animation: dy-expand-in 320ms var(--dy-spring) both;
+}
+.dy-expanded-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--dy-muted, #8a7a63);
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dy-expanded-close:hover { background: var(--dy-cream, #f6efe3); color: var(--dy-ink, #1a1917); }
+@keyframes dy-expand-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dy-expanded-col {
+  min-width: 0;
+  overflow-y: auto;
+  max-height: 100%;
+}
+.dy-expanded-head {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dy-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+}
+
+.dy-segment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: dy-seg;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.dy-segment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--dy-rule);
+  font-size: 13px;
+  color: var(--dy-ink-2);
+}
+.dy-segment-item:last-child { border-bottom: none; }
+/* Pass 4 Task 6: small colored dot at the front of each breakdown row that
+ * matches the segment's rainbow color on the map, so the buyer can reconcile
+ * a row (e.g. "28 ft") to a specific colored stretch in the drawing. */
+.dy-segment-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95),
+              0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.dy-segment-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--dy-accent-bg);
+  color: var(--dy-accent);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dy-segment-len {
+  font-family: var(--dy-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dy-ink);
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+}
+.dy-segment-delete {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--dy-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.dy-segment-delete:hover { background: #fde7e7; color: #b84233; }
+
+.dy-segment-tier {
+  margin-left: auto;
+  margin-right: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--dy-rule);
+  background: white;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--dy-ink);
+  max-width: 140px;
+}
+.dy-segment-tier:focus { outline: 2px solid var(--dy-accent); outline-offset: 1px; }
+
+.dy-material-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dy-material-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--dy-rule);
+  font-size: 13px;
+  color: var(--dy-ink-2);
+}
+.dy-material-list li:last-child { border-bottom: none; }
+.dy-material-price {
+  font-family: var(--dy-font-mono);
+  font-weight: 600;
+  color: var(--dy-ink);
+  font-variant-numeric: tabular-nums;
+}
+.dy-material-total {
+  padding-top: 10px !important;
+  margin-top: 6px;
+  border-top: 1px solid var(--dy-rule) !important;
+  font-weight: 700;
+}
+.dy-material-total .dy-material-price {
+  color: var(--dy-accent);
+  font-size: 14px;
+}
+.dy-material-note {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--dy-cream);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--dy-muted);
+  line-height: 1.4;
+}
+.dy-material-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  font-size: 12px;
+  color: var(--dy-muted);
+  cursor: help;
+  vertical-align: baseline;
+}
+.dy-material-info:hover { color: var(--dy-ink); }
+
+/* Keyboard hints (empty only) */
+.dy-keyboard-hints {
+  display: flex;
+  gap: 16px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid var(--dy-rule);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.dy-kbd-hint {
+  font-size: 11px;
+  color: var(--dy-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+.dy-kbd-hint kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--dy-cream);
+  border: 1px solid var(--dy-rule);
+  border-radius: 4px;
+  font-family: var(--dy-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dy-ink);
+  line-height: 1;
+}
+
+/* ===== Estimate banner (compact, tappable) ===== */
+.dy-est-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 12px;
+  background: rgba(26, 25, 23, 0.88);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: var(--dy-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  z-index: 19;
+}
+.dy-est-banner:hover {
+  background: rgba(26, 25, 23, 0.95);
+  transform: translateX(-50%) translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+.dy-est-banner-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dy-accent);
+  box-shadow: 0 0 6px rgba(194, 65, 12, 0.7);
+  flex-shrink: 0;
+}
+
+/* Estimate popup */
+.dy-est-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 25, 23, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  animation: dy-fade-in 0.15s ease-out;
+}
+.dy-est-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: var(--dy-font-ui);
+  color: var(--dy-ink-2);
+}
+.dy-est-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--dy-muted);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.dy-est-close:hover { background: var(--dy-cream); color: var(--dy-ink); }
+.dy-est-dialog h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dy-ink);
+  letter-spacing: -0.01em;
+}
+.dy-est-dialog p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--dy-ink-2);
+}
+.dy-est-dialog p:last-of-type { margin-bottom: 18px; }
+.dy-est-dialog strong { color: var(--dy-ink); font-weight: 700; }
+.dy-est-muted {
+  color: var(--dy-muted) !important;
+  font-size: 13px !important;
+  font-style: italic;
+}
+.dy-est-measure-img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin: 4px 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dy-border, #e6e0d7);
+}
+.dy-est-measure-link {
+  display: inline-block;
+  color: var(--dy-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.dy-est-measure-link:hover { text-decoration: underline; }
+.dy-est-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.dy-est-btn {
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 10px;
+  border: none;
+  background: var(--dy-accent);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.dy-est-btn:hover { background: var(--dy-accent-2); transform: translateY(-1px); }
+.dy-est-subhead { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--dy-ink); }
+.dy-est-video-link { margin: 0 0 10px; }
+.dy-est-video-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--dy-brand, #6BA3C2);
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.dy-est-video-cta:hover { background: #5891b0; }
+.dy-est-tips { padding-left: 18px; margin: 0 0 10px; font-size: 13px; color: var(--dy-ink-2); line-height: 1.5; }
+.dy-est-tips li { margin-bottom: 4px; }
+
+/* Slope popup (pre-draw classifier) */
+.mbx-slope-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 25, 23, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  animation: dy-fade-in 0.15s ease-out;
+}
+.mbx-slope-popup {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  width: min(820px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+  font-family: var(--dy-font-ui);
+  color: var(--dy-ink-2);
+}
+.mbx-slope-popup h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dy-ink);
+  letter-spacing: -0.01em;
+}
+.mbx-slope-infographic {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--dy-border, #e6e0d7);
+}
+.mbx-slope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.mbx-slope-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--dy-border, #e6e0d7);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--dy-ink-2);
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.mbx-slope-option:hover {
+  border-color: var(--dy-accent);
+  background: var(--dy-cream);
+}
+.mbx-slope-option.selected {
+  border-color: var(--dy-accent);
+  background: var(--dy-accent-bg, #fef2ec);
+  box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.18);
+  color: var(--dy-ink);
+}
+.mbx-slope-option input[type="radio"] {
+  accent-color: var(--dy-accent);
+  margin: 0;
+}
+.mbx-slope-help {
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mbx-slope-help h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+  color: var(--dy-ink);
+}
+.mbx-slope-help a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dy-accent);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mbx-slope-help a:hover { text-decoration: underline; }
+.mbx-slope-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+.mbx-slope-footer button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--dy-border, #e6e0d7);
+  background: transparent;
+  color: var(--dy-ink-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+.mbx-slope-footer button:hover:not(:disabled) {
+  background: var(--dy-cream);
+  color: var(--dy-ink);
+}
+.mbx-slope-footer button.primary {
+  padding: 10px 22px;
+  font-weight: 700;
+  border: none;
+  background: var(--dy-accent);
+  color: #fff;
+}
+.mbx-slope-footer button.primary:hover:not(:disabled) {
+  background: var(--dy-accent-2);
+  transform: translateY(-1px);
+}
+.mbx-slope-footer button.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Crosshair cursor only when the user has opted in to draw mode.
+   Task 3: the map opens in pan/zoom-only state with the default Mapbox cursor
+   (grab/grabbing). Once "Start Drawing" is clicked, the parent view toggles
+   .dy-draw-active on the wrapper and the crosshair takes over. */
+.dy-map.dy-draw-active .mapboxgl-canvas-container.mapboxgl-interactive { cursor: crosshair; }
+
+/* Mapbox attribution control (the circled "i" in the bottom-right corner). */
+/* Required by Mapbox ToS, but visually muted so it reads as map chrome. */
+.dy-map .mapboxgl-ctrl-attrib { opacity: 0.65; transition: opacity 120ms; }
+.dy-map .mapboxgl-ctrl-attrib:hover { opacity: 1; }
+.dy-map .mapboxgl-ctrl-attrib.mapboxgl-compact { background: rgba(255, 255, 255, 0.75); }
+
+/* ===== Map overlays (vertex markers, labels) ===== */
+.dy-vertex {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid var(--dy-accent);
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.dy-vertex:active { cursor: grabbing; }
+.dy-vertex-first {
+  background: var(--dy-accent);
+  border-color: white;
+}
+/* Enlarged invisible hit target — rendered as pseudo-element so it inherits
+   Mapbox's absolute positioning on the parent. Prior impl nested a div and
+   broke translate-based marker placement.
+   pointer-events: none so that clicks in the 14px ring AROUND the vertex
+   visual pass through to the Mapbox canvas and register as new vertex drops,
+   rather than being swallowed by this hit-target area.  The .dy-vertex
+   element itself (the 18px circle) retains pointer-events for drag. */
+.dy-vertex::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.dy-seg-label {
+  background: white;
+  color: var(--dy-ink);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--dy-font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: -0.02em;
+  /* Offset is applied dynamically via mapboxgl.Marker({ offset }) from
+     computeLabelOffsetPx so the label sits perpendicular to the segment
+     on the outside of the fence line. No static transform here. */
+}
+.dy-seg-label-ghost {
+  background: rgba(194, 65, 12, 0.92);
+  color: white;
+  opacity: 0.95;
+}
+
+/* ===== Save-for-later dialog ===== */
+.dy-save-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 25, 23, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: dy-fade-in 0.15s ease-out;
+}
+@keyframes dy-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dy-save-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: var(--dy-font-ui);
+}
+.dy-save-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: var(--dy-muted);
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 8px;
+  line-height: 1;
+}
+.dy-save-close:hover { background: var(--dy-cream); color: var(--dy-ink); }
+.dy-save-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dy-ink);
+  letter-spacing: -0.01em;
+}
+.dy-save-copy {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: var(--dy-ink-2);
+  line-height: 1.5;
+}
+.dy-save-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--dy-ink);
+  border: 1.5px solid var(--dy-rule);
+  border-radius: 10px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.dy-save-input:focus { border-color: var(--dy-accent); }
+.dy-save-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #fde7e7;
+  color: #b84233;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.dy-save-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.dy-save-btn-ghost,
+.dy-save-btn-primary {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, transform 0.15s;
+}
+.dy-save-btn-ghost {
+  background: transparent;
+  color: var(--dy-muted);
+}
+.dy-save-btn-ghost:hover:not(:disabled) { color: var(--dy-ink); background: var(--dy-cream); }
+.dy-save-btn-primary {
+  background: var(--dy-accent);
+  color: white;
+}
+.dy-save-btn-primary:hover:not(:disabled) { background: var(--dy-accent-2); transform: translateY(-1px); }
+.dy-save-btn-primary:disabled,
+.dy-save-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== Toast ===== */
+.dy-toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dy-ink);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 30;
+  animation: dy-toast-in 0.2s ease-out;
+}
+@keyframes dy-toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ===== First-visit cinematic overlay (rides the Mapbox flyTo) ===== */
+/* MapScreen (below this overlay) starts at globe zoom 1 and flies to
+   zoom 20 over 2.4s. Overlay is just the copy + vignette + skip. */
+.dy-intro-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 50;
+  font-family: var(--dy-font-ui);
+  opacity: 1;
+  transition: opacity 600ms ease-out;
+  background:
+    radial-gradient(ellipse 80% 60% at center, transparent 0%, rgba(0, 0, 0, 0.35) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
+}
+.dy-intro-overlay-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Copy stack — bottom-center, clean, no pin or globe graphic */
+.dy-intro-copy {
+  position: absolute;
+  bottom: 20%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  pointer-events: none;
+  animation: dy-intro-copy-in 700ms ease-out;
+}
+@keyframes dy-intro-copy-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dy-intro-finding {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.dy-intro-address {
+  font-family: var(--dy-font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.dy-intro-skip {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s, border-color 0.15s;
+  z-index: 10;
+}
+.dy-intro-skip:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ===== Post color legend (Pass 4 Task 5) ===== */
+/* Thin horizontal bar sitting directly under the morphing dock. Centered on
+ * the same baseline so the three post-type colors and the 15-degree corner
+ * threshold stay in the buyer's peripheral vision while drawing. Matches the
+ * dock's frosted-white aesthetic so it reads as part of the same module.
+ * The dock itself is absolutely positioned; we wrap both in `.dy-dock-wrap`
+ * to keep the legend aligned without redoing the dock's centering logic. */
+.dy-dock-wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 20;
+}
+/* Inside the wrap, the dock drops its own absolute positioning and flows
+ * naturally so the legend can sit below it on the flex baseline. */
+.dy-dock-wrap > .dy-dock {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  pointer-events: auto;
+}
+.dy-post-legend {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--dy-rule);
+  border-radius: 999px;
+  padding: 7px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  font-family: var(--dy-font-ui);
+  font-size: 12px;
+  color: var(--dy-ink-2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  max-width: 860px;
+  pointer-events: auto;
+}
+.dy-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.dy-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95),
+              0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.dy-legend-label {
+  font-weight: 600;
+  color: var(--dy-ink);
+  letter-spacing: 0.01em;
+}
+.dy-legend-hint {
+  color: var(--dy-muted);
+  font-style: italic;
+  padding-left: 8px;
+  border-left: 1px solid var(--dy-rule);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .dy-dock, .dy-dock-ready, .dy-dock-drawing, .dy-dock-expanded, .dy-dock-empty {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+  .dy-post-legend {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    font-size: 11px;
+    gap: 10px;
+  }
+  .dy-legend-hint {
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+    padding-top: 4px;
+    border-top: 1px dashed var(--dy-rule);
+  }
+  .dy-dock-breakdown {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-height: 50vh;
+  }
+  .dy-dock-main {
+    justify-content: space-between;
+  }
+  .dy-stats { gap: 14px; }
+  .dy-stat-range { font-size: 14px; }
+  .dy-empty-title { font-size: 32px; }
+  .dy-empty-sub { font-size: 14px; }
+  .dy-pill-addr { max-width: 140px; }
+  .dy-save-btn { padding: 8px 12px; font-size: 12px; }
+}
+
+/* ===== Legacy .mbx-* classes (kept for test compatibility) ===== */
+/* MapboxDrawView tests and other consumers may still reference these names.
+   They alias to the new .dy-* classes so nothing silently breaks. */
+.mbx-container { width: 100%; height: 100%; position: relative; overflow: hidden; }
+.mbx-map { width: 100%; height: 100%; position: absolute; inset: 0; }

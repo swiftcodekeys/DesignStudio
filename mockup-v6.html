@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grandview Design Studio — v6</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky:#6BA3C2; --sky-dark:#5A8FAD;
+    --accent:#d4753a; --accent-hover:#e8844a; --accent-glow:rgba(212,117,58,0.3);
+    --dark:#0c1018; --dark-panel:#0e1420;
+    --text:#f0f2f5; --text-muted:rgba(240,242,245,0.5); --text-dim:rgba(240,242,245,0.3);
+    --border:rgba(255,255,255,0.07); --glass:rgba(255,255,255,0.04);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--dark);color:var(--text);overflow:hidden;height:100vh}
+  .app{display:flex;flex-direction:column;height:100vh}
+
+  /* TOP NAV — redesigned with proper visual hierarchy */
+  .topnav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:72px;min-height:72px;background:linear-gradient(180deg,var(--sky),var(--sky-dark));box-shadow:0 2px 16px rgba(0,0,0,0.2);z-index:100}
+  .topnav-left{display:flex;align-items:center;gap:20px}
+  .topnav-logo{width:80px;height:56px;overflow:visible;background:transparent;flex-shrink:0;display:flex;align-items:center}
+  .topnav-logo img{width:80px;height:80px;object-fit:contain;filter:brightness(10);margin:-12px 0}
+  .topnav-brand{display:flex;flex-direction:column;gap:1px}
+  .topnav-brand .name{font-weight:900;font-size:19px;color:#fff;letter-spacing:-0.2px}
+  .topnav-brand .name .fence{color:#0e1420}
+  .topnav-brand .tool-name{font-size:9px;font-weight:700;color:rgba(255,255,255,0.55);letter-spacing:3px;text-transform:uppercase}
+  .topnav-divider{width:1px;height:32px;background:rgba(255,255,255,0.2);margin:0 8px}
+  .topnav-center{display:flex;gap:0}
+  .topnav-tab{padding:24px 20px;font-size:15px;font-weight:600;color:rgba(255,255,255,0.55);border-bottom:3px solid transparent;cursor:pointer;transition:all 0.25s}
+  .topnav-tab:hover{color:#fff;background:rgba(255,255,255,0.08)}
+  .topnav-tab.active{color:#fff;border-bottom-color:var(--accent)}
+  .topnav-tab .badge{font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.2);color:#fff;font-weight:800;margin-left:6px;vertical-align:middle}
+  .btn-quote-nav{padding:10px 22px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,0.3);border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.25s}
+  .btn-quote-nav:hover{background:var(--accent);border-color:var(--accent);box-shadow:0 4px 20px var(--accent-glow)}
+
+  /* VIEWPORT */
+  .viewport{flex:1;position:relative;overflow:hidden;background:var(--dark);cursor:none}
+  .viewport-bg{width:100%;height:100%;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+  /* Magnifier */
+  .mag{position:absolute;width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,0.5),0 8px 32px rgba(0,0,0,0.5),inset 0 0 30px rgba(0,0,0,0.1);background-repeat:no-repeat;display:none;z-index:20}
+  .mag::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 55%,rgba(0,0,0,0.2))}
+  /* Social proof line */
+  .social-proof{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(12,16,24,0.7);backdrop-filter:blur(8px);padding:6px 14px;border-radius:12px;font-size:11px;color:var(--text-muted);font-weight:500;z-index:10;white-space:nowrap}
+  .social-proof strong{color:var(--text);font-weight:700}
+  /* Progress bar */
+  .progress-bar{position:absolute;top:12px;right:20px;background:rgba(12,16,24,0.75);backdrop-filter:blur(8px);padding:8px 16px;border-radius:12px;display:flex;align-items:center;gap:8px;z-index:10}
+  .progress-dots{display:flex;gap:5px}
+  .progress-dot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.2)}
+  .progress-dot.done{background:var(--accent);border-color:var(--accent)}
+  .progress-dot.current{border-color:var(--accent);background:transparent}
+  .progress-label{font-size:10px;color:var(--text-muted);font-weight:600}
+
+  /* FLYOUT */
+  .flyout{background:var(--dark-panel);border-top:1px solid var(--border);padding:18px 48px 14px;height:285px;min-height:285px;max-height:285px;overflow:hidden;display:flex;flex-direction:column;z-index:50}
+  .flyout-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0}
+  .flyout-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-dim)}
+  .flyout-selected{font-size:22px;font-weight:800;color:#fff;margin-top:4px}
+  .flyout-selected span{color:var(--accent);font-weight:700}
+  .btn-product{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;transition:all 0.25s}
+  .btn-product:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 4px 16px var(--accent-glow)}
+  .flyout-body{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .flyout-content{animation:slideIn 0.55s cubic-bezier(0.22,1,0.36,1);width:100%}
+  @keyframes slideIn{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:translateX(0)}}
+
+  /* STYLE CARDS — lighter bg so fences are visible */
+  .style-grid{display:flex;gap:14px;justify-content:center}
+  .style-card{width:148px;border-radius:14px;overflow:visible;border:2px solid rgba(255,255,255,0.1);cursor:pointer;background:rgba(255,255,255,0.06);transition:all 0.3s cubic-bezier(0.22,1,0.36,1);position:relative}
+  .style-card:hover{border-color:rgba(212,117,58,0.5);transform:translateY(-5px);box-shadow:0 14px 36px rgba(0,0,0,0.5)}
+  .style-card.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow),0 10px 28px rgba(0,0,0,0.4)}
+  .style-card-img{height:108px;overflow:hidden;background:linear-gradient(180deg,#1a2438,#243248);border-radius:12px 12px 0 0}
+  .style-card-img img{width:100%;height:100%;object-fit:contain;padding:8px;transition:transform 0.4s cubic-bezier(0.22,1,0.36,1)}
+  .style-card:hover .style-card-img img{transform:scale(1.08)}
+  .style-card-info{padding:10px;text-align:center}
+  .style-card-name{font-size:14px;font-weight:800;color:var(--text)}
+  .style-card-sub{font-size:10px;color:var(--text-muted);font-weight:500;margin-top:2px}
+  .card-badge{position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:0.3px;text-transform:uppercase}
+  .b-popular{background:var(--accent);color:#fff}
+  .b-puppy{background:rgba(34,197,94,0.9);color:#fff}
+  .b-pool{background:rgba(59,130,246,0.9);color:#fff}
+  .b-classic{background:rgba(168,85,247,0.9);color:#fff}
+
+  /* SWATCHES */
+  .swatch-row{display:flex;gap:24px;justify-content:center}
+  .swatch-group{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform 0.2s}
+  .swatch-group:hover{transform:scale(1.12)}
+  .swatch{width:56px;height:56px;border-radius:50%;border:3px solid rgba(255,255,255,0.08);transition:all 0.25s;box-shadow:0 2px 10px rgba(0,0,0,0.4)}
+  .swatch:hover{border-color:rgba(212,117,58,0.4)}
+  .swatch.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+  .swatch-name{font-size:11px;color:var(--text-muted);font-weight:600}
+
+  /* CONTROLS */
+  .sections-row{display:flex;gap:48px;justify-content:center;align-items:flex-start;width:100%}
+  .section-group{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim)}
+  .controls-row{display:flex;gap:10px;justify-content:center}
+  .ctrl-btn{padding:13px 26px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);font-weight:700;font-size:15px;cursor:pointer;transition:all 0.25s}
+  .ctrl-btn:hover{border-color:rgba(212,117,58,0.4);color:var(--text)}
+  .ctrl-btn.active{background:rgba(212,117,58,0.15);border-color:var(--accent);color:var(--accent)}
+
+  /* OPTION CARDS */
+  .option-row{display:flex;gap:14px;justify-content:center}
+  .opt-card{width:140px;border-radius:12px;overflow:hidden;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);cursor:pointer;transition:all 0.3s;text-align:center}
+  .opt-card:hover{border-color:rgba(212,117,58,0.4);transform:translateY(-2px)}
+  .opt-card.active{border-color:var(--accent);background:rgba(212,117,58,0.08)}
+  .opt-card-img{height:70px;overflow:hidden;background:linear-gradient(180deg,#1a2438,#243248)}
+  .opt-card-img img{width:100%;height:100%;object-fit:contain;padding:4px}
+  .opt-card-label{padding:8px;font-size:12px;font-weight:700;color:var(--text-muted)}
+  .opt-card.active .opt-card-label{color:var(--accent)}
+
+  /* QUOTE */
+  .quote-layout{display:flex;gap:40px;align-items:center;justify-content:center;width:100%}
+  .quote-summary{min-width:420px}
+  .quote-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:15px}
+  .quote-row .ql{color:var(--text-muted)} .quote-row .qv{color:var(--text);font-weight:700}
+  .btn-big-quote{padding:18px 44px;background:linear-gradient(135deg,var(--accent),#c06830);color:#fff;border:none;border-radius:14px;font-weight:900;font-size:20px;cursor:pointer;box-shadow:0 6px 24px var(--accent-glow);transition:all 0.25s}
+  .btn-big-quote:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(212,117,58,0.4)}
+  .quote-cta{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .quote-actions{display:flex;gap:10px;margin-top:4px}
+  .btn-secondary{padding:10px 18px;background:transparent;color:var(--text-muted);border:1.5px solid rgba(255,255,255,0.12);border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;transition:all 0.25s}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+  .quote-contact{font-size:13px;color:var(--text-muted);text-align:center;line-height:1.5}
+  .quote-contact strong{color:var(--text)}
+
+  /* BOTTOM STRIP — More defined */
+  .bottom-strip{display:flex;align-items:stretch;justify-content:center;height:52px;min-height:52px;background:linear-gradient(0deg,var(--sky-dark),var(--sky));z-index:100;gap:2px}
+  .strip-tab{padding:0 28px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);cursor:pointer;border-top:3px solid transparent;transition:all 0.25s;text-transform:uppercase;letter-spacing:1.5px;display:flex;align-items:center;position:relative}
+  .strip-tab::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(255,255,255,0.1)}
+  .strip-tab:hover{color:#fff;background:rgba(255,255,255,0.08)}
+  .strip-tab.active{color:#fff;border-top-color:#fff;background:rgba(255,255,255,0.12);font-weight:800}
+
+  /* BACKLINKS */
+  .backlinks{display:flex;justify-content:center;gap:8px;padding:8px 24px;background:var(--dark);font-size:11px;flex-wrap:wrap}
+  .backlinks a{color:var(--text-dim);text-decoration:none;font-weight:500;padding:2px 5px;border-radius:4px;transition:all 0.2s}
+  .backlinks a:hover{color:var(--accent);background:rgba(212,117,58,0.08)}
+  .backlinks .sep{color:rgba(255,255,255,0.06)}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="topnav">
+    <div class="topnav-left">
+      <div class="topnav-logo"><img src="assets/logo.png" alt="Grandview"></div>
+      <div class="topnav-brand">
+        <span class="name">Grandview <span class="fence">Fence</span></span>
+        <span class="tool-name">Design Studio</span>
+      </div>
+    </div>
+    <div class="topnav-divider"></div>
+    <div class="topnav-center">
+      <div class="topnav-tab active">Driveway Gates</div>
+      <div class="topnav-tab">Front Yard</div>
+      <div class="topnav-tab">Back Yard</div>
+      <div class="topnav-tab">Draw Your Yard <span class="badge">NEW</span></div>
+    </div>
+    <div class="topnav-right"><button class="btn-quote-nav">Get Instant Quote →</button></div>
+  </nav>
+
+  <div class="viewport" id="viewport">
+    <img class="viewport-bg" id="vbg" src="assets/backgrounds/tool-background-gate_1960x1096.png" alt="">
+    <div class="mag" id="mag"></div>
+    <div class="progress-bar">
+      <div class="progress-dots">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot current"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+      <div class="progress-label">3 of 6 configured</div>
+    </div>
+    <div class="social-proof">Most chosen this month: <strong>Charleston in Satin Black, 60"</strong></div>
+  </div>
+
+  <div class="flyout" id="flyout">
+    <div id="fh" class="flyout-header">
+      <div>
+        <div class="flyout-title">Choose Your Gate Style</div>
+        <div class="flyout-selected">Horizon — <span>Flat Top, 3-Rail</span></div>
+      </div>
+      <a href="https://grandviewfence.com/fencing/horizon" class="btn-product" target="_blank">View Horizon Page →</a>
+    </div>
+    <div class="flyout-body">
+      <div class="flyout-content" id="fc">
+        <div class="style-grid">
+          <div class="style-card active">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uaf_200.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Horizon</div><div class="style-card-sub">Flat Top</div></div>
+            <div class="card-badge b-popular">Popular</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uaf_201.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Horizon Pro</div><div class="style-card-sub">Pro Spacing</div></div>
+            <div class="card-badge b-puppy">Puppy Ready</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uaf_250.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Vanguard</div><div class="style-card-sub">Spear Top</div></div>
+            <div class="card-badge b-popular">Popular</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uab_200.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Haven</div><div class="style-card-sub">Flush Bottom</div></div>
+            <div class="card-badge b-pool">Pool Safe</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uas_100.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Charleston</div><div class="style-card-sub">Spear Top</div></div>
+            <div class="card-badge b-classic">Classic</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uas_101.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Charleston Pro</div><div class="style-card-sub">Pro Spacing</div></div>
+            <div class="card-badge b-puppy">Puppy Ready</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-img"><img src="gate_tool/th/th_st_uas_150.jpg"></div>
+            <div class="style-card-info"><div class="style-card-name">Savannah</div><div class="style-card-sub">Staggered</div></div>
+            <div class="card-badge b-classic">Classic</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-strip">
+    <div class="strip-tab active">Style</div>
+    <div class="strip-tab">Color</div>
+    <div class="strip-tab">Size</div>
+    <div class="strip-tab">Options</div>
+    <div class="strip-tab">Puppy Pickets</div>
+    <div class="strip-tab">Details</div>
+    <div class="strip-tab">Quote</div>
+  </div>
+
+  <div class="backlinks">
+    <a href="https://grandviewfence.com">Home</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing">All Fencing</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/residential-commercial">Residential</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/pool-safety">Pool & Safety</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/privacy">Privacy</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/walk-drive-gates">Gates</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/accessories">Accessories</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/horizon">Horizon</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/horizon-pro">Horizon Pro</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/vanguard">Vanguard</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/haven">Haven</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/charleston">Charleston</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing/savannah">Savannah</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/quick-quote">Get a Quote</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/blog">Blog</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/about">About</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/pet-aluminum-fence">Pet-Safe</a>
+  </div>
+</div>
+
+<script>
+// MAGNIFIER
+var vp=document.getElementById('viewport'),mag=document.getElementById('mag'),bg=document.getElementById('vbg'),Z=3,S=80;
+vp.onmousemove=function(e){
+  var r=vp.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  mag.style.display='block';mag.style.left=(x-S/2)+'px';mag.style.top=(y-S/2)+'px';
+  var br=bg.getBoundingClientRect(),bx=e.clientX-br.left,by=e.clientY-br.top,bw=br.width*Z,bh=br.height*Z;
+  mag.style.backgroundImage='url('+bg.src+')';
+  mag.style.backgroundSize=bw+'px '+bh+'px';
+  mag.style.backgroundPosition=-(bx*Z-S/2)+'px '+-(by*Z-S/2)+'px';
+};
+vp.onmouseleave=function(){mag.style.display='none'};
+
+// TABS
+var tabs=document.querySelectorAll('.strip-tab'),fc=document.getElementById('fc'),fh=document.getElementById('fh');
+var ic=fc.innerHTML;
+var H={
+  0:'<div><div class="flyout-title">Choose Your Gate Style</div><div class="flyout-selected">Horizon — <span>Flat Top, 3-Rail</span></div></div><a href="https://grandviewfence.com/fencing/horizon" class="btn-product" target="_blank">View Horizon Page →</a>',
+  1:'<div><div class="flyout-title">ProCoat Powder Coat Finish</div><div class="flyout-selected">Gloss Black — <span>Premium Finish</span></div></div><a href="https://grandviewfence.com/accessories" class="btn-product" target="_blank">All Finishes →</a>',
+  2:'<div><div class="flyout-title">Gate Dimensions</div><div class="flyout-selected">60" Height — <span>Double Gate</span></div></div>',
+  3:'<div><div class="flyout-title">Gate Options</div><div class="flyout-selected">Customize — <span>Arch, Rails & More</span></div></div>',
+  4:'<div><div class="flyout-title">Puppy Picket Styles</div><div class="flyout-selected">Keep Pets Safe — <span>10 Styles Available</span></div></div><a href="https://grandviewfence.com/pet-aluminum-fence" class="btn-product" target="_blank">Pet-Safe Fencing →</a>',
+  5:'<div><div class="flyout-title">Fine Details</div><div class="flyout-selected">Post Caps, Finials & <span>Accents</span></div></div>',
+  6:'<div><div class="flyout-title">Your Configuration</div><div class="flyout-selected">Ready to Order? <span>Get your instant quote</span></div></div>'
+};
+var B={0:ic,
+1:'<div class="swatch-row"><div class="swatch-group"><div class="swatch active" style="background:#090909"></div><div class="swatch-name">Black</div></div><div class="swatch-group"><div class="swatch" style="background:#1a1a1a"></div><div class="swatch-name">Satin Black</div></div><div class="swatch-group"><div class="swatch" style="background:#42382c"></div><div class="swatch-name">Bronze</div></div><div class="swatch-group"><div class="swatch" style="background:#5a4d3e"></div><div class="swatch-name">Satin Bronze</div></div><div class="swatch-group"><div class="swatch" style="background:#f4f4f4;border-color:rgba(255,255,255,0.15)"></div><div class="swatch-name">White</div></div><div class="swatch-group"><div class="swatch" style="background:#e8e8e8;border-color:rgba(255,255,255,0.15)"></div><div class="swatch-name">Satin White</div></div><div class="swatch-group"><div class="swatch" style="background:#cdbeaf"></div><div class="swatch-name">Beige</div></div><div class="swatch-group"><div class="swatch" style="background:#c8c8c8"></div><div class="swatch-name">Silver</div></div></div>',
+2:'<div class="sections-row"><div class="section-group"><div class="section-title">Height</div><div class="controls-row"><div class="ctrl-btn">48"</div><div class="ctrl-btn active">60"</div><div class="ctrl-btn">72"</div></div></div><div class="section-group"><div class="section-title">Gate Type</div><div class="controls-row"><div class="ctrl-btn">Single</div><div class="ctrl-btn active">Double</div></div></div><div class="section-group"><div class="section-title">Mount</div><div class="controls-row"><div class="ctrl-btn active">Post</div><div class="ctrl-btn">Direct</div></div></div></div>',
+3:'<div class="sections-row"><div class="section-group"><div class="section-title">Arch Style</div><div class="option-row"><div class="opt-card active"><div class="opt-card-img"><img src="gate_tool/th/th_so_ares.jpg"></div><div class="opt-card-label">Estate</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_so_arar.jpg"></div><div class="opt-card-label">Arched</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_so_arst.jpg"></div><div class="opt-card-label">Standard</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_so_arrv.jpg"></div><div class="opt-card-label">Reverse</div></div></div></div><div class="section-group"><div class="section-title">Add-Ons</div><div class="controls-row"><div class="ctrl-btn">Mid Rail</div><div class="ctrl-btn">Flush Bottom</div><div class="ctrl-btn">Finial Rail</div></div></div></div>',
+4:'<div class="option-row"><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_std.jpg"></div><div class="opt-card-label">Standard</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_fls.jpg"></div><div class="opt-card-label">Flush</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_plg.jpg"></div><div class="opt-card-label">Plug</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_pls.jpg"></div><div class="opt-card-label">Plug Spear</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_qua.jpg"></div><div class="opt-card-label">Quad</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_spe.jpg"></div><div class="opt-card-label">Spear</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_tri.jpg"></div><div class="opt-card-label">Trident</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pup_trs.jpg"></div><div class="opt-card-label">Trident Spear</div></div></div>',
+5:'<div class="sections-row"><div class="section-group"><div class="section-title">Post Caps</div><div class="option-row"><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pstcp_flat.jpg"></div><div class="opt-card-label">Flat</div></div><div class="opt-card active"><div class="opt-card-img"><img src="gate_tool/th/th_pstcp_ball.jpg"></div><div class="opt-card-label">Ball</div></div></div></div><div class="section-group"><div class="section-title">Finials</div><div class="option-row"><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pc_spe.jpg"></div><div class="opt-card-label">Spear</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pc_tri.jpg"></div><div class="opt-card-label">Trident</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pc_qua.jpg"></div><div class="opt-card-label">Quad</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_pc_plg.jpg"></div><div class="opt-card-label">Plug</div></div></div></div><div class="section-group"><div class="section-title">Accents</div><div class="option-row"><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_acc_cir.jpg"></div><div class="opt-card-label">Circle</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_acc_but.jpg"></div><div class="opt-card-label">Butterfly</div></div><div class="opt-card"><div class="opt-card-img"><img src="gate_tool/th/th_acc_scr.jpg"></div><div class="opt-card-label">Scroll</div></div></div></div></div>',
+6:'<div class="quote-layout"><div class="quote-summary"><div class="quote-row"><span class="ql">Style</span><span class="qv">Horizon — Flat Top</span></div><div class="quote-row"><span class="ql">Color</span><span class="qv">Gloss Black (ProCoat)</span></div><div class="quote-row"><span class="ql">Size</span><span class="qv">60" Double Gate · Post Mount</span></div><div class="quote-row"><span class="ql">Arch</span><span class="qv">Estate</span></div><div class="quote-row"><span class="ql">Details</span><span class="qv">Ball Cap · No Finials</span></div></div><div class="quote-cta"><button class="btn-big-quote">Get Instant Quote →</button><div class="quote-actions"><button class="btn-secondary">📄 Download PDF</button><button class="btn-secondary">🔗 Share Design</button></div><div class="quote-contact">or call <strong>(855)-Fence-30</strong><br>sales@grandviewfence.com</div></div></div>'
+};
+tabs.forEach(function(tab,i){
+  tab.onclick=function(){
+    tabs.forEach(function(t){t.classList.remove('active')});tab.classList.add('active');
+    fh.innerHTML=H[i]||H[0];fc.style.animation='none';fc.offsetHeight;
+    fc.innerHTML=B[i]||B[0];fc.style.animation='slideIn 0.55s cubic-bezier(0.22,1,0.36,1)';
+  };
+});
+</script>
+</body>
+</html>

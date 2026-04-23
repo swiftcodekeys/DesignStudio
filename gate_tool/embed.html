@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gate Tool Embed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <iframe 
+    id="gateFrame" 
+    src="https://www.ultrafence.com/design-studio/gates/index.html"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  ></iframe>
+  
+  <script>
+    // Communication bridge with parent React app
+    const iframe = document.getElementById('gateFrame');
+    
+    // Listen for commands from parent
+    window.addEventListener('message', function(event) {
+      // Forward commands to the iframe
+      if (event.data && event.data.type) {
+        iframe.contentWindow.postMessage(event.data, 'https://www.ultrafence.com');
+      }
+    });
+    
+    // Listen for events from iframe and forward to parent
+    window.addEventListener('message', function(event) {
+      if (event.origin === 'https://www.ultrafence.com') {
+        // Forward to parent React app
+        window.parent.postMessage(event.data, '*');
+      }
+    });
+    
+    // Notify parent when ready
+    iframe.onload = function() {
+      window.parent.postMessage({ type: 'GATE_READY' }, '*');
+    };
+  </script>
+</body>
+</html>

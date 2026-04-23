@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grandview Design Studio — Full Mockup v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,sans-serif; background:#0b1220; color:#e9eef7; overflow:hidden; height:100vh; }
+
+  .app { display:flex; flex-direction:column; height:100vh; }
+
+  /* ══════ TOP NAV ══════ */
+  .topnav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; height:56px; min-height:56px;
+    background:rgba(11,18,32,0.92); backdrop-filter:blur(12px);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    z-index:100;
+  }
+  .topnav-left { display:flex; align-items:center; gap:14px; }
+  .topnav-logo {
+    width:40px; height:40px; border-radius:10px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .topnav-logo img { width:100%; height:100%; object-fit:contain; }
+  .topnav-brand {
+    display:flex; flex-direction:column; line-height:1.1;
+  }
+  .topnav-brand .name { font-weight:800; font-size:14px; color:#fff; letter-spacing:-0.3px; }
+  .topnav-brand .tool-name { font-size:10px; font-weight:600; color:rgba(249,115,22,0.9); letter-spacing:1.5px; text-transform:uppercase; }
+
+  .topnav-tabs { display:flex; gap:0; position:absolute; left:50%; transform:translateX(-50%); }
+  .topnav-tab {
+    padding:17px 18px; font-size:13px; font-weight:600; color:rgba(255,255,255,0.5);
+    border-bottom:2px solid transparent; cursor:pointer; transition:all 0.2s;
+    white-space:nowrap;
+  }
+  .topnav-tab:hover { color:rgba(255,255,255,0.8); }
+  .topnav-tab.active { color:#fff; border-bottom-color:#ea580c; }
+  .topnav-tab .badge {
+    display:inline-block; font-size:8px; padding:2px 5px; border-radius:4px;
+    background:rgba(249,115,22,0.2); color:#f97316; font-weight:700; margin-left:4px;
+    vertical-align:middle; letter-spacing:0.5px;
+  }
+
+  .topnav-right { display:flex; align-items:center; gap:10px; }
+  .btn-quote {
+    padding:9px 20px; background:linear-gradient(135deg,#ea580c,#f97316); color:#fff; border:none; border-radius:10px;
+    font-weight:700; font-size:12px; cursor:pointer; letter-spacing:0.3px;
+    box-shadow:0 2px 12px rgba(249,115,22,0.3); transition:all 0.2s;
+  }
+  .btn-quote:hover { box-shadow:0 4px 20px rgba(249,115,22,0.5); transform:translateY(-1px); }
+  .btn-quote .arrow { margin-left:6px; }
+
+  /* ══════ VIEWPORT ══════ */
+  .viewport {
+    flex:1; position:relative; overflow:hidden;
+    background:#0b1220;
+  }
+  .viewport-bg {
+    width:100%; height:100%; object-fit:cover; opacity:0.9;
+    position:absolute; top:0; left:0;
+  }
+  .viewport-canvas-placeholder {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .gate-placeholder {
+    color:rgba(255,255,255,0.15); font-size:18px; font-weight:600; letter-spacing:3px;
+    text-transform:uppercase;
+  }
+
+  /* ══════ BOTTOM STRIP ══════ */
+  .bottom-strip {
+    display:flex; align-items:stretch; justify-content:center; gap:0;
+    height:48px; min-height:48px;
+    background:rgba(11,18,32,0.95); backdrop-filter:blur(12px);
+    border-top:1px solid rgba(255,255,255,0.08);
+    z-index:100;
+  }
+  .strip-tab {
+    padding:0 24px; font-size:11px; font-weight:700; color:rgba(255,255,255,0.4);
+    cursor:pointer; border-top:2px solid transparent; transition:all 0.2s;
+    text-transform:uppercase; letter-spacing:1px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .strip-tab:hover { color:rgba(255,255,255,0.7); background:rgba(255,255,255,0.03); }
+  .strip-tab.active { color:#f97316; border-top-color:#ea580c; background:rgba(249,115,22,0.06); }
+  .strip-tab .icon { font-size:14px; }
+
+  /* ══════ FLYOUT PANEL ══════ */
+  .flyout {
+    background:rgba(15,26,44,0.97); backdrop-filter:blur(16px);
+    border-top:1px solid rgba(255,255,255,0.08);
+    padding:20px 28px 16px;
+    max-height:280px; min-height:280px;
+    overflow-y:auto; overflow-x:hidden;
+    z-index:50;
+  }
+  .flyout-header {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;
+  }
+  .flyout-title {
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px;
+    color:rgba(255,255,255,0.35);
+  }
+  .flyout-selected {
+    font-size:14px; font-weight:700; color:#fff;
+  }
+  .flyout-selected span { color:#f97316; }
+
+  /* Thumbnail cards */
+  .thumb-grid { display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; }
+  .thumb-grid::-webkit-scrollbar { height:4px; }
+  .thumb-grid::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
+  .thumb-card {
+    min-width:130px; max-width:130px; border-radius:12px; overflow:hidden;
+    border:2px solid rgba(255,255,255,0.08); cursor:pointer; transition:all 0.25s;
+    background:rgba(255,255,255,0.03); flex-shrink:0;
+  }
+  .thumb-card:hover { border-color:rgba(255,255,255,0.2); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .thumb-card.active { border-color:#ea580c; box-shadow:0 0 0 2px rgba(249,115,22,0.3), 0 8px 24px rgba(0,0,0,0.3); }
+  .thumb-img {
+    height:80px; background:linear-gradient(135deg,#1a2332,#2d3748);
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; color:rgba(255,255,255,0.3); font-weight:600;
+  }
+  .thumb-label { padding:8px 10px; text-align:center; }
+  .thumb-label .name { font-size:12px; font-weight:700; color:#fff; }
+  .thumb-label .sub { font-size:9px; color:rgba(255,255,255,0.4); font-weight:500; margin-top:2px; }
+
+  /* Color swatches */
+  .swatch-row { display:flex; gap:16px; flex-wrap:wrap; }
+  .swatch-group { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; }
+  .swatch {
+    width:44px; height:44px; border-radius:50%; border:3px solid rgba(255,255,255,0.1);
+    transition:all 0.2s; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+  }
+  .swatch:hover { transform:scale(1.15); }
+  .swatch.active { border-color:#ea580c; box-shadow:0 0 0 3px rgba(249,115,22,0.3); }
+  .swatch-name { font-size:9px; color:rgba(255,255,255,0.5); font-weight:600; text-align:center; width:52px; }
+
+  /* Size controls */
+  .size-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .size-btn {
+    padding:10px 18px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.7);
+    font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s;
+  }
+  .size-btn:hover { border-color:rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); }
+  .size-btn.active { background:rgba(249,115,22,0.15); border-color:rgba(249,115,22,0.5); color:#f97316; box-shadow:0 0 0 2px rgba(249,115,22,0.1); }
+
+  /* Option toggles */
+  .option-grid { display:flex; gap:12px; flex-wrap:wrap; }
+  .option-card {
+    width:120px; padding:12px; border-radius:12px; text-align:center;
+    border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
+    cursor:pointer; transition:all 0.2s;
+  }
+  .option-card:hover { border-color:rgba(255,255,255,0.15); }
+  .option-card.active { border-color:rgba(249,115,22,0.5); background:rgba(249,115,22,0.08); }
+  .option-card .icon { font-size:20px; margin-bottom:6px; }
+  .option-card .label { font-size:10px; font-weight:600; color:rgba(255,255,255,0.6); }
+
+  /* Section dividers in flyout */
+  .flyout-section { margin-bottom:16px; }
+  .flyout-section-title { font-size:10px; font-weight:700; color:rgba(255,255,255,0.25); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+
+  /* Quote panel */
+  .quote-panel { display:flex; gap:24px; }
+  .quote-summary { flex:1; }
+  .quote-summary-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13px; }
+  .quote-summary-row .label { color:rgba(255,255,255,0.4); }
+  .quote-summary-row .value { color:#fff; font-weight:600; }
+  .quote-cta { display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; min-width:220px; }
+  .btn-instant-quote {
+    padding:14px 32px; background:linear-gradient(135deg,#ea580c,#f97316); color:#fff;
+    border:none; border-radius:12px; font-weight:800; font-size:15px; cursor:pointer;
+    box-shadow:0 4px 20px rgba(249,115,22,0.4); letter-spacing:0.3px;
+  }
+  .quote-phone { font-size:12px; color:rgba(255,255,255,0.4); margin-top:4px; }
+
+  /* Sky gradient at bottom (brand element) */
+  .sky-accent {
+    height:3px;
+    background:linear-gradient(90deg, #78AFCF, #a8d4e6, #78AFCF);
+    opacity:0.6;
+  }
+
+  /* Backlinks bar */
+  .backlinks {
+    display:flex; justify-content:center; gap:16px; padding:6px 0;
+    background:rgba(11,18,32,0.98); font-size:9px;
+  }
+  .backlinks a {
+    color:rgba(255,255,255,0.25); text-decoration:none; font-weight:500;
+    transition:color 0.2s;
+  }
+  .backlinks a:hover { color:rgba(255,255,255,0.5); }
+  .backlinks .sep { color:rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════ TOP NAV ══════ -->
+  <nav class="topnav">
+    <div class="topnav-left">
+      <div class="topnav-logo">
+        <img src="assets/logo.png" alt="Grandview Fence">
+      </div>
+      <div class="topnav-brand">
+        <span class="name">Grandview Fence</span>
+        <span class="tool-name">Design Studio</span>
+      </div>
+    </div>
+    <div class="topnav-tabs">
+      <div class="topnav-tab active">Driveway Gates</div>
+      <div class="topnav-tab">Front Yard</div>
+      <div class="topnav-tab">Back Yard</div>
+      <div class="topnav-tab">Draw Your Yard <span class="badge">NEW</span></div>
+    </div>
+    <div class="topnav-right">
+      <button class="btn-quote">Get Instant Quote <span class="arrow">→</span></button>
+    </div>
+  </nav>
+
+  <!-- ══════ 3D VIEWPORT ══════ -->
+  <div class="viewport">
+    <img class="viewport-bg" src="assets/backgrounds/tool-background-gate_1960x1096.png" alt="">
+    <div class="viewport-canvas-placeholder">
+      <div class="gate-placeholder">3D Gate Renders Here</div>
+    </div>
+  </div>
+
+  <!-- ══════ FLYOUT PANEL ══════ -->
+  <div class="flyout" id="flyout">
+    <!-- This content changes per active tab — showing STYLE tab -->
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Choose Your Gate Style</div>
+        <div class="flyout-selected">Horizon™ — <span>Flat Top, 3-Rail</span></div>
+      </div>
+    </div>
+    <div class="thumb-grid">
+      <div class="thumb-card active">
+        <div class="thumb-img">UAF-200</div>
+        <div class="thumb-label"><div class="name">Horizon™</div><div class="sub">Flat Top</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img">UAF-201</div>
+        <div class="thumb-label"><div class="name">Horizon Pro™</div><div class="sub">Pro Spacing</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img">UAF-250</div>
+        <div class="thumb-label"><div class="name">Vanguard™</div><div class="sub">Spear Top</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img">UAB-200</div>
+        <div class="thumb-label"><div class="name">Haven™</div><div class="sub">Pool-Safe</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img">UAS-100</div>
+        <div class="thumb-label"><div class="name">Charleston™</div><div class="sub">Classic Spear</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img">UAS-101</div>
+        <div class="thumb-label"><div class="name">Charleston Pro™</div><div class="sub">Pro Spacing</div></div>
+      </div>
+      <div class="thumb-card">
+        <div class="thumb-img">UAS-150</div>
+        <div class="thumb-label"><div class="name">Savannah™</div><div class="sub">Staggered Spear</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sky accent line -->
+  <div class="sky-accent"></div>
+
+  <!-- ══════ BOTTOM STRIP ══════ -->
+  <div class="bottom-strip">
+    <div class="strip-tab active"><span class="icon">◆</span> Style</div>
+    <div class="strip-tab"><span class="icon">●</span> Color</div>
+    <div class="strip-tab"><span class="icon">↕</span> Size</div>
+    <div class="strip-tab"><span class="icon">⚙</span> Options</div>
+    <div class="strip-tab"><span class="icon">✦</span> Details</div>
+    <div class="strip-tab"><span class="icon">📋</span> Quote</div>
+  </div>
+
+  <!-- Backlinks bar -->
+  <div class="backlinks">
+    <a href="https://grandviewfence.com">Home</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/fencing">Fencing</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/walk-drive-gates">Gates</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/accessories">Accessories</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/quick-quote">Get a Quote</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/blog">Blog</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/pet-aluminum-fence">Pet-Safe Fencing</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/privacy">Privacy Fence</a><span class="sep">·</span>
+    <a href="https://grandviewfence.com/about">About Us</a>
+  </div>
+</div>
+
+<script>
+// Tab switching demo
+const tabs = document.querySelectorAll('.strip-tab');
+const flyout = document.getElementById('flyout');
+
+const flyoutContent = {
+  style: flyout.innerHTML,
+  color: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">ProCoat™ Powder Coat Finish</div>
+        <div class="flyout-selected">Gloss Black — <span>Premium Finish</span></div>
+      </div>
+    </div>
+    <div class="swatch-row">
+      <div class="swatch-group"><div class="swatch active" style="background:#090909"></div><div class="swatch-name">Black</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#1a1a1a"></div><div class="swatch-name">Satin Black</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#42382c"></div><div class="swatch-name">Bronze</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#5a4d3e"></div><div class="swatch-name">Satin Bronze</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#f4f4f4;border-color:rgba(255,255,255,0.2)"></div><div class="swatch-name">White</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#e8e8e8;border-color:rgba(255,255,255,0.2)"></div><div class="swatch-name">Satin White</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#cdbeaf"></div><div class="swatch-name">Beige</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#c8c8c8"></div><div class="swatch-name">Silver</div></div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:rgba(255,255,255,0.3)">
+      All colors include our ProCoat powder coat finish — individually coated before assembly for complete coverage. Limited Lifetime Warranty.
+    </div>
+  `,
+  size: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Gate Dimensions</div>
+        <div class="flyout-selected">60" Height — <span>Double Gate</span></div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Height</div>
+      <div class="size-row">
+        <div class="size-btn">48"</div>
+        <div class="size-btn">54"</div>
+        <div class="size-btn active">60"</div>
+        <div class="size-btn">72"</div>
+      </div>
+    </div>
+    <div class="flyout-section" style="margin-top:16px">
+      <div class="flyout-section-title">Gate Type</div>
+      <div class="size-row">
+        <div class="size-btn">Single Gate</div>
+        <div class="size-btn active">Double Gate</div>
+      </div>
+    </div>
+  `,
+  options: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Gate Options</div>
+        <div class="flyout-selected">Customize Your Gate</div>
+      </div>
+    </div>
+    <div class="option-grid">
+      <div class="option-card active"><div class="icon">🏛️</div><div class="label">Estate Arch</div></div>
+      <div class="option-card"><div class="icon">⌒</div><div class="label">Arched</div></div>
+      <div class="option-card"><div class="icon">—</div><div class="label">Standard</div></div>
+      <div class="option-card"><div class="icon">⌢</div><div class="label">Reverse</div></div>
+      <div class="option-card"><div class="icon">▬</div><div class="label">Mid Rail</div></div>
+      <div class="option-card"><div class="icon">▤</div><div class="label">Flush Bottom</div></div>
+    </div>
+  `,
+  details: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Fine Details</div>
+        <div class="flyout-selected">Post Caps, Finials & Accessories</div>
+      </div>
+    </div>
+    <div class="flyout-section">
+      <div class="flyout-section-title">Post Caps</div>
+      <div class="size-row">
+        <div class="size-btn">None</div>
+        <div class="size-btn active">Flat Cap</div>
+        <div class="size-btn">Ball Cap</div>
+      </div>
+    </div>
+    <div class="flyout-section" style="margin-top:14px">
+      <div class="flyout-section-title">Finials</div>
+      <div class="size-row">
+        <div class="size-btn active">Spear</div>
+        <div class="size-btn">Trident</div>
+        <div class="size-btn">Quad</div>
+        <div class="size-btn">Plug</div>
+      </div>
+    </div>
+    <div class="flyout-section" style="margin-top:14px">
+      <div class="flyout-section-title">Decorative Accents</div>
+      <div class="size-row">
+        <div class="size-btn">Circle</div>
+        <div class="size-btn">Butterfly</div>
+        <div class="size-btn">Scroll</div>
+      </div>
+    </div>
+  `,
+  quote: `
+    <div class="flyout-header">
+      <div>
+        <div class="flyout-title">Your Configuration</div>
+        <div class="flyout-selected">Ready to Order? <span>Get your instant quote below</span></div>
+      </div>
+    </div>
+    <div class="quote-panel">
+      <div class="quote-summary">
+        <div class="quote-summary-row"><span class="label">Style</span><span class="value">Horizon™ — Flat Top</span></div>
+        <div class="quote-summary-row"><span class="label">Color</span><span class="value">Gloss Black (ProCoat)</span></div>
+        <div class="quote-summary-row"><span class="label">Height</span><span class="value">60" Double Gate</span></div>
+        <div class="quote-summary-row"><span class="label">Arch</span><span class="value">Estate</span></div>
+        <div class="quote-summary-row"><span class="label">Post Caps</span><span class="value">Flat Cap</span></div>
+        <div class="quote-summary-row"><span class="label">Options</span><span class="value">None</span></div>
+      </div>
+      <div class="quote-cta">
+        <button class="btn-instant-quote">Get Instant Quote →</button>
+        <div class="quote-phone">or call <strong style="color:#fff">(855)-Fence-30</strong></div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px">sales@grandviewfence.com</div>
+      </div>
+    </div>
+  `
+};
+
+tabs.forEach((tab, i) => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const keys = ['style','color','size','options','details','quote'];
+    flyout.innerHTML = flyoutContent[keys[i]] || flyoutContent.style;
+  });
+});
+</script>
+</body>
+</html>

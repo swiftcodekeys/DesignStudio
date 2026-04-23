@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+.superpowers/
+dist/
+quiz/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Git worktrees
+.worktrees/

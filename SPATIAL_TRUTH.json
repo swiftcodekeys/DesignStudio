@@ -1,0 +1,263 @@
+{
+  "_source": "Extracted from gate_tool/js/ultra_dsg_min.js — DO NOT EDIT without re-verifying against Ultra live tool at https://www.ultrafence.com/design-studio/gates/index.html",
+  "_verified_date": "2026-03-16",
+
+  "inches_to_meters": {
+    "_1":     0.025,
+    "_1_5":   0.037,
+    "_2":     0.0508,
+    "_2_5":   0.0635,
+    "_3_625": 0.092,
+    "_4_125": 0.105,
+    "_5":     0.127,
+    "_6":     0.152,
+    "_6_125": 0.155,
+    "_7_5":   0.1905,
+    "_12":    0.3048,
+    "_13_5":  0.343,
+    "_14_5":  0.3683,
+    "_16":    0.4064,
+    "_18":    0.457,
+    "_20":    0.508,
+    "_24":    0.610,
+    "_48":    1.219,
+    "_60":    1.524,
+    "_72":    1.829
+  },
+
+  "camera": {
+    "fov": 40,
+    "zoom": 1.788,
+    "position": { "x": 0.82, "y": 1.27, "z": 7.2 },
+    "rotation_y_deg": 6,
+    "rotation_order": "YXZ",
+    "near": 1,
+    "far": 100
+  },
+
+  "height_y_offsets": {
+    "_note": "tY = scene Y offset applied to picket groups via mY(grpte, tY+_12+fsv)",
+    "48in": -0.915,
+    "60in": -0.610,
+    "72in": -0.305
+  },
+
+  "style_fsv_offsets": {
+    "_note": "fsv = vertical offset applied to rails and pickets based on style family",
+    "f2_flat":   0,
+    "b2_flush":  0,
+    "s1_spear": -0.152
+  },
+
+  "pro_spacing": {
+    "_note": "grptx and grpbx are ALWAYS loaded but visibility toggled in viz(). xtr=true only for pi==201 or pi==101.",
+    "xtr_true_styles": ["UAF-201", "UAS-101"],
+    "xtr_pi_codes": ["201", "101"],
+    "visibility_rule": "if(xtr==true){ grptx.visible=true; grpbx.visible=true; }else{ grptx.visible=false; grpbx.visible=false; }"
+  },
+
+  "picket_y_positions": {
+    "_note": "mY(grpte, tY+_12+fsv) — same for grpto. grptx uses style-specific offset.",
+    "grpte_grpto_y": "tY + 0.3048 + fsv",
+    "grptx_y_by_style": {
+      "UAF-201_gN3_no_tcr": "tY + 0.3048 + fsv - 0.1905",
+      "UAF-201_gN3_with_tcr": "tY + 0.1905 + fsv",
+      "UAS-101_gN8_no_accent": "tY + 0.3048 + fsv",
+      "UAS-101_gN8_with_tcr": "tY + 0.1905 + fsv",
+      "UAS-101_gN8_with_tbu": "tY + 0.127 + fsv",
+      "f250_vanguard_gN2_grpto_offset": -0.205
+    }
+  },
+
+  "clipping_planes": {
+    "_note": "Three.js does NOT auto-normalize plane normals. Non-normalized (0,±0.735,0) used for pickets — this is intentional and matches Ultra exactly.",
+    "post_po14_po40_pob124": {
+      "normal": [0, -1, 0],
+      "constant_formula": "htY + _2_5",
+      "example_60in": 1.5875
+    },
+    "post_po23": {
+      "normal": [0, -1, 0],
+      "constant_by_arch": {
+        "arched_a_or_estate_e": "htY + _12 + _2_5  (except 72in estate: constant=3)",
+        "standard_s": "htY + _2_5",
+        "reverse_r": "htY - _12 + _2_5"
+      }
+    },
+    "picket_top_pteCp_ptoCp_ptxCp": {
+      "normal": [0, 0.735, 0],
+      "constant": -0.735,
+      "effective_clip_y": 1.0,
+      "warning": "DO NOT normalize this normal — effective clip = constant/|normal| = -0.735/0.735 = -1.0 in normalized space, BUT Three.js clips where dot(normal,point)+constant=0, so with non-normalized normal the clip is at y=1.0"
+    },
+    "picket_bottom_pbeCp_pboCp": {
+      "normal": [0, -0.735, 0],
+      "constant": 0.735,
+      "effective_clip_y": 1.0
+    },
+    "picket_bottom_pbxCp_pro_extra": {
+      "normal": [0, -0.735, 0],
+      "constant_default": 0.735,
+      "constant_with_puppy_pupcl": "_18 + _4_125 = 0.562 (with ufr) or _18+0.02=0.477 (without)",
+      "constant_with_puppy_other": "r3y + 0.2"
+    }
+  },
+
+  "rails": {
+    "_note": "r0=top rail, r1=second top rail, r2=mid rail (optional), r3=extra lower rail (optional), r4=bottom rail",
+    "rH_rail_height_offset": -0.035,
+    "pcY_post_cap_y_offset": -0.015,
+    "bottom_rail_bY": {
+      "default": 0.155,
+      "flush_bottom_res_true_or_pupfl": 0.0508,
+      "ufr_adds": 0.0635
+    },
+    "r0_top_rail_y": "htY + rH + fsv",
+    "r1_second_rail_y": {
+      "default": "htY - _7_5 + rH + fsv",
+      "haven_gN4": "htY - 0.07 + rH + fsv",
+      "with_tcr_circles": "htY - _7_5 + rH + fsv + _2_5"
+    },
+    "r4_bottom_rail_y": "bY  (see bottom_rail_bY above)",
+    "r2_mid_rail_y": "(r1y/2) + (r4y/2) - rAdj  [rAdj=_6 for reverse arch, else 0]",
+    "r2_mid_rail_y_with_xlr_bcr_bbu": "(r1y/2) + (r3y/2) - rAdj",
+    "r3_extra_lower_y": {
+      "puppy_pupcl": "bY + _7_5",
+      "puppy_pupfl": "bY + _16",
+      "puppy_pupst": "bY + _12",
+      "no_puppy_with_bcr": "bY + _5",
+      "no_puppy_no_bcr": "bY + _7_5"
+    }
+  },
+
+  "post_cap_positions": {
+    "_note": "pc0-pc3 = outer/inner gate posts. pc4-pc5 = center seam caps (double leaf only, at +/-0.044)",
+    "double_leaf_xD": {
+      "pc0_outer_left":  -1.829,
+      "pc1_outer_right":  1.829,
+      "pc2_inner_left":  -1.645,
+      "pc3_inner_right":  1.645,
+      "pc4_center_left": -0.044,
+      "pc5_center_right": 0.044
+    },
+    "single_leaf_xS": {
+      "pc0_left":   -1.873,
+      "pc1_right":   1.873,
+      "pc2_left2":  -1.689,
+      "pc3_right2":  1.689,
+      "_note_pc0_single": "Ultra adds +0.07 to pc0 in single leaf: pcPo[0].xS + 0.07"
+    },
+    "outer_post_scale": "pc0 and pc1 scaled 1.545x in all axes",
+    "center_seam_caps_pc4_pc5": {
+      "x": "+/-0.044  — NO CENTER_GAP push applied here",
+      "y_formula": "htY + midY + pcY + _2_5  where midY=_12=0.3048 by default",
+      "arch_y_note": "midY comes from arArr: Estate/Arched midY=0.305, Standard midY=0, Reverse midY=-0.305"
+    }
+  },
+
+  "hinge_positions": {
+    "hng0": { "xD": -1.778, "xS": -1.823, "y_formula": "htY - 0.15", "z": 0, "rotation_y_deg": -90 },
+    "hng1": { "xD":  1.778, "xS":  1.823, "y_formula": "htY - 0.15", "z": 0, "rotation_y_deg": 90 },
+    "hng2": { "xD": -1.778, "xS": -1.823, "y": 0.225, "z": 0, "rotation_y_deg": -90 },
+    "hng3": { "xD":  1.778, "xS":  1.823, "y": 0.225, "z": 0, "rotation_y_deg": 90 },
+    "_note": "hng0 and hng2 hidden for single leaf (lfI==1)"
+  },
+
+  "po23_center_stile": {
+    "_note": "CRITICAL — po23 center gap behavior. Ultra does NOT vertex-shift po23 geometry. The po23.json model geometry for double leaf (lfI=2) already contains TWO stiles positioned with a gap baked in. The gap is NOT created by code — it is in the model file itself.",
+    "double_leaf": "pob23.visible = true — the gap is IN the model geometry",
+    "single_leaf": "pob23.visible = false — po12 is used instead",
+    "clipping": "pob23Mt uses pob23Cp — clipped at top based on arch height",
+    "CENTER_GAP_vertex_manipulation": "WRONG — do not vertex-shift po23. The existing CENTER_GAP code in GateRenderer.js is incorrect and should be removed."
+  },
+
+  "finial_y_offsets_by_arch": {
+    "_note": "mY(grfin, htY + offset + fsv - f250v). f250v=0.205 for Vanguard (gN==2), else 0.",
+    "arched_a":   0.06,
+    "estate_e":   0.04,
+    "reverse_r":  0.025,
+    "standard_s": 0.04
+  },
+
+  "finial_position_arrays": {
+    "_note": "Variable names in ultra_dsg_min.js. b=spear family (Charleston/Savannah), f250=Vanguard, st=Savannah staggered. Leaf count and arch in variable name.",
+    "spear_family_double_leaf": {
+      "arched":  "b2a",
+      "estate":  "b2e",
+      "reverse": "b2r",
+      "standard":"b2s"
+    },
+    "spear_family_single_leaf": {
+      "arched":  "b1a",
+      "estate":  "b1e",
+      "reverse": "b1r",
+      "standard":"b1s"
+    },
+    "vanguard_f250_double": {
+      "arched":  "f250_2a",
+      "estate":  "f250_2e",
+      "reverse": "f250_2r",
+      "standard":"f250_2s"
+    },
+    "vanguard_f250_single": {
+      "arched":  "f250_1a",
+      "estate":  "f250_1e",
+      "reverse": "f250_1r",
+      "standard":"f250_1s"
+    },
+    "savannah_staggered_double": {
+      "arched":  "st2a",
+      "estate":  "st2e",
+      "reverse": "st2r",
+      "standard":"st2s"
+    },
+    "savannah_staggered_single": {
+      "arched":  "st1a",
+      "estate":  "st1e",
+      "reverse": "st1r",
+      "standard":"st1s"
+    }
+  },
+
+  "scroll_accent_positions": {
+    "scr1_single_leaf": [[-0.889, 0, 0], [0, 0, 0], [0.889, 0, 0]],
+    "scr2_double_leaf": [[-0.844, 0, 0], [0.844, 0, 0]],
+    "_note": "Y position set dynamically in movY: (r1y/2)+(r4y/2)-rAdj or (r1y/2)+(r3y/2)-rAdj"
+  },
+
+  "style_definitions": {
+    "UAF-200": { "gN": 1, "stlI": "f2", "modI": "200", "pi": "200", "fin": false, "xtr": false, "fsv": 0 },
+    "UAF-250": { "gN": 2, "stlI": "f2", "modI": "250", "pi": "250", "fin": true,  "xtr": false, "fsv": 0, "f250v": 0.205 },
+    "UAF-201": { "gN": 3, "stlI": "f2", "modI": "201", "pi": "201", "fin": false, "xtr": true,  "fsv": 0 },
+    "UAB-200": { "gN": 4, "stlI": "b2", "modI": "200", "pi": "200", "fin": false, "xtr": false, "fsv": 0 },
+    "UAS-100": { "gN": 6, "stlI": "s1", "modI": "100", "pi": "100", "fin": true,  "xtr": false, "fsv": -0.152 },
+    "UAS-150": { "gN": 7, "stlI": "s1", "modI": "150", "pi": "100", "fin": true,  "xtr": false, "fsv": -0.152, "stg": true },
+    "UAS-101": { "gN": 8, "stlI": "s1", "modI": "100", "pi": "101", "fin": true,  "xtr": true,  "fsv": -0.152 }
+  },
+
+  "three_rendering": {
+    "known_bugs_to_fix": [
+      {
+        "id": "BUG-1",
+        "title": "Charleston/Charleston Pro center gap missing",
+        "root_cause": "GateRenderer.js applies CENTER_GAP vertex manipulation to po23 geometry. This is WRONG. The po23.json model already has the double-leaf gap baked in. The vertex shift code must be removed.",
+        "fix": "Remove the CENTER_GAP vertex manipulation block in buildGate(). Load po23 geometry as-is. Ensure isDoubleLeaf check only controls pob23.visible, not geometry mutation.",
+        "verify": "Charleston double leaf estate arch should show visible gap at center seam matching Ultra live tool"
+      },
+      {
+        "id": "BUG-2",
+        "title": "Pro spacing (grptx) appears between top two rails",
+        "root_cause": "grptx Y position is incorrect for UAS-101 (Charleston Pro). Ultra places grptx at tY+_12+fsv for gN==8 without accents. Check current GateRenderer spatialConstants vs SPATIAL_TRUTH picket_y_positions.",
+        "fix": "In GateRenderer.js picket section for ptRes (grptx equivalent), apply Y transform matching Ultra: for UAS-101 no-accent case use tY+_12+fsv. Only deviate for accent variants.",
+        "verify": "Charleston Pro should show tight spacing ONLY below the second horizontal rail, not between the two top rails"
+      },
+      {
+        "id": "BUG-3",
+        "title": "Horizon inner post caps slightly off center",
+        "root_cause": "Center seam post caps (pc4/pc5) should be at x=+/-0.044 with NO CENTER_GAP offset applied. If CENTER_GAP is being added to their X positions that is wrong.",
+        "fix": "In GateRenderer.js M_CAPS handling, confirm idx>=4 caps use fixed x=+/-0.044 from Ultra source (pcPo[4].xD=-0.044, pcPo[5].xD=0.044). Do NOT apply CENTER_GAP to these positions.",
+        "verify": "Horizon double leaf: center seam caps should be centered directly above the gate seam"
+      }
+    ]
+  }
+}

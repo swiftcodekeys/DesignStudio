@@ -1,0 +1,63 @@
+================================================================================
+JOURNAL - Grandview Design Studio Fence Tool
+================================================================================
+Archive policy: keep this file under 100 lines. Roll older entries into
+docs/journal-archive-YYYY-MM.md monthly. Previous entries:
+  docs/journal-archive-2026-04.md  (everything through Pass 3 2026-04-21)
+
+
+BRANCH SITUATION (as of 2026-04-21)
+-----------------------------------
+Active branch: feat/quote-redesign, pushed to origin.
+Preview: https://feat-quote-redesign.designstudio-csy.pages.dev
+
+Latest Pass 3 snapshot committed through ecc8afe. Today (2026-04-21 later)
+Pass 4 is in progress on top of that.
+
+
+PASS 4 PROGRESS (2026-04-21)
+----------------------------
+Sarah reviewed the pushed preview and surfaced a new round of draw-tool +
+quote-page fixes. Nine task items.
+
+Done:
+- P4.1-4 batched at 2369926. Trailing dotted line gated on drawModeActive;
+  post math now returns {endPosts, corners, linePosts} with 15 degree
+  corner threshold; dock stats row redesigned with Barlow Condensed font,
+  flex-wrap, stable min-width so numbers stop colliding; Continue CTA no
+  longer duplicates the stats-row price tail.
+- P4.7 at 437c195. Per-segment rackability dropdown removed from the
+  draw tool entirely. Racking tier selection moves to the quote page.
+
+In flight (subagents dispatched in parallel):
+- P4.5 + P4.6. Color-coded posts on map (end = amber, corner = red,
+  line = blue), legend with "corners at turns greater than 15 degrees"
+  copy, and per-segment rainbow colors in the breakdown rows that match
+  the line paint on the overlay.
+- P4.8 + P4.9. Plain-language slope options on quote page (No Slope /
+  Sloped / Heavy Slope, internal SKU values unchanged), racking-vs-
+  stair-step SVG diagrams with racking-preferred framing per GreatFence.
+
+
+CURRENT STATE
+-------------
+Working:
+- Draw tool opens in pan/zoom mode, buyer opts in via Start Drawing.
+- Post counts split into end / corner / line with readable font.
+- CTA is clean (no duplicate price).
+- Rackability lives on the quote page only.
+- Email guard protects preview from burning GAS quota.
+
+Broken / known rough edges:
+- Legend + colored post/segment overlays not yet visible (subagent P4.5
+  pending).
+- Quote page still shows technical Racking Tier names; plain-language
+  labels arriving in subagent P4.8 commit.
+
+
+OPEN DECISIONS / BLOCKERS
+-------------------------
+- Industrial post pricing at 72" still missing the 96" postLength entry
+  in POST_PRICING. Deferred.
+- Admin CRM (grandview-quote-system) still needs git init before any
+  PO/pricing commits can be tracked.

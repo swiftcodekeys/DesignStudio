@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sanity Check</title>
+    <style>body { margin: 0; overflow: hidden; background: #333; }</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/86/three.min.js"></script>
+</head>
+<body>
+    <div id="info" style="position:absolute; top:10px; left:10px; color:white; font-family:sans-serif; z-index: 100;">
+        Status: <span id="status">Initializing...</span>
+    </div>
+
+    <script>
+        var statusEl = document.getElementById('status');
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        var renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true }); 
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x333333); // Dark grey background
+        document.body.appendChild(renderer.domElement);
+
+        // --- HELPERS ---
+        var gridHelper = new THREE.GridHelper( 100, 100 );
+        scene.add( gridHelper );
+        
+        // FIX: In older versions of Three.js it was "AxisHelper" not "AxesHelper"
+        var axesHelper = new THREE.AxisHelper( 50 );
+        scene.add( axesHelper );
+        
+        var boxGeo = new THREE.BoxGeometry(2, 2, 2);
+        var boxMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        var testBox = new THREE.Mesh(boxGeo, boxMat);
+        scene.add(testBox);
+
+        // --- LIGHTING ---
+        var ambientLight = new THREE.AmbientLight( 0xffffff, 0.5 ); 
+        scene.add( ambientLight );
+        var dirLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+        dirLight.position.set( 10, 20, 10 );
+        scene.add( dirLight );
+
+        // --- CAMERA ---
+        camera.position.set(20, 20, 50);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        // --- LOAD MODEL ---
+        statusEl.innerText = "Attempting to load m/0/po14.json...";
+        var loader = new THREE.JSONLoader();
+        
+        loader.load('gate_tool/m/0/po14.json', 
+            function (geometry, materials) {
+                statusEl.innerText = "Success! Model Loaded.";
+                statusEl.style.color = "lightgreen";
+                
+                var overrideMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+                var mesh = new THREE.Mesh(geometry, overrideMaterial);
+                scene.add(mesh);
+
+                geometry.computeBoundingBox();
+                var center = new THREE.Vector3();
+                
+                // FIX: Older Three.js requires bounding box math like this
+                center.x = (geometry.boundingBox.max.x + geometry.boundingBox.min.x) / 2;
+                center.y = (geometry.boundingBox.max.y + geometry.boundingBox.min.y) / 2;
+                center.z = (geometry.boundingBox.max.z + geometry.boundingBox.min.z) / 2;
+                
+                mesh.position.sub(center); 
+
+                var sizeX = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+                var sizeY = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
+                var sizeZ = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
+                var maxDim = Math.max(sizeX, sizeY, sizeZ);
+                
+                if (maxDim < 1) {
+                    mesh.scale.set(50, 50, 50);
+                    maxDim *= 50;
+                }
+
+                camera.position.set(0, maxDim, maxDim * 2);
+                camera.lookAt(mesh.position);
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    mesh.rotation.y += 0.01; 
+                    renderer.render(scene, camera);
+                }
+                animate();
+            },
+            null,
+            function (error) {
+                console.error("Load Error:", error);
+                statusEl.innerText = "Error: File not found (Check Console F12)";
+                statusEl.style.color = "red";
+                renderer.render(scene, camera); 
+            }
+        );
+    </script>
+</body>
+</html>
