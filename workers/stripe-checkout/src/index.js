@@ -94,6 +94,60 @@ export default {
       }
     }
 
+    if (url.pathname === '/api/webhook' && request.method === 'POST') {
+      var sig = request.headers.get('stripe-signature') || '';
+      var rawBody = await request.text();
+      var event;
+      try {
+        var stripeWebhook = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' });
+        event = stripeWebhook.webhooks.constructEvent(rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
+      } catch (e) {
+        console.error('Webhook signature verification failed:', e.message);
+        return json({ error: 'Invalid signature' }, { status: 400 });
+      }
+
+      var knownEvents = [
+        'payment_intent.amount_capturable_updated',
+        'payment_intent.succeeded',
+        'payment_intent.payment_failed',
+      ];
+      if (knownEvents.indexOf(event.type) !== -1) {
+        var pi = event.data.object;
+        var paymentStatus = event.type === 'payment_intent.succeeded' ? 'captured'
+          : event.type === 'payment_intent.payment_failed' ? 'failed'
+          : 'authorized';
+        var crmBody = JSON.stringify({
+          payment_status: paymentStatus,
+          authorized_amount_cents: pi.amount,
+          captured_amount_cents: pi.amount_received || 0,
+          stripe_event_id: event.id,
+        });
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(
+            fetch(env.CRM_WORKER_URL + '/leads/by-payment-intent/' + pi.id, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + env.ADMIN_API_KEY,
+              },
+              body: crmBody,
+            }).catch(function(e) { console.error('CRM webhook forward failed:', e); })
+          );
+        } else {
+          // In test environment ctx may be undefined
+          fetch(env.CRM_WORKER_URL + '/leads/by-payment-intent/' + pi.id, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + env.ADMIN_API_KEY,
+            },
+            body: crmBody,
+          }).catch(function(e) { console.error('CRM webhook forward failed:', e); });
+        }
+      }
+      return json({ received: true });
+    }
+
     return json({ error: 'Not found' }, { status: 404, headers: cors });
   },
 };
