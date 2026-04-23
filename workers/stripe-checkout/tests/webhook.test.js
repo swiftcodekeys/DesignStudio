@@ -31,6 +31,7 @@ describe('POST /api/webhook', () => {
       data: { object: { id: 'pi_test_1', amount: 350000, amount_received: 0, metadata: { quoteMeta: '{}' } } },
     };
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    const waitUntil = vi.fn((p) => p);
     const req = new Request('https://x/api/webhook', {
       method: 'POST',
       headers: { 'stripe-signature': 'valid_sig' },
@@ -42,7 +43,7 @@ describe('POST /api/webhook', () => {
       CRM_WORKER_URL: 'https://crm.test',
       ADMIN_API_KEY: 'admin',
       ALLOWED_ORIGINS: '*',
-    });
+    }, { waitUntil });
     expect(resp.status).toBe(200);
     const data = await resp.json();
     expect(data.received).toBe(true);
@@ -62,7 +63,7 @@ describe('POST /api/webhook', () => {
       STRIPE_WEBHOOK_SECRET: 'whsec_test',
       STRIPE_SECRET_KEY: 'sk_test',
       ALLOWED_ORIGINS: '*',
-    });
+    }, { waitUntil: vi.fn() });
     expect(resp.status).toBe(400);
   });
 
@@ -82,7 +83,7 @@ describe('POST /api/webhook', () => {
       STRIPE_WEBHOOK_SECRET: 'whsec_test',
       STRIPE_SECRET_KEY: 'sk_test',
       ALLOWED_ORIGINS: '*',
-    });
+    }, { waitUntil: vi.fn() });
     expect(resp.status).toBe(200);
     expect(global.fetch).not.toHaveBeenCalled();
   });

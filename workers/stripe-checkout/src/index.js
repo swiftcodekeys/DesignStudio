@@ -103,7 +103,7 @@ export default {
         event = stripeWebhook.webhooks.constructEvent(rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
       } catch (e) {
         console.error('Webhook signature verification failed:', e.message);
-        return json({ error: 'Invalid signature' }, { status: 400 });
+        return json({ error: 'Invalid signature' }, { status: 400, headers: cors });
       }
 
       var knownEvents = [
@@ -122,19 +122,7 @@ export default {
           captured_amount_cents: pi.amount_received || 0,
           stripe_event_id: event.id,
         });
-        if (ctx && ctx.waitUntil) {
-          ctx.waitUntil(
-            fetch(env.CRM_WORKER_URL + '/leads/by-payment-intent/' + pi.id, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + env.ADMIN_API_KEY,
-              },
-              body: crmBody,
-            }).catch(function(e) { console.error('CRM webhook forward failed:', e); })
-          );
-        } else {
-          // In test environment ctx may be undefined
+        ctx.waitUntil(
           fetch(env.CRM_WORKER_URL + '/leads/by-payment-intent/' + pi.id, {
             method: 'PATCH',
             headers: {
@@ -142,8 +130,8 @@ export default {
               'Authorization': 'Bearer ' + env.ADMIN_API_KEY,
             },
             body: crmBody,
-          }).catch(function(e) { console.error('CRM webhook forward failed:', e); });
-        }
+          }).catch(function(e) { console.error('CRM webhook forward failed:', e); })
+        );
       }
       return json({ received: true });
     }
