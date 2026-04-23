@@ -34,6 +34,7 @@ function GateRenderer(container) {
     this._container = container;
     this._animId = null;
     this._lastConfig = null;
+    this._needsRender = true;
 
     // Scene
     this.scene = new THREE.Scene();
@@ -151,7 +152,10 @@ function GateRenderer(container) {
     // Start render loop
     (function animate() {
         self._animId = requestAnimationFrame(animate);
-        self.renderer.render(self.scene, self.camera);
+        if (self._needsRender) {
+            self._needsRender = false;
+            self.renderer.render(self.scene, self.camera);
+        }
     })();
 }
 
@@ -160,6 +164,7 @@ GateRenderer.prototype.resize = function(w, h) {
     this.camera.zoom = 1.788;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
+    this._needsRender = true;
 };
 
 GateRenderer.prototype.dispose = function() {
@@ -180,6 +185,7 @@ GateRenderer.prototype.dispose = function() {
 // updateMaterials — fast color-only update, no geometry reload
 // ============================================================
 GateRenderer.prototype.updateMaterials = function(config) {
+    this._needsRender = true;
     var THREE = window.THREE;
     var color = config.color || { threeHex: 0x080808, metalness: 0.9, roughness: 0.1 };
     var gate = this.gate;
@@ -205,6 +211,7 @@ GateRenderer.prototype.updateMaterials = function(config) {
 // buildGate — full scene rebuild
 // ============================================================
 GateRenderer.prototype.buildGate = function(config) {
+    this._needsRender = true;
     var THREE = window.THREE;
     var self = this;
     var gate = this.gate;
