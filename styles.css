@@ -7442,3 +7442,5 @@ html, body {
 .htm-body table { border-collapse: collapse; margin: 1rem 0; }
 .htm-body th, .htm-body td { border: 1px solid #e8eaed; padding: 0.5rem 1rem; }
 
+
+@keyframes gv-spin { to { transform: rotate(360deg); } }

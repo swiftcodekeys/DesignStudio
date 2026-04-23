@@ -35,6 +35,9 @@ function GateRenderer(container) {
     this._animId = null;
     this._lastConfig = null;
     this._needsRender = true;
+    this._onLoading = null;
+    this._onReady = null;
+    this._pendingLoads = 0;
 
     // Scene
     this.scene = new THREE.Scene();
@@ -212,6 +215,8 @@ GateRenderer.prototype.updateMaterials = function(config) {
 // ============================================================
 GateRenderer.prototype.buildGate = function(config) {
     this._needsRender = true;
+    this._pendingLoads = 0;
+    if (this._onLoading) this._onLoading();
     var THREE = window.THREE;
     var self = this;
     var gate = this.gate;
@@ -223,9 +228,26 @@ GateRenderer.prototype.buildGate = function(config) {
         self._needsRender = true;
     }
 
+    // Wraps loader.load with pending-load tracking so _onReady fires when all models arrive
+    var loader = new THREE.JSONLoader();
+    function trackedLoad(path, callback) {
+        self._pendingLoads++;
+        loader.load(path, function(geo) {
+            callback(geo);
+            self._pendingLoads--;
+            if (self._pendingLoads === 0 && self._onReady) {
+                self._needsRender = true;
+                self._onReady();
+            }
+        });
+    }
+
     // Clear existing meshes
     while (gate.children.length > 0) gate.remove(gate.children[0]);
-    if (!config) return;
+    if (!config) {
+        if (this._onReady) this._onReady();
+        return;
+    }
 
     this._lastConfig = config;
     var archId = config.arch || 'e';
@@ -350,8 +372,6 @@ GateRenderer.prototype.buildGate = function(config) {
         });
     };
 
-    var loader = new THREE.JSONLoader();
-
     // Mount type: 'p' = post mount (default), 'd' = direct mount
     // Ultra direct mount: hides outer posts (po40d/po40s) + outer caps (pc0/pc1)
     // Keeps visible: hinges, inner posts (po14/po12), center stiles (po23), inner caps
@@ -364,7 +384,7 @@ GateRenderer.prototype.buildGate = function(config) {
     // Single gate (lfI=1): hng0 and hng2 (left side, indices 0,2) are hidden.
     var hingeTransforms = !isPostMount ? M_HINGE_DIRECT
         : (isDoubleLeaf ? M_HINGE : M_HINGE_SINGLE);
-    loader.load(getModelPath('hinge', config), function(geo) {
+    trackedLoad(getModelPath('hinge', config), function(geo) {
         hingeTransforms.forEach(function(m, idx) {
             // Single gate: skip left hinges (indices 0, 2)
             if (!isDoubleLeaf && (idx === 0 || idx === 2)) return;
@@ -379,7 +399,7 @@ GateRenderer.prototype.buildGate = function(config) {
     // Ultra: if(mntI=='d'){ pob40s.visible=false; pob40d.visible=false; }
     if (isPostMount) {
         var outerPostModel = isDoubleLeaf ? 'po40d' : 'po40s';
-        loader.load(getModelPath(outerPostModel, config), function(geo) {
+        trackedLoad(getModelPath(outerPostModel, config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
@@ -389,13 +409,13 @@ GateRenderer.prototype.buildGate = function(config) {
     // INNER POSTS — always visible (both mount types)
     // Ultra: pob14.visible=true (double) or pob12.visible=true (single) regardless of mntI
     if (isDoubleLeaf) {
-        loader.load(getModelPath('po14', config), function(geo) {
+        trackedLoad(getModelPath('po14', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
         });
     } else {
-        loader.load(getModelPath('po12', config), function(geo) {
+        trackedLoad(getModelPath('po12', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
@@ -405,7 +425,7 @@ GateRenderer.prototype.buildGate = function(config) {
     // PO23 inner stiles — only for double gate (both mount types)
     // Single gate has no center seam posts (Ultra viz(): pob23.visible = false when lfI=1)
     if (isDoubleLeaf) {
-        loader.load(getModelPath('po23', config), function(geo) {
+        trackedLoad(getModelPath('po23', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeClipMat(clips.post23));
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
@@ -417,7 +437,7 @@ GateRenderer.prototype.buildGate = function(config) {
     // Inner caps (indices 2+) stay visible for both mount types.
     if (config.postCap) {
         var capTransforms = isDoubleLeaf ? M_CAPS : M_CAPS_SINGLE;
-        loader.load(getModelPath('postCap', config), function(geo) {
+        trackedLoad(getModelPath('postCap', config), function(geo) {
             capTransforms.forEach(function(m, idx) {
                 // Direct mount: skip outer caps (indices 0, 1)
                 if (!isPostMount && idx <= 1) return;
@@ -446,7 +466,7 @@ GateRenderer.prototype.buildGate = function(config) {
     if (hasTopCircles) {
         railT1Final = offsetY(railT1Final, ACCENT_CIRCLE_RAIL_BUMP, 0);
     }
-    loader.load(getModelPath('railTop', config), function(geo) {
+    trackedLoad(getModelPath('railTop', config), function(geo) {
         [railT0, railT1Final].forEach(function(m) {
             var mesh = new THREE.Mesh(geo, makeMat());
             snap(mesh, m);
@@ -455,7 +475,7 @@ GateRenderer.prototype.buildGate = function(config) {
     });
 
     // BOTTOM RAILS — per-leaf Y positions (fsv-adjusted)
-    loader.load(getModelPath('railBot', config), function(geo) {
+    trackedLoad(getModelPath('railBot', config), function(geo) {
         var meshB = new THREE.Mesh(geo, makeMat());
         snap(meshB, railB2);
         addMesh(meshB);
@@ -487,24 +507,24 @@ GateRenderer.prototype.buildGate = function(config) {
     var ptOddTransform = (isVanguard && ptOddStagger) ? ptOddStagger : picketTop;
 
     // Even pickets
-    loader.load(getModelPath('ptEven', config), function(geo) {
+    trackedLoad(getModelPath('ptEven', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
         snap(mesh, picketTop);
         addMesh(mesh);
     });
-    loader.load(getModelPath('pbEven', config), function(geo) {
+    trackedLoad(getModelPath('pbEven', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb));
         snap(mesh, M_IDENTITY);
         addMesh(mesh);
     });
 
     // Odd pickets
-    loader.load(getModelPath('ptOdd', config), function(geo) {
+    trackedLoad(getModelPath('ptOdd', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
         snap(mesh, ptOddTransform);
         addMesh(mesh);
     });
-    loader.load(getModelPath('pbOdd', config), function(geo) {
+    trackedLoad(getModelPath('pbOdd', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pb));
         snap(mesh, M_IDENTITY);
         addMesh(mesh);
@@ -537,13 +557,13 @@ GateRenderer.prototype.buildGate = function(config) {
     } else {
         ptResTransform = picketTop;
     }
-    loader.load(getModelPath('ptRes', config), function(geo) {
+    trackedLoad(getModelPath('ptRes', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pt));
         snap(mesh, ptResTransform);
         mesh.visible = isProSpacing;
         addMesh(mesh);
     });
-    loader.load(getModelPath('pbRes', config), function(geo) {
+    trackedLoad(getModelPath('pbRes', config), function(geo) {
         var mesh = new THREE.Mesh(geo, makeClipMat(clips.pbRes));
         snap(mesh, M_IDENTITY);
         // Ultra: grpbx visible for Pro spacing OR puppy pickets
@@ -566,7 +586,7 @@ GateRenderer.prototype.buildGate = function(config) {
         var pfModel = pfModelMap[pupId] || 'fp';
 
         if (pfPositions) {
-            loader.load('gate_tool/m/3/' + pfModel + '.json', function(geo) {
+            trackedLoad('gate_tool/m/3/' + pfModel + '.json', function(geo) {
                 pfPositions.forEach(function(pos) {
                     var mesh = new THREE.Mesh(geo, makeMat());
                     mesh.position.set(pos[0], pfBaseY + pos[1], pos[2]);
@@ -578,7 +598,7 @@ GateRenderer.prototype.buildGate = function(config) {
 
     // UPPER FILLER RAIL
     if (config.accessories && config.accessories.ufr) {
-        loader.load(getModelPath('ufr', config), function(geo) {
+        trackedLoad(getModelPath('ufr', config), function(geo) {
             var mesh = new THREE.Mesh(geo, makeMat());
             snap(mesh, M_IDENTITY);
             addMesh(mesh);
@@ -598,7 +618,7 @@ GateRenderer.prototype.buildGate = function(config) {
         var finBaseY = FINIAL_BASE_Y[finCategory] || 1.412;
 
         if (finPositions) {
-            loader.load(getModelPath('finial', config), function(geo) {
+            trackedLoad(getModelPath('finial', config), function(geo) {
                 finPositions.forEach(function(pos) {
                     var mesh = new THREE.Mesh(geo, makeMat());
                     snap(mesh, [1,0,0,0, 0,1,0,0, 0,0,1,0, pos[0], finBaseY + pos[1] + hOff, pos[2], 1]);
@@ -629,7 +649,7 @@ GateRenderer.prototype.buildGate = function(config) {
             var scrollPositions = isDoubleLeaf
                 ? [[-0.844, 0], [0.844, 0]]
                 : [[0.889, 0], [0, 0], [-0.889, 0]];
-            loader.load(getModelPath('scroll', config), function(geo) {
+            trackedLoad(getModelPath('scroll', config), function(geo) {
                 scrollPositions.forEach(function(pos) {
                     var mesh = new THREE.Mesh(geo, makeMat());
                     snap(mesh, [1,0,0,0, 0,1,0,0, 0,0,1,0, pos[0],scrollY,0,1]);
@@ -642,7 +662,7 @@ GateRenderer.prototype.buildGate = function(config) {
         if (config.accessories.cir) {
             var circlePositions = ACCENT_POSITIONS.circle[leaf] && ACCENT_POSITIONS.circle[leaf][archId];
             if (circlePositions) {
-                loader.load(getModelPath('circle', config), function(geo) {
+                trackedLoad(getModelPath('circle', config), function(geo) {
                     circlePositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_BASE_Y.circle + pos[1] + accentTopOffset, pos[2]);
@@ -655,7 +675,7 @@ GateRenderer.prototype.buildGate = function(config) {
         if (config.accessories.bcr) {
             var circleBasePositions = ACCENT_POSITIONS.circle[leaf] && ACCENT_POSITIONS.circle[leaf][archId];
             if (circleBasePositions) {
-                loader.load(getModelPath('circle', config), function(geo) {
+                trackedLoad(getModelPath('circle', config), function(geo) {
                     circleBasePositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_CIRCLE_BOTTOM_Y, pos[2]);
@@ -668,7 +688,7 @@ GateRenderer.prototype.buildGate = function(config) {
         if (config.accessories.but) {
             var butterflyPositions = ACCENT_POSITIONS.butterfly[leaf] && ACCENT_POSITIONS.butterfly[leaf][archId];
             if (butterflyPositions) {
-                loader.load(getModelPath('butterfly', config), function(geo) {
+                trackedLoad(getModelPath('butterfly', config), function(geo) {
                     butterflyPositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_BASE_Y.butterfly + pos[1] + accentTopOffset, pos[2]);
@@ -681,7 +701,7 @@ GateRenderer.prototype.buildGate = function(config) {
         if (config.accessories.bbu) {
             var butterflyBasePositions = ACCENT_POSITIONS.butterfly[leaf] && ACCENT_POSITIONS.butterfly[leaf][archId];
             if (butterflyBasePositions) {
-                loader.load(getModelPath('butterfly', config), function(geo) {
+                trackedLoad(getModelPath('butterfly', config), function(geo) {
                     butterflyBasePositions.forEach(function(pos) {
                         var mesh = new THREE.Mesh(geo, makeMat());
                         mesh.position.set(pos[0], ACCENT_BUTTERFLY_BOTTOM_Y, pos[2]);

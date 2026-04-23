@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { fitContainBox } from './spatialConstants';
 import GateRenderer from './GateRenderer';
 import FenceRenderer from './FenceRenderer';
@@ -153,6 +153,10 @@ var UnifiedCanvas = function(props) {
     var prevConfigRef = useRef(null);
     var sceneTypeRef = useRef(null);  // tracks 'gate' or 'fence' to detect scene switch
 
+    var loadingState = useState(false);
+    var isLoading = loadingState[0];
+    var setIsLoading = loadingState[1];
+
     // ============================================================
     // SCENE INIT — creates GateRenderer or FenceRenderer
     // Re-runs when switching between gate and fence scenes
@@ -197,6 +201,8 @@ var UnifiedCanvas = function(props) {
             r.setView(activeScene === 'backyard' ? 'ba' : 'fr');
         } else {
             r = new GateRenderer(mount);
+            r._onLoading = function() { setIsLoading(true); };
+            r._onReady = function() { setIsLoading(false); };
         }
         r.resize(box.w, box.h);
         rendererRef.current = r;
@@ -345,6 +351,21 @@ var UnifiedCanvas = function(props) {
                     width: '100%', height: '100%',
                     position: 'absolute', top: 0, left: 0,
                 }} />
+                {isLoading && (
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.18)',
+                    }}>
+                        <div style={{
+                            width: 40, height: 40,
+                            border: '3px solid rgba(255,255,255,0.25)',
+                            borderTopColor: '#6BA3C2',
+                            borderRadius: '50%',
+                            animation: 'gv-spin 0.8s linear infinite',
+                        }} />
+                    </div>
+                )}
             </div>
         </div>
     );
