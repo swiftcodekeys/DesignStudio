@@ -45,10 +45,14 @@ function GateRenderer(container) {
     window._gateScene = this.scene;  // expose for regression testing
 
     // Camera — exact legacy values
+    // FOV=40, near=1, far=100 — matches Ultra gate tool (Playwright-verified 2026-03-17)
     this.camera = new THREE.PerspectiveCamera(40, 1, 1, 100);
+    // zoom=1.788 — verified against Ultra's scene camera zoom value
     this.camera.zoom = 1.788;
+    // position — verified against Ultra: x=0.82 (slight right), y=1.27 (chest height), z=7.2 (distance)
     this.camera.position.set(0.82, 1.27, 7.2);
     this.camera.rotation.order = 'YXZ';
+    // 6° Y rotation — slight left-facing angle matching Ultra's gate view
     this.camera.rotation.set(0, (6 * Math.PI) / 180, 0);
     this.camera.updateProjectionMatrix();
 
@@ -167,6 +171,7 @@ function GateRenderer(container) {
 
 GateRenderer.prototype.resize = function(w, h) {
     this.camera.aspect = w / h;
+    // Restore verified zoom after aspect change — do not change this value
     this.camera.zoom = 1.788;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
