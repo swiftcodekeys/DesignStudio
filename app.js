@@ -24,15 +24,19 @@ import './checkout.css';
 
 function debounce(fn, ms) {
     var t;
+    var lastArgs;
+    var lastCtx;
     var debounced = function() {
-        var args = arguments;
-        var ctx = this;
+        lastArgs = arguments;
+        lastCtx = this;
         clearTimeout(t);
-        t = setTimeout(function() { fn.apply(ctx, args); }, ms);
+        t = setTimeout(function() { fn.apply(lastCtx, lastArgs); }, ms);
     };
     debounced.flush = function() {
-        clearTimeout(t);
-        fn();
+        if (lastArgs) {
+            clearTimeout(t);
+            fn.apply(lastCtx, lastArgs);
+        }
     };
     return debounced;
 }
