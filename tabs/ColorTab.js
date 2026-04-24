@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { COLORS } from '../configData';
 import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
 import ImagePopup from './ImagePopup';
+import DesignStudioContext from '../DesignStudioContext';
 
 var COLOR_PREVIEWS = {
     5: 'assets/ifence_previews/gate_colors/black.png',
@@ -15,9 +16,10 @@ var COLOR_PREVIEWS = {
 };
 
 var ColorTab = function(props) {
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
     var isFence = props.isFence;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
 
     // Check if current fence style is privacy
     var fStyle = null;

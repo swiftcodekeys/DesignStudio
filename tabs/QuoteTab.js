@@ -1,8 +1,10 @@
 import React from 'react';
 import { FENCE_STYLES, ARCH_STYLES, POST_CAPS, FINIALS, ACCESSORIES } from '../configData';
+import DesignStudioContext from '../DesignStudioContext';
 
 var QuoteTab = function(props) {
-    var config = props.config;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
     var onGetQuote = props.onGetQuote;
     var activeScene = props.activeScene;
     var onSceneChange = props.onSceneChange;

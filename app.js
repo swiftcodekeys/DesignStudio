@@ -21,6 +21,7 @@ import HowToMeasurePage from './HowToMeasurePage';
 import CheckoutPage from './CheckoutPage';
 import CheckoutSuccessPage from './CheckoutSuccessPage';
 import './checkout.css';
+import DesignStudioContext from './DesignStudioContext';
 
 function debounce(fn, ms) {
     var t;
@@ -556,6 +557,15 @@ var DesignStudio = function() {
     }
 
     return (
+        <DesignStudioContext.Provider value={{
+            config: config,
+            setConfig: setConfig,
+            fenceConfig: fenceConfig,
+            setFenceConfig: setFenceConfig,
+            activeScene: activeTab,
+            activeConfigTab: activeConfigTab,
+            setActiveConfigTab: setActiveConfigTab,
+        }}>
         <div className="app-shell">
             <TopNav activeScene={activeTab} onSceneChange={function(id) {
                 if (id === 'draw') {
@@ -603,6 +613,7 @@ var DesignStudio = function() {
             )}
             <ContactPopup isOpen={contactPopupOpen} onClose={function() { setContactPopupOpen(false); }} />
         </div>
+        </DesignStudioContext.Provider>
     );
 };
 

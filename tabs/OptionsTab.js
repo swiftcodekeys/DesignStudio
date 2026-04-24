@@ -1,5 +1,6 @@
 import React from 'react';
 import { ARCH_STYLES, STYLE_FEATURE_GATE } from '../configData';
+import DesignStudioContext from '../DesignStudioContext';
 
 var ARCH_THUMBS = {
     e: 'gate_tool/th/th_so_ares.jpg',
@@ -15,8 +16,9 @@ var ADDON_DEFS = [
 ];
 
 var OptionsTab = function(props) {
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
     var gate = STYLE_FEATURE_GATE[config.styleId] || {};
     var availableArches = (gate.archStyles || []);
     var availableOptions = (gate.options || []);

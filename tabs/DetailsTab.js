@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { STYLE_FEATURE_GATE, FENCE_STYLES } from '../configData';
 import ImagePopup from './ImagePopup';
+import DesignStudioContext from '../DesignStudioContext';
 
 var POST_CAP_ITEMS = [
     { id: 'pcf', name: 'Flat', thumb: 'assets/ifence_previews/post_caps/flat_cap_71.png' },
@@ -21,8 +22,9 @@ var ACCENT_ITEMS = [
 ];
 
 var DetailsTab = function(props) {
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
     var gate = STYLE_FEATURE_GATE[config.styleId] || {};
     var style = FENCE_STYLES.find(function(s) { return s.id === config.styleId; }) || FENCE_STYLES[0];
 

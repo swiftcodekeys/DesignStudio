@@ -4,6 +4,7 @@ import GateRenderer from './GateRenderer';
 import FenceRenderer from './FenceRenderer';
 import { FENCE_STYLES, getStyleRenderMode } from './configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import DesignStudioContext from './DesignStudioContext';
 
 // ============================================================
 // accessoriesEqual — direct field comparison (replaces O(n) JSON.stringify)
@@ -136,8 +137,9 @@ var OverlayPlaceholder = function(props) {
 var PANEL_WIDTH = 0; // Panel is now a flex sibling, canvas uses full container
 
 var UnifiedCanvas = function(props) {
-    var config = props.config;
-    var fenceConfig = props.fenceConfig;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ctx.config : props.config;
+    var fenceConfig = ctx ? ctx.fenceConfig : props.fenceConfig;
     var panelCollapsed = props.panelCollapsed;
     var activeScene = props.activeScene || 'gates';
     var isFence = (activeScene === 'fencing' || activeScene === 'backyard');

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { STYLE_FEATURE_GATE } from '../configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
 import ImagePopup from './ImagePopup';
+import DesignStudioContext from '../DesignStudioContext';
 
 var PUPPY_VARIANTS = [
     { id: 'fls', name: 'Flush',     thumb: 'assets/ifence_previews/gate_puppy_pickets/flush_puppies_97.png' },
@@ -32,9 +33,10 @@ var FENCE_PUPPY_VARIANTS = [
 ];
 
 var PuppyPicketsTab = function(props) {
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
     var isFence = props.isFence;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
 
     var supportsPuppy;
     if (isFence) {

@@ -1,9 +1,11 @@
 import React from 'react';
 import { HEIGHTS } from '../configData';
+import DesignStudioContext from '../DesignStudioContext';
 
 var SizeTab = function(props) {
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
 
     var update = function(key, value) {
         onConfigChange({ ...config, [key]: value });

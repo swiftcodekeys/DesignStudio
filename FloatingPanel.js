@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
+import DesignStudioContext from './DesignStudioContext';
 import { FENCE_STYLES, COLORS, ARCH_STYLES } from './configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES, FENCE_COLORS, FENCE_HEIGHTS } from './fenceConfigData';
 import StyleTab from './tabs/StyleTab';
@@ -77,12 +78,15 @@ function renderTabContent(activeTab, config, onConfigChange, isFence, onGetQuote
 var FloatingPanel = function(props) {
     var activeTab = props.activeTab;
     var onTabChange = props.onTabChange;
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
     var collapsed = props.collapsed;
     var onToggleCollapse = props.onToggleCollapse;
 
     var isFence = props.isFence;
+
+    var ctx = React.useContext(DesignStudioContext);
+    // If context is available, use it; fall back to props for safety
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
     var onGetQuote = props.onGetQuote;
     var header = getHeader(activeTab, config, isFence);
     var bodyRef = useRef(null);

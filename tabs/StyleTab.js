@@ -1,6 +1,7 @@
 import React from 'react';
 import { FENCE_STYLES } from '../configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
+import DesignStudioContext from '../DesignStudioContext';
 
 var STYLE_BADGES = {
     uaf_200: { label: 'Popular', cls: 'b-popular' },
@@ -39,9 +40,10 @@ var FENCE_THUMBS = {
 };
 
 var StyleTab = function(props) {
-    var config = props.config;
-    var onConfigChange = props.onConfigChange;
     var isFence = props.isFence;
+    var ctx = React.useContext(DesignStudioContext);
+    var config = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.fenceConfig : ctx.config) : props.config;
+    var onConfigChange = ctx ? ((ctx.activeScene === 'fencing' || ctx.activeScene === 'backyard') ? ctx.setFenceConfig : ctx.setConfig) : props.onConfigChange;
     var allStyles = isFence ? FENCE_TOOL_STYLES : FENCE_STYLES;
     var styles3D = allStyles.filter(function(s) {
         if (!isFence && (s.isPrivacy || s.category === 'privacy')) return false;
