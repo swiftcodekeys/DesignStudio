@@ -22,6 +22,21 @@ import CheckoutPage from './CheckoutPage';
 import CheckoutSuccessPage from './CheckoutSuccessPage';
 import './checkout.css';
 
+function debounce(fn, ms) {
+    var t;
+    var debounced = function() {
+        var args = arguments;
+        var ctx = this;
+        clearTimeout(t);
+        t = setTimeout(function() { fn.apply(ctx, args); }, ms);
+    };
+    debounced.flush = function() {
+        clearTimeout(t);
+        fn();
+    };
+    return debounced;
+}
+
 var STORAGE_KEY = 'gv_config';
 var USE_MAPBOX = process.env.USE_MAPBOX_DRAW;
 
@@ -422,28 +437,29 @@ var DesignStudio = function() {
         alert('Save Image coming soon');
     };
 
-    // Auto-save to localStorage and update URL hash on config change
+    var persistRef = React.useRef(null);
+
+    // Auto-save to localStorage (debounced) and update URL hash on config change
     useEffect(function() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        } catch (e) {
-            // localStorage may be unavailable
+        if (!persistRef.current) {
+            persistRef.current = debounce(function(cfg, frontCfg, backCfg) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
+                try { localStorage.setItem('gv_fence_config', JSON.stringify(frontCfg)); } catch (e) {}
+                try { localStorage.setItem('gv_back_config', JSON.stringify(backCfg)); } catch (e) {}
+            }, 500);
         }
+        persistRef.current(config, frontYardConfig, backyardConfig);
         var hashString = buildHashString(config);
         window.history.replaceState(null, '', '#' + hashString);
-    }, [config]);
+    }, [config, frontYardConfig, backyardConfig]);
 
     useEffect(function() {
-        try {
-            localStorage.setItem('gv_fence_config', JSON.stringify(frontYardConfig));
-        } catch (e) {}
-    }, [frontYardConfig]);
-
-    useEffect(function() {
-        try {
-            localStorage.setItem('gv_back_config', JSON.stringify(backyardConfig));
-        } catch (e) {}
-    }, [backyardConfig]);
+        var flush = function() {
+            if (persistRef.current) persistRef.current.flush();
+        };
+        window.addEventListener('beforeunload', flush);
+        return function() { window.removeEventListener('beforeunload', flush); };
+    }, []);
 
     var isDraw = activeTab === 'draw';
 
