@@ -141,7 +141,7 @@ var UnifiedCanvas = function(props) {
     var config = ctx ? ctx.config : props.config;
     var fenceConfig = ctx ? ctx.fenceConfig : props.fenceConfig;
     var panelCollapsed = props.panelCollapsed;
-    var activeScene = props.activeScene || 'gates';
+    var activeScene = (ctx ? ctx.activeScene : props.activeScene) || 'gates';
     var isFence = (activeScene === 'fencing' || activeScene === 'backyard');
 
     // Determine render mode — check fence style's renderMode if in fence mode

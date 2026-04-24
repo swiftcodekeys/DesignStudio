@@ -184,7 +184,7 @@ var FloatingPanel = function(props) {
                         return (
                             <div key={tab.id} id={'section-' + tab.id} className="panel-section">
                                 <div className="panel-section-label">{'Step ' + (i + 1) + ' of ' + visibleTabs.length + ' | ' + sectionLabels[tab.id]}</div>
-                                {renderTabContent(tab.id, config, onConfigChange, props.isFence, onGetQuote, props.activeScene, props.onSceneChange)}
+                                {renderTabContent(tab.id, config, onConfigChange, isFence, onGetQuote, props.activeScene, props.onSceneChange)}
                                 {i < visibleTabs.length - 1 && <div className="panel-section-divider" />}
                             </div>
                         );
