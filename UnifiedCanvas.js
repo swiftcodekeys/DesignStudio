@@ -3,7 +3,7 @@ import { fitContainBox } from './spatialConstants';
 import GateRenderer from './GateRenderer';
 import FenceRenderer from './FenceRenderer';
 import { FENCE_STYLES, getStyleRenderMode } from './configData';
-import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import { FENCE_TOOL_STYLES } from './configData';
 import DesignStudioContext from './DesignStudioContext';
 
 // ============================================================

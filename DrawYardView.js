@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FENCE_STYLES as FENCE_TOOL_STYLES, FENCE_COLORS } from './fenceConfigData';
+import { FENCE_TOOL_STYLES, FENCE_COLORS } from './configData';
 import { GATE_COMPATIBLE_WIDTHS } from './retailPricing';
 
 var GOOGLE_MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY || '';

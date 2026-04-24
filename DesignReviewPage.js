@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PoolCompliancePopup from './PoolCompliancePopup';
-import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import { FENCE_TOOL_STYLES } from './configData';
 import { FENCE_STYLES as GATE_STYLES, POST_CAPS, FINIALS, ARCH_STYLES } from './configData';
 import {
     STYLES as PRICING_STYLES, PANEL_PRICING, POST_PRICING, POST_LENGTH_MAP,

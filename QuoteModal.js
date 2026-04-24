@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FENCE_STYLES, ARCH_STYLES, POST_CAPS, FINIALS, ACCESSORIES } from './configData';
-import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import { FENCE_TOOL_STYLES } from './configData';
 import { isProductionEmailHost } from './emailWorkerClient';
 
 var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzBdmxtSMuNETzERknuA9ZuhZ-KfK9kWCtDiFnVdIBnBqiLAAjGrpMgJmf_DibN6WnVYw/exec';

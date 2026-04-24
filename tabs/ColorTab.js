@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { COLORS } from '../configData';
-import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
+import { FENCE_COLORS, FENCE_TOOL_STYLES } from '../configData';
 import ImagePopup from './ImagePopup';
 import DesignStudioContext from '../DesignStudioContext';
 

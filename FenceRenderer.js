@@ -26,7 +26,7 @@ import {
     FENCE_PUPPY_FINIAL_POSITIONS, FENCE_PUPPY_FINIAL_OFFSET_Y,
 } from './fenceSpatialConstants';
 
-import { getFenceModelPath, FENCE_STYLES } from './fenceConfigData';
+import { getFenceModelPath, FENCE_TOOL_STYLES as FENCE_STYLES } from './configData';
 
 function FenceRenderer(container) {
     var THREE = window.THREE;

@@ -11,7 +11,7 @@ import DrawYardView from './DrawYardView';
 import MapboxDrawView from './MapboxDrawView';
 import QuoteBuilder from './QuoteBuilder';
 import { COLORS, FENCE_STYLES } from './configData';
-import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import { FENCE_COLORS, FENCE_TOOL_STYLES } from './configData';
 import QuizPage from './quiz/QuizPage';
 import LandingPage from './LandingPage';
 import WizardShell from './WizardShell';

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import DesignStudioContext from './DesignStudioContext';
 import { FENCE_STYLES, COLORS, ARCH_STYLES } from './configData';
-import { FENCE_STYLES as FENCE_TOOL_STYLES, FENCE_COLORS, FENCE_HEIGHTS } from './fenceConfigData';
+import { FENCE_TOOL_STYLES, FENCE_COLORS, FENCE_HEIGHTS } from './configData';
 import StyleTab from './tabs/StyleTab';
 import ColorTab from './tabs/ColorTab';
 import SizeTab from './tabs/SizeTab';

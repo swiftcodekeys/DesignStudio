@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { STYLE_FEATURE_GATE } from '../configData';
-import { FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
+import { FENCE_TOOL_STYLES } from '../configData';
 import ImagePopup from './ImagePopup';
 import DesignStudioContext from '../DesignStudioContext';
 

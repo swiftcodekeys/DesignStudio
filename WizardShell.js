@@ -8,7 +8,7 @@ import DetailsTab from './tabs/DetailsTab';
 import PuppyPicketsTab from './tabs/PuppyPicketsTab';
 import OptionsTab from './tabs/OptionsTab';
 import { COLORS, FENCE_STYLES } from './configData';
-import { FENCE_COLORS, FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
+import { FENCE_COLORS, FENCE_TOOL_STYLES } from './configData';
 import PoolCompliancePopup from './PoolCompliancePopup';
 import PoolPopup from './PoolPopup';
 import DesignReviewPage from './DesignReviewPage';

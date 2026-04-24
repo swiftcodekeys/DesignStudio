@@ -1,6 +1,6 @@
 import React from 'react';
 import { FENCE_STYLES } from '../configData';
-import { FENCE_STYLES as FENCE_TOOL_STYLES } from '../fenceConfigData';
+import { FENCE_TOOL_STYLES } from '../configData';
 import DesignStudioContext from '../DesignStudioContext';
 
 var STYLE_BADGES = {
