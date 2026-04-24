@@ -6,6 +6,19 @@ import { FENCE_STYLES, getStyleRenderMode } from './configData';
 import { FENCE_STYLES as FENCE_TOOL_STYLES } from './fenceConfigData';
 
 // ============================================================
+// accessoriesEqual — direct field comparison (replaces O(n) JSON.stringify)
+// ============================================================
+function accessoriesEqual(a, b) {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    var keys = ['cir', 'bcr', 'but', 'bbu', 'scr', 'mdr', 'xlr', 'ufr', 'pup', 'res'];
+    for (var i = 0; i < keys.length; i++) {
+        if (a[keys[i]] !== b[keys[i]]) return false;
+    }
+    return true;
+}
+
+// ============================================================
 // PreviewPlaceholder — shown when renderMode === 'preview'
 // ============================================================
 var PreviewPlaceholder = function(props) {
@@ -273,7 +286,7 @@ var UnifiedCanvas = function(props) {
                 prev.height === fc.height &&
                 prev.finialType === fc.finialType &&
                 prev.postCap === fc.postCap &&
-                JSON.stringify(prev.accessories) === JSON.stringify(fc.accessories) &&
+                accessoriesEqual(prev.accessories, fc.accessories) &&
                 prev.pupType === fc.pupType &&
                 prev._pupVariant === fc._pupVariant &&
                 prev.color !== fc.color) {
@@ -294,7 +307,7 @@ var UnifiedCanvas = function(props) {
                 prev.postCap === config.postCap &&
                 prev.finial === config.finial &&
                 prev.height === config.height &&
-                JSON.stringify(prev.accessories) === JSON.stringify(config.accessories) &&
+                accessoriesEqual(prev.accessories, config.accessories) &&
                 prev.color !== config.color) {
                 r.updateMaterials(config);
                 return;
