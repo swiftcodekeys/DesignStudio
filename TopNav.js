@@ -12,15 +12,27 @@ var TopNav = function(props) {
     var onSceneChange = props.onSceneChange;
     var onReset = props.onReset;
     var onSaveImage = props.onSaveImage;
+    var onCopyLink = props.onCopyLink;
+    var onEmailDesign = props.onEmailDesign;
+    var linkCopied = props.linkCopied;
     var onGetQuote = props.onGetQuote;
 
     var menuState = useState(false);
     var menuOpen = menuState[0];
     var setMenuOpen = menuState[1];
 
+    var saveMenuState = useState(false);
+    var saveMenuOpen = saveMenuState[0];
+    var setSaveMenuOpen = saveMenuState[1];
+
     var handleSceneChange = function(id) {
         onSceneChange(id);
         setMenuOpen(false);
+    };
+
+    var handleSaveOption = function(fn) {
+        setSaveMenuOpen(false);
+        fn();
     };
 
     return (
@@ -55,7 +67,27 @@ var TopNav = function(props) {
             </div>
             <div className="topnav-right">
                 <button className="nav-btn nav-btn-desktop" onClick={onReset}>Reset</button>
-                <button className="nav-btn nav-btn-desktop" onClick={onSaveImage}>Save</button>
+                <div className="save-menu-wrap" style={{ position: 'relative', display: 'inline-block' }}>
+                    <button
+                        className="nav-btn nav-btn-desktop"
+                        onClick={function() { setSaveMenuOpen(!saveMenuOpen); }}
+                    >
+                        Save {saveMenuOpen ? '▲' : '▼'}
+                    </button>
+                    {saveMenuOpen && (
+                        <div className="save-menu-dropdown">
+                            <button className="save-menu-item" onClick={function() { handleSaveOption(onSaveImage); }}>
+                                Download PNG
+                            </button>
+                            <button className="save-menu-item" onClick={function() { handleSaveOption(onCopyLink); }}>
+                                {linkCopied ? 'Copied!' : 'Copy Link'}
+                            </button>
+                            <button className="save-menu-item" onClick={function() { handleSaveOption(onEmailDesign); }}>
+                                Email to Myself
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <button className="btn-quote-nav" onClick={onGetQuote}>Get Instant Quote <span className="arrow">&rarr;</span></button>
             </div>
             {menuOpen && (
@@ -74,7 +106,9 @@ var TopNav = function(props) {
                     })}
                     <div className="mobile-menu-actions">
                         <button className="mobile-menu-btn" onClick={function() { onReset(); setMenuOpen(false); }}>Reset Design</button>
-                        <button className="mobile-menu-btn" onClick={function() { onSaveImage(); setMenuOpen(false); }}>Save Image</button>
+                        <button className="mobile-menu-btn" onClick={function() { onSaveImage(); setMenuOpen(false); }}>Download PNG</button>
+                        <button className="mobile-menu-btn" onClick={function() { onCopyLink(); setMenuOpen(false); }}>{linkCopied ? 'Copied!' : 'Copy Link'}</button>
+                        <button className="mobile-menu-btn" onClick={function() { onEmailDesign(); setMenuOpen(false); }}>Email to Myself</button>
                     </div>
                 </div>
             )}

@@ -438,8 +438,73 @@ var DesignStudio = function() {
         }
     };
 
+    var copiedLinkState = useState(false);
+    var copiedLink = copiedLinkState[0];
+    var setCopiedLink = copiedLinkState[1];
+
     var handleSaveImage = function() {
-        alert('Save Image coming soon');
+        try { window.dispatchEvent(new CustomEvent('gv:request-render')); } catch (_) {}
+        var canvasEl = document.querySelector('.viewport-scene canvas');
+        if (!canvasEl) { alert('Load a design first.'); return; }
+        try {
+            var dataUrl;
+            var bgImgEl = document.querySelector('.viewport-scene img');
+            if (bgImgEl) {
+                var offscreen = document.createElement('canvas');
+                offscreen.width = canvasEl.width;
+                offscreen.height = canvasEl.height;
+                var ctx = offscreen.getContext('2d');
+                try { ctx.drawImage(bgImgEl, 0, 0, offscreen.width, offscreen.height); } catch (_) {}
+                ctx.drawImage(canvasEl, 0, 0, offscreen.width, offscreen.height);
+                dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+            } else {
+                dataUrl = canvasEl.toDataURL('image/jpeg', 0.85);
+            }
+            var a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'grandview-fence-design.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (e) { alert('Could not save image — try again.'); }
+    };
+
+    var handleCopyLink = function() {
+        var url = window.location.href;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+                setCopiedLink(true);
+                setTimeout(function() { setCopiedLink(false); }, 2000);
+            });
+        } else {
+            var inp = document.createElement('input');
+            inp.value = url;
+            document.body.appendChild(inp);
+            inp.select();
+            try { document.execCommand('copy'); } catch (_) {}
+            document.body.removeChild(inp);
+            setCopiedLink(true);
+            setTimeout(function() { setCopiedLink(false); }, 2000);
+        }
+    };
+
+    var handleEmailDesign = function() {
+        var isFenceScene = (activeTab === 'fencing' || activeTab === 'backyard');
+        var cfg = isFenceScene ? fenceConfig : config;
+        var styleName = cfg.styleId || '';
+        var colorName = (cfg.color && cfg.color.displayName) || '';
+        var height = cfg.height || '48';
+        var url = window.location.href;
+        var subject = encodeURIComponent('My Grandview Fence Design');
+        var body = encodeURIComponent(
+            'Here is my fence design:\n\n' +
+            url + '\n\n' +
+            'Style: ' + styleName + '\n' +
+            'Color: ' + colorName + '\n' +
+            'Height: ' + height + '"\n\n' +
+            'Click the link above to reopen your exact configuration.'
+        );
+        window.open('mailto:?subject=' + subject + '&body=' + body);
     };
 
     var persistRef = React.useRef(null);
@@ -582,7 +647,7 @@ var DesignStudio = function() {
                     setActiveTab(id);
                     setView('studio');
                 }
-            }} onReset={handleReset} onSaveImage={handleSaveImage} onGetQuote={handleGetQuote} />
+            }} onReset={handleReset} onSaveImage={handleSaveImage} onCopyLink={handleCopyLink} onEmailDesign={handleEmailDesign} linkCopied={copiedLink} onGetQuote={handleGetQuote} />
             {isDraw ? (
                 <div className="viewport-wrap">
                     {USE_MAPBOX
