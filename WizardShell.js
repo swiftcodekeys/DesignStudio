@@ -21,7 +21,7 @@ import { isProductionEmailHost } from './emailWorkerClient';
 import DesignStudioContext from './DesignStudioContext';
 import {
     loadWizardState, saveWizardState, getZoneOrder, getZoneQuote,
-    updateZoneQuote, getCurrentZoneId, getGrandTotal,
+    updateZoneQuote, getCurrentZoneId, getGrandTotal, resetWizardState,
 } from './wizardState';
 import {
     trackZoneSelection, trackQuoteComplete, trackSummaryView, trackDropoff,
@@ -366,11 +366,30 @@ var WizardShell = function() {
     }, [step]);
     useEscapeHatchTriggers(step, handleExitIntent);
 
-    // Initialize configs when zones are selected
+    // Restore saved wizard session on mount
+    useEffect(function() {
+        var saved = wizardState;
+        if (saved && saved.selectedZones && saved.selectedZones.length > 0) {
+            setSelectedZones(saved.selectedZones);
+            // Restore configs from saved zone quotes
+            var restored = {};
+            saved.selectedZones.forEach(function(zoneId) {
+                var savedConfig = saved.zoneQuotes && saved.zoneQuotes[zoneId] && saved.zoneQuotes[zoneId].config;
+                restored[zoneId] = savedConfig || getDefaultConfig(zoneId);
+            });
+            setZoneConfigs(restored);
+            setCurrentZone(saved.selectedZones[0]);
+            setStep(2);
+        }
+    }, []);
+
+    // Initialize configs when zones are selected (first-time selection, no saved state)
     useEffect(function() {
         var newConfigs = {};
         selectedZones.forEach(function(zoneId) {
-            newConfigs[zoneId] = zoneConfigs[zoneId] || getDefaultConfig(zoneId);
+            newConfigs[zoneId] = zoneConfigs[zoneId] ||
+                (wizardState.zoneQuotes && wizardState.zoneQuotes[zoneId] && wizardState.zoneQuotes[zoneId].config) ||
+                getDefaultConfig(zoneId);
         });
         if (Object.keys(newConfigs).length > 0) {
             setZoneConfigs(newConfigs);
@@ -434,7 +453,12 @@ var WizardShell = function() {
         setZoneConfigs(function(prev) {
             var updated = Object.assign({}, prev);
             var current = updated[currentZone] || {};
-            updated[currentZone] = typeof newConfig === 'function' ? newConfig(current) : newConfig;
+            var resolved = typeof newConfig === 'function' ? newConfig(current) : newConfig;
+            updated[currentZone] = resolved;
+            // Persist to wizardState so config survives leaving and returning to wizard
+            setWizardState(function(wPrev) {
+                return updateZoneQuote(wPrev, currentZone, { config: resolved });
+            });
             return updated;
         });
     };
@@ -756,6 +780,8 @@ var WizardShell = function() {
     var handleSubmitQuote = function() {
         submitQuoteToCRM('quote').then(function(result) {
             if (result.ok) {
+                // Clear saved wizard session so next visit starts fresh
+                setWizardState(resetWizardState());
                 alert(
                     'Quote submitted successfully!\n\nConfirmation ID: ' + result.quoteId +
                     '\n\nOur team will review your selections and reach out within one business day.'
