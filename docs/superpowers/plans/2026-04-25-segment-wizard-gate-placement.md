@@ -541,7 +541,7 @@ function el(tag, props) {
 var GATE_TYPES = [
   { id: 'walk',   name: 'Walk Gate',    range: '36–72"',   defaultWidth: 36 },
   { id: 'drive',  name: 'Drive Gate',   range: '72–144"',  defaultWidth: 72 },
-  { id: 'double', name: 'Double Drive', range: '72–144"',  defaultWidth: 84 },
+  { id: 'driveway', name: 'Driveway Gate', range: '72–144"', defaultWidth: 84 },
 ];
 
 var WIDTHS_WALK  = [36, 42, 48, 60, 72];
@@ -1048,7 +1048,7 @@ function SegmentCard(props) {
     el('div', { className: 'swc-tier-row' }, tierButtons),
     gatesOnSeg.length > 0 && el('div', { className: 'swc-gates' },
       gatesOnSeg.map(function(gate) {
-        var typeLabels = { walk: 'Walk gate', drive: 'Drive gate', double: 'Double drive' };
+        var typeLabels = { walk: 'Walk gate', drive: 'Drive gate', driveway: 'Driveway gate' };
         return el('div', { key: gate.id, className: 'swc-gate-row' },
           el('span', { className: 'swc-gate-info' },
             (typeLabels[gate.type] || 'Gate') + ' · ' + gate.widthInches + '" · ' +
@@ -1195,7 +1195,7 @@ function el(tag, props) {
 var GATE_TYPES = [
   { id: 'walk', name: 'Walk Gate' },
   { id: 'drive', name: 'Drive Gate' },
-  { id: 'double', name: 'Double Drive' },
+  { id: 'driveway', name: 'Driveway Gate' },
 ];
 var WIDTHS_WALK  = [36, 42, 48, 60, 72];
 var WIDTHS_DRIVE = [72, 84, 96, 108, 120, 132, 144];
@@ -1509,6 +1509,14 @@ At the top of `QuoteStep3_Gates.js`, add:
 import GateEditModal from './GateEditModal.js';
 ```
 
+Also in `QuoteStep3_Gates.js`, rename the existing `GATE_TYPES` entry:
+```javascript
+// Change: { id: 'double', name: 'Double Drive', ... }
+// To:
+{ id: 'driveway', name: 'Driveway Gate', desc: 'Two leaves meet in center', range: '72–144"', ... }
+```
+And update `widthsForType`: `return type === 'walk' ? WIDTHS_WALK : WIDTHS_DRIVE;` stays the same — `driveway` falls through to `WIDTHS_DRIVE` correctly.
+
 Inside `QuoteStep3_Gates`, add state for editing:
 ```javascript
 var editingGateVar = useState(null);
@@ -1534,7 +1542,7 @@ if (isDrawToolBuyer) {
       ? el('div', { className: 'qbg-readonly-none' }, 'No gates placed. You confirmed no gates during drawing.')
       : el('div', { className: 'qbg-readonly-list' },
           dtGates.map(function(gate, i) {
-            var typeLabels = { walk: 'Walk gate', drive: 'Drive gate', double: 'Double drive' };
+            var typeLabels = { walk: 'Walk gate', drive: 'Drive gate', driveway: 'Driveway gate' };
             return el('div', { key: gate.id, className: 'qbg-readonly-card' },
               el('div', { className: 'qbg-readonly-card-info' },
                 el('div', { className: 'qbg-readonly-card-title' }, 'Gate ' + (i + 1) + ' — ' + (typeLabels[gate.type] || gate.type)),
@@ -1810,6 +1818,6 @@ git commit -m "test: E2E tests for segment wizard and gate placement flow"
 | Draw-tool buyer read-only gate summary in Step 3 | Task 9 |
 | Manufacturing payload: segmentTiers, gateCount, totalPanelFt | Task 10 |
 | `compassLabel` verified in segment data | Task 3 (already in buildAndComplete line 1856) |
-| Gate type names match existing GATE_TYPES | Tasks 4, 7 (walk/drive/double) |
+| Gate type names match existing GATE_TYPES | Tasks 4, 7 (walk/drive/driveway) |
 | `widthInches` field name consistency | Tasks 4, 7, 9 |
 | E2E integration tests | Task 11 |

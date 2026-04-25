@@ -50,15 +50,15 @@ Shown after the buyer completes drawing and reviews measurements. Presented as a
 ### Gate configuration card fields
 | Field | Options | Default |
 |-------|---------|---------|
-| Gate type | Walk Gate / Drive Gate / Double Drive | Walk Gate |
+| Gate type | Walk Gate / Drive Gate / Driveway Gate | Walk Gate |
 | Top style | Flat / Arched | Flat |
 | Swing direction | Swings left / Swings right | Swings left |
 | Width | Selected from type's available range (see below) | 36" |
 
 Gate types and width ranges match the existing `GATE_TYPES` and `widthsForType()` in `QuoteStep3_Gates.js`:
 - `walk` (Walk Gate): 36"–72", default 36". "36" = person access | 48" = mower"
-- `drive` (Drive Gate, single leaf): 72"–144", default 72". Vehicle access.
-- `double` (Double Drive, two leaves): 72"–144", default 72". Two leaves meet in center.
+- `drive` (Drive Gate, single leaf): 72"–144", default 72". Vehicle access, one leaf.
+- `driveway` (Driveway Gate, two leaves): 72"–144", default 72". Two leaves meet in center.
 
 Width is selected via a dropdown using the same widths array as `QuoteStep3_Gates.js`. The gate card also shows the segment it's on and its approximate offset from the start of that segment.
 
@@ -83,7 +83,7 @@ gates: [
     segmentIndex: 2,                 // which segment within that line
     offsetFt: 42,                    // distance from start of THIS segment (not line start)
     latLng: { lat, lng },           // precise placement point
-    type: 'walk',                    // 'walk' | 'drive' | 'double' — matches QuoteStep3_Gates GATE_TYPES
+    type: 'walk',                    // 'walk' | 'drive' | 'driveway' — matches QuoteStep3_Gates GATE_TYPES
     top: 'flat',                     // 'flat' | 'arched' — matches QuoteStep3_Gates DEFAULT_GATE
     swing: 'left',                   // 'left' | 'right' — matches QuoteStep3_Gates DEFAULT_GATE
     widthInches: 36,                 // matches QuoteStep3_Gates widthInches field name
@@ -221,7 +221,7 @@ Gates for manual buyers are handled in the existing Gates step (Step 2) which is
   gateCount: Number,                 // gates.length
   gates: [                           // per-gate detail
     {
-      type: String,                  // 'walk' | 'drive' | 'double'
+      type: String,                  // 'walk' | 'drive' | 'driveway'
       top: String,                   // 'flat' | 'arched'
       swing: String,                 // 'left' | 'right'
       widthInches: Number,           // consistent with QuoteStep3_Gates field name
