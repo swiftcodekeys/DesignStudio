@@ -538,11 +538,24 @@ function el(tag, props) {
 }
 
 // Gate types matching QuoteStep3_Gates.js GATE_TYPES
+// Images live in assets/gate_types/ — see asset copy step below
 var GATE_TYPES = [
-  { id: 'walk',   name: 'Walk Gate',    range: '36–72"',   defaultWidth: 36 },
-  { id: 'drive',  name: 'Drive Gate',   range: '72–144"',  defaultWidth: 72 },
+  { id: 'walk',     name: 'Walk Gate',     range: '36–72"',  defaultWidth: 36 },
+  { id: 'drive',    name: 'Drive Gate',    range: '72–144"', defaultWidth: 72 },
   { id: 'driveway', name: 'Driveway Gate', range: '72–144"', defaultWidth: 84 },
 ];
+
+// Gate top-style images — shown in the type/arch selector cards.
+// All images are Horizon (UAF-200) style. Copy note is below.
+var GATE_IMAGES = {
+  'walk-flat':     'assets/gate_types/walk_flat.png',     // source: Desktop/Fence styles/Walk Gates/horizonflat.png
+  'walk-arched':   'assets/gate_types/walk_arched.png',   // source: Desktop/Fence styles/Walk Gates/horizonarch.png
+  'driveway-flat': 'assets/gate_types/driveway_flat.png', // source: Downloads/flattopdouble.png
+  'driveway-arched':'assets/gate_types/driveway_arched.png', // source: .claude/image-cache/.../7.png (arched driveway 3D render)
+  // Drive Gate (single leaf) reuses walk images as placeholder — update if dedicated images become available
+  'drive-flat':    'assets/gate_types/walk_flat.png',
+  'drive-arched':  'assets/gate_types/walk_arched.png',
+};
 
 var WIDTHS_WALK  = [36, 42, 48, 60, 72];
 var WIDTHS_DRIVE = [72, 84, 96, 108, 120, 132, 144];
@@ -739,11 +752,35 @@ Add after the draw tool section:
 .mds-gate-empty { font-size: 12px; color: var(--text-hint); text-align: center; padding: 16px; }
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Copy gate type images into the project**
+
+Create `assets/gate_types/` and copy the approved images:
 
 ```bash
-git add MapboxDrawGateStep.js tests/gateStep.test.js styles.css
-git commit -m "feat: MapboxDrawGateStep component with gate config and footage math"
+mkdir -p "assets/gate_types"
+cp "C:/Users/sarah/Desktop/Fence styles/Walk Gates/horizonflat.png"  assets/gate_types/walk_flat.png
+cp "C:/Users/sarah/Desktop/Fence styles/Walk Gates/horizonarch.png"  assets/gate_types/walk_arched.png
+cp "C:/Users/sarah/Downloads/flattopdouble.png"                       assets/gate_types/driveway_flat.png
+# Driveway arched: copy from image-cache (the 3D render Sarah reviewed as image #7)
+cp "C:/Users/sarah/.claude/image-cache/ed789fc6-3b30-482f-be6b-650d3a97f3a0/7.png" assets/gate_types/driveway_arched.png
+```
+
+Image notes (from Sarah's review session 2026-04-25):
+- `walk_flat.png` / `walk_arched.png` — Photorealistic 3D renders, Horizon style, white bg, square posts with flat caps, hinges + latch visible. Approved as-is.
+- `driveway_flat.png` — Semi-realistic render (flattopdouble.png), square posts with flat caps, center latch visible, ground shadow. Approved as-is.
+- `driveway_arched.png` — Semi-realistic 3D render, arched double-leaf, center latch, hinges on outer posts. Minor note: outer posts appear round rather than square — acceptable for now.
+- All 4 images are Horizon (UAF-200) style. For other fence styles, swap images per style — use `GATE_IMAGES` lookup keyed on `styleId + '-' + topStyle` when that mapping is built.
+
+**Style-match copy to display in the gate type selector:**
+> "Your gate will be built to match your fence style. The images shown are representative — your actual gate will use the same picket design, rail spacing, and finish as your selected fence."
+
+Add this as a `<p>` below the type selector cards in `MapboxDrawGateStep` (and in `GateEditModal`).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add MapboxDrawGateStep.js tests/gateStep.test.js styles.css assets/gate_types/
+git commit -m "feat: MapboxDrawGateStep component with gate config, footage math, and gate type images"
 ```
 
 ---
