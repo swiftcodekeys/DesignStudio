@@ -18,6 +18,7 @@ import useEscapeHatchTriggers from './useEscapeHatchTriggers';
 import ZoneTransitionPage from './ZoneTransitionPage';
 import ZoneQuoteSummary from './ZoneQuoteSummary';
 import { isProductionEmailHost } from './emailWorkerClient';
+import DesignStudioContext from './DesignStudioContext';
 import {
     loadWizardState, saveWizardState, getZoneOrder, getZoneQuote,
     updateZoneQuote, getCurrentZoneId, getGrandTotal,
@@ -1003,6 +1004,15 @@ var WizardShell = function() {
 
             {/* ---- Step 2: Configure Each Zone (3D Configurator) ---- */}
             {step === 2 && activeConfig && (
+            <DesignStudioContext.Provider value={{
+                config: isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '60', color: COLORS[5], arch: 'e', leaf: '2', mount: 'p', postCap: 'pcf' },
+                setConfig: isGateConfig ? handleConfigChange : function() {},
+                fenceConfig: !isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '48', color: FENCE_COLORS[5] },
+                setFenceConfig: !isGateConfig ? handleConfigChange : function() {},
+                activeScene: activeScene,
+                activeConfigTab: 'style',
+                setActiveConfigTab: function() {},
+            }}>
                 <div className="wizard-configure">
                     <div className="wizard-configure-left">
                         {/* Zone pills (if multiple zones) */}
@@ -1152,6 +1162,7 @@ var WizardShell = function() {
                         )}
                     </div>
                 </div>
+            </DesignStudioContext.Provider>
             )}
 
             {/* ---- Step 3: Design Review / Measure (bridge page) ---- */}

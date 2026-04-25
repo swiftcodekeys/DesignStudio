@@ -438,7 +438,6 @@ export var FENCE_TOOL_STYLES = [
         id: 'uab_200', code: 'UAB-200', name: 'Haven', subtitle: 'Flat Top Flush',
         stlI: 'b2', cat: 'b', mod: '200', pi: '200',
         hasFinials: false, isSpear: false, isFlush: true,
-        forcedHeight: '48',
         supports3D: true,
         acc: ['cir', 'but', 'scr', 'pup'],
     },

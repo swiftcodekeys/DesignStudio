@@ -249,7 +249,6 @@ FenceRenderer.prototype.buildFence = function(config) {
 
     // Height
     var height = config.height || '48';
-    if (styleDef.isFlush) height = '48';  // Haven forced to 48"
     var tY = HEIGHT_TY[height] !== undefined ? HEIGHT_TY[height] : HEIGHT_TY['48'];
 
     // Clipping: 72" disables clipping entirely
