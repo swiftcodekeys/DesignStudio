@@ -173,7 +173,7 @@ var DesignStudio = function() {
     };
     var defaultBackyardConfig = {
         styleId: 'uab_200', // Haven
-        height: '54',
+        height: '48',
         color: FENCE_COLORS[3], // Textured White
         finialType: null,
         postCap: 'pcf',

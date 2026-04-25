@@ -228,7 +228,7 @@ function getDefaultConfig(zoneId) {
         var gateStyle = FENCE_STYLES[0];
         return {
             styleId: gateStyle.id,
-            height: '60',
+            height: '48',
             color: COLORS[5],
             post: gateStyle.postDefault,
             postCap: 'pcf',
@@ -242,7 +242,7 @@ function getDefaultConfig(zoneId) {
     if (zoneId === 'back') {
         return {
             styleId: 'uab_200',
-            height: '60',
+            height: '48',
             color: FENCE_COLORS[0],
             finialType: null,
             postCap: 'pcf',
@@ -1005,7 +1005,7 @@ var WizardShell = function() {
             {/* ---- Step 2: Configure Each Zone (3D Configurator) ---- */}
             {step === 2 && activeConfig && (
             <DesignStudioContext.Provider value={{
-                config: isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '60', color: COLORS[5], arch: 'e', leaf: '2', mount: 'p', postCap: 'pcf' },
+                config: isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '48', color: COLORS[5], arch: 'e', leaf: '2', mount: 'p', postCap: 'pcf' },
                 setConfig: isGateConfig ? handleConfigChange : function() {},
                 fenceConfig: !isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '48', color: FENCE_COLORS[5] },
                 setFenceConfig: !isGateConfig ? handleConfigChange : function() {},
@@ -1154,7 +1154,7 @@ var WizardShell = function() {
                             </div>
                         ) : (
                             <UnifiedCanvas
-                                config={isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '60', color: COLORS[5], arch: 'e', leaf: '2', mount: 'p', postCap: 'pcf' }}
+                                config={isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '48', color: COLORS[5], arch: 'e', leaf: '2', mount: 'p', postCap: 'pcf' }}
                                 fenceConfig={!isGateConfig ? activeConfig : { styleId: 'uaf_200', height: '48', color: FENCE_COLORS[5] }}
                                 panelCollapsed={false}
                                 activeScene={activeScene}
