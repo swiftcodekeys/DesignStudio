@@ -1,9 +1,10 @@
 // QuoteStep3_Gates.js — Gates step for QuoteBuilder
 // React.createElement, var, function declarations, vanilla CSS
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash, Plus, ArrowsLeftRight, Warning, ShieldCheck, DoorOpen } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
+import GateEditModal from './GateEditModal.js';
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -23,7 +24,7 @@ function sectionHeader(title, infoProps) {
 var GATE_TYPES = [
   { id: 'walk',   name: 'Walk Gate',   desc: 'Person or mower access', range: '36\u201372\u2033', image: 'assets/ifence_previews/gates/standard_3.png' },
   { id: 'drive',  name: 'Drive Gate',  desc: 'Vehicle access',          range: '72\u2013144\u2033', image: 'assets/ifence_previews/gates/standard_3.png' },
-  { id: 'double', name: 'Double Drive', desc: 'Two leaves meet in center', range: '72\u2013144\u2033', image: 'assets/ifence_previews/gates/arched_4.png' },
+  { id: 'driveway', name: 'Driveway Gate', desc: 'Two leaves meet in center', range: '72\u2013144\u2033', image: 'assets/ifence_previews/gates/arched_4.png' },
 ];
 
 var WIDTHS_WALK   = [36, 42, 48, 60, 72];
@@ -64,6 +65,10 @@ function QuoteStep3_Gates(props) {
   var update = props.update;
   var poolCompliance = props.poolCompliance;
   var isPool = poolCompliance && poolCompliance.poolBarrier;
+
+  var editingGateVar = useState(null);
+  var editingGate = editingGateVar[0];
+  var setEditingGate = editingGateVar[1];
 
   var gates = data.gates || [];
 
@@ -316,6 +321,51 @@ function QuoteStep3_Gates(props) {
           'Cantilever gates carry a 5-year limited warranty (not lifetime)'
         )
       )
+    );
+  }
+
+  // Draw-tool buyers: show read-only gate summary with edit capability
+  var isDrawToolBuyer = !!(props.drawToolData && props.drawToolData.lines);
+  if (isDrawToolBuyer) {
+    var dtGates = props.drawToolData.gates || [];
+    return el('div', { className: 'qbg-readonly' },
+      el('div', { className: 'qbg-readonly-header' },
+        el('div', { className: 'qbg-readonly-title' }, 'Your gates'),
+        el('div', { className: 'qbg-readonly-sub' }, 'Placed during drawing. Edit any gate below.')
+      ),
+      dtGates.length === 0
+        ? el('div', { className: 'qbg-readonly-none' }, 'No gates placed. You confirmed no gates during drawing.')
+        : el('div', { className: 'qbg-readonly-list' },
+            dtGates.map(function(gate, i) {
+              var typeLabels = { walk: 'Walk gate', driveway: 'Driveway gate' };
+              return el('div', { key: gate.id || i, className: 'qbg-readonly-card' },
+                el('div', { className: 'qbg-readonly-card-info' },
+                  el('div', { className: 'qbg-readonly-card-title' },
+                    'Gate ' + (i + 1) + ' — ' + (typeLabels[gate.type] || gate.type)
+                  ),
+                  el('div', { className: 'qbg-readonly-card-detail' },
+                    gate.widthInches + '" · ' +
+                    (gate.top === 'arched' ? 'Arched' : 'Straight') + ' · Swings ' + (gate.swing || 'left') +
+                    (gate.segmentLabel ? ' · ' + gate.segmentLabel + ' segment' : '')
+                  )
+                ),
+                el('button', {
+                  className: 'qbg-readonly-edit',
+                  onClick: function() { setEditingGate(gate); },
+                }, 'Edit')
+              );
+            })
+          ),
+      editingGate ? React.createElement(GateEditModal, {
+        gate: editingGate,
+        onUpdate: function(updated) {
+          var newGates = dtGates.map(function(g) { return g.id === updated.id ? updated : g; });
+          props.update({ gates: newGates });
+          setEditingGate(updated);
+        },
+        onClose: function() { setEditingGate(null); },
+      }) : null,
+      el('button', { className: 'qbg-readonly-next', onClick: props.onNext }, 'Continue →')
     );
   }
 
