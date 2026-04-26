@@ -1725,7 +1725,9 @@ function MapboxDrawView(props) {
   }, []);
 
   // Derived values
-  var totalFt = totalFeet(points);
+  // Sum footage per-line so disconnected fence runs don't include the
+  // bridge distance between line endpoints in the total.
+  var totalFt = lines.reduce(function(sum, line) { return sum + totalFeet(line); }, 0);
   // P4.3: sum corners + linePosts per-line. Calling the helper once on the
   // flat `points` shim would count each cross-line "bridge" vertex as a
   // direction change (a corner it isn't) and would spread post estimation
