@@ -264,6 +264,23 @@
 }
 .dy-save-btn:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); transform: translateY(-1px); }
 
+/* Slope pill — reopens slope question from the top bar */
+.dy-slope-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 20px;
+  background: rgba(17,24,39,0.7); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7);
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.dy-slope-pill::before { content: '⊕'; font-size: 13px; }
+.dy-slope-pill.answered { color: #fff; border-color: rgba(107,163,194,0.5); background: rgba(107,163,194,0.25); }
+.dy-slope-pill.answered::before { content: '✓'; }
+.dy-slope-pill:hover { background: rgba(107,163,194,0.35); border-color: rgba(107,163,194,0.6); }
+
+/* Gate step: crosshair cursor on map */
+.dy-container.gate-step-active .mapboxgl-canvas { cursor: crosshair !important; }
+
 /* ===== Empty-state hero overlay ===== */
 .dy-empty-overlay {
   position: absolute;

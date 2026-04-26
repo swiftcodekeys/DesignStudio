@@ -458,7 +458,7 @@ function EmptyStateOverlay() {
     ),
     React.createElement('h1', { className: 'dy-empty-title' }, 'Sketch your fence line'),
     React.createElement('p', { className: 'dy-empty-sub' },
-      'Click to drop corners. Drag to adjust. Every measurement is verified on a free call before anything gets cut.'
+      'Click to drop corners. Drag to adjust. A Grandview rep verifies every measurement before your order goes to production.'
     )
   );
 }
@@ -723,7 +723,7 @@ function MorphingDock(props) {
   if (showEpqsLoading) {
     ctaLabel = React.createElement('span', null, 'Calculating slope\u2026');
   } else if (showSlopeAck && slopeAck === 'unknown') {
-    ctaLabel = React.createElement('span', null, 'Slope unknown, you can still continue');
+    ctaLabel = React.createElement('span', null, "Slope not auto-detected — confirm it in the next step");
   } else if (showSlopeAck) {
     var friendly = slopeAck === 'flat' ? 'flat' : (slopeAck === 'heavy-rack' ? 'heavy rack' : 'rackable');
     ctaLabel = React.createElement('span', null, 'Slope detected: ' + friendly);
@@ -911,7 +911,7 @@ function MorphingDock(props) {
       React.createElement('span', { className: 'dy-legend-label' }, 'Line posts')
     ),
     React.createElement('span', { className: 'dy-legend-hint' },
-      "Turns under 10° don’t need a corner post. Panels flex through."
+      "Turns under 10° don’t need a corner post."
     )
   );
 
@@ -998,17 +998,16 @@ function MapScreen(props) {
       } catch (e) { /* setFog unavailable on older mapbox-gl */ }
 
       var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var duration = cinematic && !prefersReduced ? 2100 : (prefersReduced ? 0 : 450);
+      var duration = cinematic && !prefersReduced ? EARTH_INTRO_DURATION_MS : (prefersReduced ? 0 : 600);
       map.flyTo({
         center: [props.location.lng, props.location.lat],
         zoom: 20,
         pitch: 0,
         duration: duration,
         essential: true,
-        // Cubic bezier imitating ease-out-quint — slow entry, fast middle,
-        // gentle settle onto the property. Default flyTo easing is ease-in-out
-        // which feels mechanical at high zoom deltas.
-        easing: function(t) { return 1 - Math.pow(1 - t, 5); },
+        // Smooth ease-in-out so the descent feels gradual from space, not
+        // a sudden deceleration drop. Ease-out-quint was too fast in the middle.
+        easing: function(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; },
       });
     });
 
@@ -1051,11 +1050,20 @@ function MapScreen(props) {
             segmentLabel: segLabel,
             offsetFt: segLenFt / 2,
             latLng: { lat: clickLat, lng: clickLng },
-            type: 'walk', top: 'flat', swing: 'left', widthInches: 48,
-            heightInches: props.fenceHeight || 48,
-            hinge: 'standard', latch: 'lokklatch',
           };
-          props.setGates(function(prev) { return prev.concat([newGate]); });
+          props.setGates(function(prev) {
+            // Copy settings from last gate so each new gate matches what the buyer configured
+            var last = prev.length > 0 ? prev[prev.length - 1] : null;
+            return prev.concat([Object.assign(newGate, {
+              type:        last ? last.type        : 'walk',
+              top:         last ? last.top         : 'flat',
+              swing:       last ? last.swing       : 'left',
+              widthInches: last ? last.widthInches : 48,
+              heightInches: props.fenceHeight || 48,
+              hinge:       last ? last.hinge       : 'standard',
+              latch:       last ? last.latch       : 'lokklatch',
+            })]);
+          });
         }
         return; // don't add a fence point
       }
@@ -2196,6 +2204,8 @@ function MapboxDrawView(props) {
     var midLat   = (segStart[1] + segEnd[1]) / 2;
     var id = 'gate-' + (gateIdCounterRef.current++);
     setGates(function(prev) {
+      // Copy settings from the last gate so subsequent gates match what the buyer configured
+      var last = prev.length > 0 ? prev[prev.length - 1] : null;
       return prev.concat([{
         id: id,
         segmentLineId:  bestLine.id,
@@ -2203,9 +2213,13 @@ function MapboxDrawView(props) {
         segmentLabel:   compassBearing(segStart, segEnd),
         offsetFt:       bestLen / 2,
         latLng:         { lat: midLat, lng: midLng },
-        type: 'walk', top: 'flat', swing: 'left', widthInches: 48,
+        type:         last ? last.type         : 'walk',
+        top:          last ? last.top          : 'flat',
+        swing:        last ? last.swing        : 'left',
+        widthInches:  last ? last.widthInches  : 48,
         heightInches: fenceHeight,
-        hinge: 'standard', latch: 'lokklatch',
+        hinge:        last ? last.hinge        : 'standard',
+        latch:        last ? last.latch        : 'lokklatch',
       }]);
     });
   }
@@ -2298,10 +2312,24 @@ function MapboxDrawView(props) {
     });
   }
 
-  return React.createElement('div', { className: 'dy-container' },
-    // Top-overlay: address pill (always), save-for-later (when drawing)
+  // Slope pill label — shows answered slope or prompts user to answer
+  var slopePillLabel = (function() {
+    if (!slopeAnswer || slopeAnswer === 'skip') return 'Add slope info';
+    var labels = { flat: 'Flat', 'slight-slope': 'Slight slope', 'moderate-slope': 'Sloped', 'heavy-rack': 'Heavy slope' };
+    return labels[slopeAnswer] || ('Slope: ' + slopeAnswer);
+  })();
+  var showSlopePill = drawModeActive || points.length > 0;
+  var slopePillAnswered = slopeAnswer && slopeAnswer !== 'skip';
+
+  return React.createElement('div', { className: 'dy-container' + (showGateStep ? ' gate-step-active' : '') },
+    // Top-overlay: address pill (always), slope pill (after drawing starts), save-for-later
     React.createElement('div', { className: 'dy-top-overlay' },
       React.createElement(AddressPill, { location: location, onChangeAddress: handleAddress }),
+      showSlopePill && React.createElement('button', {
+        className: 'dy-slope-pill' + (slopePillAnswered ? ' answered' : ''),
+        onClick: function() { setSlopeAnswer(null); },
+        title: 'Click to update slope answer',
+      }, slopePillLabel),
       points.length > 0 && React.createElement('button', {
         className: 'dy-save-btn',
         onClick: handleSaveForLater,
