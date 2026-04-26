@@ -309,6 +309,55 @@ function buildSidebarSpecs(data) {
   return specs;
 }
 
+// Derive segment tiers, gate counts, and total panel footage from the
+// accumulated quote data and return an enriched payload object.
+// This is additive — all existing fields from `data` are preserved.
+// Called right before passing the final payload to props.onComplete so
+// Ultra Manufacturing gets accurate per-segment tier info and gate counts.
+function buildManufacturingPayload(data) {
+  // Derive segment tiers from confirmed lines (draw-tool buyers)
+  var segmentTiers = [];
+  var confirmedSlopedPostCount = data.slopedPostCount || 0;
+  if (data.confirmedSegmentLines) {
+    segmentTiers = [];
+    data.confirmedSegmentLines.forEach(function(line) {
+      (line.segments || []).forEach(function(seg) {
+        segmentTiers.push({
+          segmentId: line.id + '-' + seg.index,
+          finalTier: seg.finalTier || seg.rackingTier || 'unknown',
+          lengthFt: seg.lengthFeet || 0,
+        });
+      });
+    });
+    // Recompute slopedPostCount from confirmed tiers
+    confirmedSlopedPostCount = segmentTiers.reduce(function(sum, st) {
+      if (st.finalTier === 'rackable' || st.finalTier === 'heavy') {
+        return sum + Math.max(0, Math.floor(st.lengthFt / 6) - 1);
+      }
+      return sum;
+    }, 0);
+  }
+
+  // Gate payload fields
+  var effectiveGates = data.gates || [];
+  var gateCount = effectiveGates.length;
+  var gatePostCount = gateCount * 2;
+  var totalPanelFt = (data.totalFeet || 0) - effectiveGates.reduce(function(s, g) {
+    return s + (g.widthInches || 36) / 12;
+  }, 0);
+
+  var payload = Object.assign({}, data);
+  payload.segmentTiers = segmentTiers;
+  payload.slopedPostCount = confirmedSlopedPostCount;
+  payload.gateCount = gateCount;
+  payload.gates = effectiveGates.map(function(g) {
+    return { type: g.type, top: g.top, swing: g.swing, widthInches: g.widthInches };
+  });
+  payload.gatePostCount = gatePostCount;
+  payload.totalPanelFt = Math.max(0, totalPanelFt);
+  return payload;
+}
+
 var DEFAULT_DATA = {
   grade: 'residential',
   fenceType: 'ornamental',
@@ -656,7 +705,7 @@ function QuoteBuilder(props) {
         onClick: function() {
           trackStepComplete(step, props.zoneId);
           if (step < 5) setStep(step + 1);
-          else if (props.onComplete) props.onComplete(data);
+          else if (props.onComplete) props.onComplete(buildManufacturingPayload(data));
         },
       },
         step < 5 ? 'Next' : 'Get Quote',
