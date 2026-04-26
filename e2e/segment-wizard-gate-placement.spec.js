@@ -6,10 +6,9 @@ import { test, expect } from '@playwright/test';
 
 var BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
-test.describe('Gate placement + segment wizard', function() {
+test.describe('Gate placement + segment wizard', () => {
 
-  test('draw-tool flow: skip gate step, wizard shows no gates', async function(args) {
-    var page = args.page;
+  test('draw-tool flow: skip gate step, wizard shows no gates', async ({ page }) => {
     await page.goto(BASE_URL);
     await page.click('[data-testid="start-drawing"], .draw-cta, button:has-text("Draw my fence")');
     await page.waitForSelector('.mapboxgl-canvas', { timeout: 15000 });
@@ -18,8 +17,7 @@ test.describe('Gate placement + segment wizard', function() {
     expect(await page.locator('.swc-gate-row').count()).toBe(0);
   });
 
-  test('segment wizard: CTA disabled until all segments confirmed', async function(args) {
-    var page = args.page;
+  test('segment wizard: CTA disabled until all segments confirmed', async ({ page }) => {
     await page.goto(BASE_URL);
     await page.click('[data-testid="start-drawing"], .draw-cta, button:has-text("Draw my fence")');
     await page.waitForSelector('.mapboxgl-canvas', { timeout: 15000 });
@@ -35,16 +33,14 @@ test.describe('Gate placement + segment wizard', function() {
     await expect(ctaBtn).toBeEnabled();
   });
 
-  test('manual-entry buyer: no segment cards shown', async function(args) {
-    var page = args.page;
+  test('manual-entry buyer: no segment cards shown', async ({ page }) => {
     await page.goto(BASE_URL);
     await page.click('button:has-text("Enter footage manually"), [data-testid="manual-entry"]');
     await page.waitForSelector('.qsl-wizard-layout, [data-testid="qb-terrain-section"]', { timeout: 10000 });
     expect(await page.locator('.swc-card').count()).toBe(0);
   });
 
-  test('payload contains gateCount and totalPanelFt at review step', async function(args) {
-    var page = args.page;
+  test('payload contains gateCount and totalPanelFt at review step', async ({ page }) => {
     await page.goto(BASE_URL);
     await page.click('[data-testid="start-drawing"], .draw-cta, button:has-text("Draw my fence")');
     await page.waitForSelector('.mapboxgl-canvas', { timeout: 15000 });
