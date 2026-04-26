@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup · Welcome Screen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1917;
+  --ink-2: #3b3936;
+  --muted: #6b6760;
+  --rule: #e3dfd6;
+  --accent: #c2410c;
+  --accent-2: #a8370a;
+  --accent-bg: #fef2ec;
+  --cream: #faf7f0;
+  --bg: #f5f3ee;
+  --brand: #78AFCF;
+  --font: 'Inter Tight', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Mockup banner */
+.mockup-banner { background: var(--ink); color: #fff; padding: 10px 24px; font-size: 12px; display: flex; justify-content: space-between; font-family: var(--mono); }
+.mockup-banner b { color: var(--accent); }
+
+/* Minimal top nav */
+.nav { height: 56px; background: var(--brand); display: flex; align-items: center; padding: 0 24px; }
+.nav-brand { font-weight: 800; letter-spacing: 0.04em; color: #fff; font-size: 13px; }
+.nav-brand b { color: #1a2a3a; }
+.nav-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.nav-save { background: rgba(255,255,255,0.15); color: #fff; padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.25); font-family: inherit; }
+
+/* Page content */
+.page { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px 64px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+/* Progress dots */
+.dots { display: flex; gap: 10px; align-items: center; margin-bottom: 32px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rule); transition: all 0.2s; }
+.dot.active { width: 24px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-bg); }
+.dot-label { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; margin-left: 6px; }
+
+/* Hero */
+.hero { text-align: center; margin-bottom: 40px; }
+.hero h1 { font-size: 52px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); margin-bottom: 14px; line-height: 1.1; }
+.hero p { font-size: 16px; color: var(--muted); max-width: 540px; margin: 0 auto; line-height: 1.55; }
+
+/* Three cards */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 40px; width: 100%; max-width: 960px; }
+@media (max-width: 800px) { .cards { grid-template-columns: 1fr; } }
+.card { background: #fff; border: 1px solid var(--rule); border-radius: 14px; padding: 24px 22px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow 0.15s, transform 0.15s; }
+.card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.card-num { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+.card-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.card-title { font-size: 17px; font-weight: 700; color: var(--ink); }
+.card-body { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.card-chip { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 0.02em; }
+
+/* CTA */
+.cta-row { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.cta { background: var(--accent); color: #fff; font-weight: 700; font-size: 16px; padding: 14px 36px; border-radius: 12px; border: none; cursor: pointer; font-family: inherit; box-shadow: 0 6px 18px rgba(194,65,12,0.3); transition: background 0.15s, transform 0.15s, box-shadow 0.15s; }
+.cta:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(194,65,12,0.4); }
+.skip { background: transparent; border: none; color: var(--muted); font-size: 13px; font-family: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.skip:hover { color: var(--ink); text-decoration-color: var(--muted); }
+
+/* Trust row */
+.trust { display: flex; gap: 20px; justify-content: center; margin-top: 28px; flex-wrap: wrap; }
+.trust-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 500; }
+.trust-check { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <span><b>MOCKUP</b> · This is a visual proposal, not a live page.</span>
+  <span>File: docs/mockups/welcome-screen-mockup.html</span>
+</div>
+
+<nav class="nav">
+  <div class="nav-brand">GRANDVIEW <b>FENCE</b> · Design Studio</div>
+  <div class="nav-right">
+    <button class="nav-save">💾 Save for later</button>
+  </div>
+</nav>
+
+<main class="page">
+
+  <!-- Progress: 1 of 7 -->
+  <div class="dots" aria-label="Progress: step 1 of 7">
+    <span class="dot active"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot-label">STEP 1 OF 7</span>
+  </div>
+
+  <div class="hero">
+    <h1>Let's build your fence.</h1>
+    <p>Takes about 5 minutes. You can save your progress any time — I'll email you a link so you can pick back up from anywhere.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">1</div>
+      <div class="card-num">Step 1–2</div>
+      <div class="card-title">Pick your style</div>
+      <div class="card-body">Choose fence style, color, and height. Preview it in 3D to see exactly what you're getting.</div>
+      <div class="card-chip">~ 60 seconds</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">2</div>
+      <div class="card-num">Step 3–4</div>
+      <div class="card-title">Measure your yard</div>
+      <div class="card-body">Draw your fence line on a satellite view of your property, or enter linear footage if you already measured.</div>
+      <div class="card-chip">~ 2 minutes</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">3</div>
+      <div class="card-num">Step 5–7</div>
+      <div class="card-title">Get your quote</div>
+      <div class="card-body">Instant price estimate with a full materials breakdown. I verify every order before production — no surprises.</div>
+      <div class="card-chip">~ 2 minutes</div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <button class="cta">Let's Get Started →</button>
+    <button class="skip">Skip intro — I know what I'm doing</button>
+  </div>
+
+  <div class="trust">
+    <span class="trust-item"><span class="trust-check">✓</span> Veteran-owned (SDVOSB)</span>
+    <span class="trust-item"><span class="trust-check">✓</span> Made in Howell, MI</span>
+    <span class="trust-item"><span class="trust-check">✓</span> Limited lifetime warranty</span>
+    <span class="trust-item"><span class="trust-check">✓</span> No credit card to start</span>
+  </div>
+
+</main>
+
+</body>
+</html>
