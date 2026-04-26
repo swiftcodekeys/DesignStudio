@@ -7581,3 +7581,13 @@ html, body {
 .qbg-readonly-card-detail { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
 .qbg-readonly-edit { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; color: var(--text-secondary); cursor: pointer; }
 .qbg-readonly-next { width: 100%; padding: 11px; border-radius: 8px; background: var(--cta); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px; }
+
+/* Gate question modal */
+.mds-gate-question-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.55); z-index: 30; display: flex; align-items: center; justify-content: center; }
+.mds-gate-question-modal { background: #fff; border-radius: 14px; padding: 28px 24px; width: 320px; max-width: 90vw; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 24px 60px rgba(0,0,0,0.3); }
+.mds-gate-question-title { font-size: 18px; font-weight: 800; color: var(--text-primary, #1a1a2e); text-align: center; }
+.mds-gate-question-sub { font-size: 13px; color: var(--text-secondary, #5a6270); text-align: center; line-height: 1.5; }
+.mds-gate-question-yes { width: 100%; padding: 12px; border-radius: 10px; background: var(--brand, #6BA3C2); color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer; }
+.mds-gate-question-yes:hover { opacity: 0.9; }
+.mds-gate-question-no { width: 100%; padding: 10px; border-radius: 10px; background: transparent; border: none; color: var(--text-hint, #8e95a0); font-size: 13px; cursor: pointer; }
+.mds-gate-question-no:hover { color: var(--text-secondary, #5a6270); }

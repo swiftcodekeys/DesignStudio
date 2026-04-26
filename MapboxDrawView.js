@@ -1803,6 +1803,11 @@ function MapboxDrawView(props) {
   var showGateStepRef = useRef(false);
   showGateStepRef.current = showGateStep;
 
+  // Gate question modal — "Do you need any gates?" shown before the placement panel
+  var showGateQuestionState = useState(false);
+  var showGateQuestion = showGateQuestionState[0];
+  var setShowGateQuestion = showGateQuestionState[1];
+
   var gatesState = useState([]);
   var gates = gatesState[0];
   var setGates = gatesState[1];
@@ -2121,13 +2126,14 @@ function MapboxDrawView(props) {
   }
 
   function handleContinue() {
-    // First click → show gate step
-    if (!showGateStep) {
-      setShowGateStep(true);
-      showGateStepRef.current = true;
+    // First click → ask "Do you need any gates?" before showing the panel
+    if (!showGateQuestion && !showGateStep) {
+      setShowGateQuestion(true);
       return;
     }
-    // Second click (from gate step "Done") → proceed with snapshot
+    // Gate question "Yes" answered → now completing from gate panel
+    // Gate question "No" answered → skip straight here
+    setShowGateQuestion(false);
     setShowGateStep(false);
     showGateStepRef.current = false;
 
@@ -2330,7 +2336,7 @@ function MapboxDrawView(props) {
         onClick: function() { setSlopeAnswer(null); },
         title: 'Click to update slope answer',
       }, slopePillLabel),
-      points.length > 0 && React.createElement('button', {
+      points.length > 0 && !showGateQuestion && !showGateStep && React.createElement('button', {
         className: 'dy-save-btn',
         onClick: handleSaveForLater,
         type: 'button',
@@ -2455,7 +2461,33 @@ function MapboxDrawView(props) {
       )
     ),
 
-    // Gate placement step overlay
+    // ── "Do you need any gates?" question modal ──────────────────────────────
+    showGateQuestion && !showGateStep && React.createElement('div', { className: 'mds-gate-question-backdrop' },
+      React.createElement('div', { className: 'mds-gate-question-modal' },
+        React.createElement('div', { className: 'mds-gate-question-title' }, 'Do you need any gates?'),
+        React.createElement('div', { className: 'mds-gate-question-sub' },
+          'Walk gates, driveway gates, or any opening in your fence line.'
+        ),
+        React.createElement('button', {
+          className: 'mds-gate-question-yes',
+          onClick: function() {
+            setShowGateQuestion(false);
+            setShowGateStep(true);
+            showGateStepRef.current = true;
+          },
+        }, 'Yes — add gates'),
+        React.createElement('button', {
+          className: 'mds-gate-question-no',
+          onClick: function() {
+            setGates([]);
+            setShowGateQuestion(false);
+            handleContinue();
+          },
+        }, 'No gates needed')
+      )
+    ),
+
+    // ── Gate placement panel ─────────────────────────────────────────────────
     showGateStep && React.createElement('div', { className: 'mds-gate-step-overlay' },
       React.createElement(MapboxDrawGateStep, {
         lines: lines,
@@ -2465,7 +2497,7 @@ function MapboxDrawView(props) {
         onAddGate: handleAddGate,
         fenceHeight: fenceHeight,
         onComplete: handleContinue,
-        onSkip: function() { setGates([]); handleContinue(); },
+        onSkip: function() { setGates([]); setShowGateStep(false); showGateStepRef.current = false; handleContinue(); },
       })
     )
   );
