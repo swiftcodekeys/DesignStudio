@@ -20,6 +20,7 @@ import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 import { classifyDrawnLine } from './epqsClient';
 import { buildAnnotatedSnapshot } from './legendOverlay';
 import SlopePopup from './SlopePopup';
+import MapboxDrawGateStep from './MapboxDrawGateStep.js';
 
 // OS-aware modifier key display. Mac shows ⌘, everyone else shows Ctrl.
 // The keyboard handler itself listens for both metaKey and ctrlKey so the
@@ -943,6 +944,8 @@ function MapScreen(props) {
   var setHoverPoint = props.setHoverPoint;
   var pointsRef = useRef(props.points);
   pointsRef.current = props.points;
+  var linesRef = useRef(props.lines || []);
+  linesRef.current = props.lines || [];
 
   // Task 3: drawModeActive gates the click handler so we don't drop a vertex
   // until the user explicitly opts in via "Start Drawing". We use a ref so the
@@ -1013,6 +1016,42 @@ function MapScreen(props) {
     // Task 3: gate on drawModeActiveRef so the tool opens in pan/zoom-only mode
     // and only accepts vertex clicks after the user hits "Start Drawing".
     map.on('click', function(e) {
+      // Gate placement mode — intercept click before drawing logic
+      if (props.showGateStepRef && props.showGateStepRef.current) {
+        var clickLng = e.lngLat.lng;
+        var clickLat = e.lngLat.lat;
+        var bestLine = null, bestSeg = null, bestDist = Infinity;
+        var currentLines = linesRef.current;
+        currentLines.forEach(function(lineArr) {
+          for (var i = 0; i < lineArr.length - 1; i++) {
+            var midLng = (lineArr[i][0] + lineArr[i+1][0]) / 2;
+            var midLat = (lineArr[i][1] + lineArr[i+1][1]) / 2;
+            var d = Math.pow(clickLng - midLng, 2) + Math.pow(clickLat - midLat, 2);
+            if (d < bestDist) {
+              bestDist = d;
+              bestLine = { id: 'line-' + currentLines.indexOf(lineArr), lineArr: lineArr };
+              bestSeg = i;
+            }
+          }
+        });
+        if (bestLine && props.setGates && props.gateIdCounterRef) {
+          var segLenFt = Math.round(Math.sqrt(bestDist) * 111320 * 3.28084 * 10) / 10;
+          var id = 'gate-' + (props.gateIdCounterRef.current++);
+          var newGate = {
+            id: id,
+            segmentLineId: bestLine.id,
+            segmentIndex: bestSeg,
+            segmentLabel: '',
+            offsetFt: segLenFt / 2,
+            latLng: { lat: clickLat, lng: clickLng },
+            type: 'walk', top: 'flat', swing: 'left', widthInches: 36,
+            hinge: 'standard', latch: 'lokklatch',
+          };
+          props.setGates(function(prev) { return prev.concat([newGate]); });
+        }
+        return; // don't add a fence point
+      }
+
       if (!drawModeActiveRef.current) return;
       if (e.originalEvent && e.originalEvent.target) {
         var t = e.originalEvent.target;
@@ -1651,6 +1690,18 @@ function MapboxDrawView(props) {
   var epqsOverall = epqsOverallState[0];
   var setEpqsOverall = epqsOverallState[1];
 
+  var showGateStepState = useState(false);
+  var showGateStep = showGateStepState[0];
+  var setShowGateStep = showGateStepState[1];
+  var showGateStepRef = useRef(false);
+  showGateStepRef.current = showGateStep;
+
+  var gatesState = useState([]);
+  var gates = gatesState[0];
+  var setGates = gatesState[1];
+
+  var gateIdCounterRef = useRef(0);
+
   useEffect(function() {
     if (!points || points.length < 2) {
       epqsResults.current = null;
@@ -1923,7 +1974,7 @@ function MapboxDrawView(props) {
       parcel: parcelData || null,
       mapBounds: mapBounds,
       vertices: vertices,
-      gates: [],
+      gates: gates,
     };
 
     // Read postCap from saved design config (set by the 3D configurator before
@@ -1947,7 +1998,7 @@ function MapboxDrawView(props) {
       totalFt: totalFt,
       corners: corners,
       mapBounds: mapBounds,
-      gates: [],
+      gates: gates,
     }).then(function(annotatedUrl) {
       data.annotatedSnapshotUrl = annotatedUrl;
       if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
@@ -1961,6 +2012,16 @@ function MapboxDrawView(props) {
   }
 
   function handleContinue() {
+    // First click → show gate step
+    if (!showGateStep) {
+      setShowGateStep(true);
+      showGateStepRef.current = true;
+      return;
+    }
+    // Second click (from gate step "Done") → proceed with snapshot
+    setShowGateStep(false);
+    showGateStepRef.current = false;
+
     if (!mapInstanceRef.current) {
       setDrawModeActive(false);
       buildAndComplete(null);
@@ -2132,6 +2193,9 @@ function MapboxDrawView(props) {
       cinematic: cinematic,
       setParcelData: setParcelData,
       drawModeActive: drawModeActive,
+      showGateStepRef: showGateStepRef,
+      setGates: setGates,
+      gateIdCounterRef: gateIdCounterRef,
     }),
 
     // Cinematic overlay rides on top of the live flyTo for first visits
@@ -2224,6 +2288,18 @@ function MapboxDrawView(props) {
           }, saveSending ? 'Sending\u2026' : 'Email me the link')
         )
       )
+    ),
+
+    // Gate placement step overlay
+    showGateStep && React.createElement('div', { className: 'mds-gate-step-overlay' },
+      React.createElement(MapboxDrawGateStep, {
+        lines: lines,
+        totalFt: totalFt,
+        gates: gates,
+        onGatesChange: setGates,
+        onComplete: handleContinue,
+        onSkip: function() { setGates([]); handleContinue(); },
+      })
     )
   );
 }
