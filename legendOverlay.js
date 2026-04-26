@@ -12,6 +12,7 @@
 // Exports: buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) -> Promise<string>
 
 import { TIER_COLORS } from './tierColors.js';
+import { projectToPixel, classifyPostsPerVertex, computeLinePostPositions } from './geometryUtils.js';
 
 // Post-cap icon tags used in the legend.
 var CAP_LABELS = {
@@ -82,16 +83,31 @@ function summarizeTiers(lines) {
   return counts;
 }
 
+// Draw a diamond shape on ctx at (cx, cy) with given size.
+function drawDiamondIcon(ctx, cx, cy, size) {
+  var h = size / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - h);
+  ctx.lineTo(cx + h, cy);
+  ctx.lineTo(cx, cy + h);
+  ctx.lineTo(cx - h, cy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
 // Main export. Returns a Promise<string> (data URL for image/png).
 // baseImageDataUrl: string | null -- Mapbox canvas PNG, may be null
 // lines: array -- per the buildAndComplete outLines shape
-// opts: { postCap: string, finialType: string|null, totalFt: number, corners: number }
+// opts: { postCap, finialType, totalFt, corners, mapBounds?, gates? }
 function buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) {
   return new Promise(function(resolve) {
     var postCap = (opts && opts.postCap) || 'pcf';
     var finialType = (opts && opts.finialType) || null;
     var totalFt = (opts && opts.totalFt) || 0;
     var corners = (opts && opts.corners) || 0;
+    var mapBounds = (opts && opts.mapBounds) || null;
+    var gates = (opts && opts.gates) || [];
 
     var tierCounts = summarizeTiers(lines);
 
@@ -176,6 +192,8 @@ function buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) {
       var LINE_H = 24;
       var ICON_SIZE = 10;
       var ICON_RADIUS = 5;
+
+      drawPostMarkers(ctx, lines, gates, mapBounds, W, H);
 
       // Build legend rows.
       // Tier rows only shown when at least one segment exists for that tier.
@@ -333,6 +351,98 @@ function buildAnnotatedSnapshot(baseImageDataUrl, lines, opts) {
     }
 
     drawOverlay();
+  });
+}
+
+// Draw post markers, corner squares, and gate gap diamonds onto ctx.
+// Requires mapBounds to project lngLat -> pixel. No-ops if mapBounds is null.
+function drawPostMarkers(ctx, lines, gates, mapBounds, W, H) {
+  if (!mapBounds) return;
+
+  lines.forEach(function(line) {
+    var pts = line.points || [];
+    if (pts.length < 2) return;
+
+    var classified = classifyPostsPerVertex(pts, 15);
+    var linePosts = computeLinePostPositions(pts, 6);
+
+    (line.segments || []).forEach(function(seg) {
+      var px = projectToPixel(
+        (seg.start[1] + seg.end[1]) / 2,
+        (seg.start[0] + seg.end[0]) / 2,
+        mapBounds, W, H
+      );
+      if (!px) return;
+      ctx.fillStyle = seg.color || '#eab308';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(Math.round(seg.lengthFeet) + ' ft', px.x, px.y - 6);
+    });
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    linePosts.forEach(function(lp) {
+      var px = projectToPixel(lp.lat, lp.lng, mapBounds, W, H);
+      if (!px) return;
+      ctx.beginPath();
+      ctx.arc(px.x, px.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    classified.forEach(function(v) {
+      if (v.type === 'line') return;
+      var px = projectToPixel(v.lat, v.lng, mapBounds, W, H);
+      if (!px) return;
+      ctx.fillStyle = '#f1f5f9';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      if (v.type === 'corner') {
+        ctx.fillRect(px.x - 6, px.y - 6, 12, 12);
+        ctx.strokeRect(px.x - 6, px.y - 6, 12, 12);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(px.x, px.y - 7);
+        ctx.lineTo(px.x + 6, px.y + 5);
+        ctx.lineTo(px.x - 6, px.y + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    });
+  });
+
+  gates.forEach(function(gate) {
+    if (!gate.latLng) return;
+    var gateWidthFt = (gate.widthInches || 36) / 12;
+    var centerPx = projectToPixel(gate.latLng.lat, gate.latLng.lng, mapBounds, W, H);
+    if (!centerPx) return;
+
+    var halfGatePx = (gateWidthFt / 2) / (
+      (mapBounds.east - mapBounds.west) / W * 111320 * Math.cos(gate.latLng.lat * Math.PI / 180)
+    );
+
+    var post1x = centerPx.x - halfGatePx;
+    var post2x = centerPx.x + halfGatePx;
+    var posty = centerPx.y;
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    drawDiamondIcon(ctx, post1x, posty, 12);
+    drawDiamondIcon(ctx, post2x, posty, 12);
+
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    var midx = (post1x + post2x) / 2;
+    ctx.moveTo(post1x, posty);
+    ctx.quadraticCurveTo(midx, posty - 16, post2x, posty);
+    ctx.stroke();
+    ctx.setLineDash([]);
   });
 }
 
