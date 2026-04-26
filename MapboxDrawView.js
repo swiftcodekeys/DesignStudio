@@ -91,8 +91,11 @@ function markEarthIntroSeen() {
 
 export function extractMapBoundsFromMap(map) {
   if (!map) return null;
-  var b = map.getBounds();
-  return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+  try {
+    var b = map.getBounds();
+    if (!b) return null;
+    return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+  } catch (_) { return null; }
 }
 
 export function extractVerticesFromLines(lines) {

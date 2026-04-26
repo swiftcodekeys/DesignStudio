@@ -31,4 +31,15 @@ describe('extractVerticesFromLines', () => {
     var verts = extractVerticesFromLines(lines);
     expect(verts.find(function(v) { return v.type === 'end'; })).toBeTruthy();
   });
+
+  it('never includes line-type vertices in output', () => {
+    var lines = [{ id: 'L1', points: [[-83.1, 42.4], [-83.05, 42.4], [-83.0, 42.4]] }];
+    var verts = extractVerticesFromLines(lines);
+    expect(verts.some(function(v) { return v.type === 'line'; })).toBe(false);
+  });
+
+  it('returns empty array for null or empty input', () => {
+    expect(extractVerticesFromLines(null)).toEqual([]);
+    expect(extractVerticesFromLines([])).toEqual([]);
+  });
 });
