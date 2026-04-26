@@ -1239,6 +1239,88 @@ function MapScreen(props) {
     else mapRef.current.once && mapRef.current.once('style.load', apply);
   }, [props.lines]);
 
+  // Gate rectangle markers — one amber rectangle per placed gate, oriented
+  // along the fence line so buyers can see exactly where the gate opening is.
+  useEffect(function() {
+    if (!mapRef.current) return;
+    var gates = props.gates || [];
+    var linesArr = props.lines || [];
+
+    function buildGateFeatures() {
+      var features = [];
+      gates.forEach(function(gate) {
+        if (!gate.latLng) return;
+        var lat = gate.latLng.lat;
+        var lng = gate.latLng.lng;
+        var widthFt = (gate.widthInches || 48) / 12;
+
+        // Find the fence segment to get its bearing
+        var lineArr = linesArr[parseInt((gate.segmentLineId || '').replace('line-', ''), 10)];
+        var segIdx = gate.segmentIndex || 0;
+        var bearing = 0; // degrees, 0 = East
+        if (lineArr && lineArr[segIdx] && lineArr[segIdx + 1]) {
+          var dx = lineArr[segIdx + 1][0] - lineArr[segIdx][0];
+          var dy = lineArr[segIdx + 1][1] - lineArr[segIdx][1];
+          bearing = Math.atan2(dy, dx); // radians, in lng/lat space
+        }
+
+        // Convert feet to degrees (approximate at this latitude)
+        var ftPerDegLat = 364000;
+        var ftPerDegLng = ftPerDegLat * Math.cos(lat * Math.PI / 180);
+        var halfW = (widthFt / 2) / ftPerDegLng; // half gate width in lng degrees
+        var halfH = 1.5 / ftPerDegLat;            // fixed visual height ~1.5 ft
+
+        // Rectangle corners (unrotated: along lng axis)
+        var corners = [
+          [-halfW, -halfH], [halfW, -halfH],
+          [halfW,  halfH],  [-halfW,  halfH],
+        ];
+
+        // Rotate by fence bearing
+        var cos = Math.cos(bearing);
+        var sin = Math.sin(bearing);
+        var ring = corners.map(function(c) {
+          return [lng + c[0] * cos - c[1] * sin,
+                  lat + c[0] * sin + c[1] * cos];
+        });
+        ring.push(ring[0]); // close polygon
+
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [ring] },
+          properties: { id: gate.id, type: gate.type },
+        });
+      });
+      return { type: 'FeatureCollection', features: features };
+    }
+
+    function apply() {
+      var map = mapRef.current;
+      if (!map) return;
+      var data = buildGateFeatures();
+      if (map.getSource && map.getSource('dy-gates')) {
+        map.getSource('dy-gates').setData(data);
+      } else if (map.addSource) {
+        map.addSource('dy-gates', { type: 'geojson', data: data });
+        map.addLayer({
+          id: 'dy-gates-fill',
+          type: 'fill',
+          source: 'dy-gates',
+          paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.85 },
+        });
+        map.addLayer({
+          id: 'dy-gates-outline',
+          type: 'line',
+          source: 'dy-gates',
+          paint: { 'line-color': '#78350f', 'line-width': 2 },
+        });
+      }
+    }
+
+    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
+    else mapRef.current.once && mapRef.current.once('style.load', apply);
+  }, [props.gates, props.lines]);
+
   // Pass 4 Task 5: colored post overlay. We build a single GeoJSON source
   // (`dy-posts`) that holds one Point feature per post (end / corner / line)
   // and render it as a Mapbox circle layer. Circle color is a data expression
