@@ -330,3 +330,12 @@ export function densifyPath(points, approxFeetPerSample) {
   }
   return out;
 }
+
+// --- Geo to pixel projection ---
+// Project a lat/lng point to pixel coordinates within an image given geographic bounds.
+export function projectToPixel(lat, lng, bounds, imageWidth, imageHeight) {
+  if (!bounds) return null;
+  var x = (lng - bounds.west) / (bounds.east - bounds.west) * imageWidth;
+  var y = (bounds.north - lat) / (bounds.north - bounds.south) * imageHeight;
+  return { x: x, y: y };
+}
