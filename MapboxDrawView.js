@@ -1035,13 +1035,16 @@ function MapScreen(props) {
           }
         });
         if (bestLine && props.setGates && props.gateIdCounterRef) {
-          var segLenFt = Math.round(Math.sqrt(bestDist) * 111320 * 3.28084 * 10) / 10;
+          var segStart = bestLine.lineArr[bestSeg];
+          var segEnd = bestLine.lineArr[bestSeg + 1];
+          var segLenFt = totalFeet([segStart, segEnd]);
+          var segLabel = compassBearing(segStart, segEnd);
           var id = 'gate-' + (props.gateIdCounterRef.current++);
           var newGate = {
             id: id,
             segmentLineId: bestLine.id,
             segmentIndex: bestSeg,
-            segmentLabel: '',
+            segmentLabel: segLabel,
             offsetFt: segLenFt / 2,
             latLng: { lat: clickLat, lng: clickLng },
             type: 'walk', top: 'flat', swing: 'left', widthInches: 36,
