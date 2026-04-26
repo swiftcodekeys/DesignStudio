@@ -50,15 +50,14 @@ Shown after the buyer completes drawing and reviews measurements. Presented as a
 ### Gate configuration card fields
 | Field | Options | Default |
 |-------|---------|---------|
-| Gate type | Walk Gate / Drive Gate / Driveway Gate | Walk Gate |
+| Gate type | Walk Gate / Driveway Gate | Walk Gate |
 | Top style | Flat / Arched | Flat |
 | Swing direction | Swings left / Swings right | Swings left |
 | Width | Selected from type's available range (see below) | 36" |
 
-Gate types and width ranges match the existing `GATE_TYPES` and `widthsForType()` in `QuoteStep3_Gates.js`:
-- `walk` (Walk Gate): 36"–72", default 36". "36" = person access | 48" = mower"
-- `drive` (Drive Gate, single leaf): 72"–144", default 72". Vehicle access, one leaf.
-- `driveway` (Driveway Gate, two leaves): 72"–144", default 72". Two leaves meet in center.
+Two standard gate types — both orderable via Ultra's Easy Order Form with published pricing (price book pages 2-4/2-5 and 2-6/2-7). Wide single-leaf gates (>72" single leaf) are a special/pro-rated order and are NOT offered in the configurator.
+- `walk` (Walk Gate, single leaf): 36", 42", 48", 60", 72". Default 36". "36" = person access | 48" = mower"
+- `driveway` (Driveway Gate, double leaf): 72", 84", 96", 108", 120", 132", 144". Default 72". Two leaves meet in center.
 
 Width is selected via a dropdown using the same widths array as `QuoteStep3_Gates.js`. The gate card also shows the segment it's on and its approximate offset from the start of that segment.
 

@@ -537,24 +537,28 @@ function el(tag, props) {
   return React.createElement.apply(React, args);
 }
 
-// Gate types matching QuoteStep3_Gates.js GATE_TYPES
-// Images live in assets/gate_types/ — see asset copy step below
+// Two standard gate types only — both on Ultra Easy Order Form with published pricing.
+// Wide single-leaf gates (>72") are special/pro-rated — NOT offered here.
+// Images live in assets/gate_types/ — see asset copy step below.
 var GATE_TYPES = [
-  { id: 'walk',     name: 'Walk Gate',     range: '36–72"',  defaultWidth: 36 },
-  { id: 'drive',    name: 'Drive Gate',    range: '72–144"', defaultWidth: 72 },
-  { id: 'driveway', name: 'Driveway Gate', range: '72–144"', defaultWidth: 84 },
+  { id: 'walk',     name: 'Walk Gate',     range: '36–72"',   defaultWidth: 36 },
+  { id: 'driveway', name: 'Driveway Gate', range: '72–144"',  defaultWidth: 72 },
 ];
 
-// Gate top-style images — shown in the type/arch selector cards.
-// All images are Horizon (UAF-200) style. Copy note is below.
+var WIDTHS_WALK     = [36, 42, 48, 60, 72];
+var WIDTHS_DRIVEWAY = [72, 84, 96, 108, 120, 132, 144];
+
+function widthsForType(type) {
+  return type === 'driveway' ? WIDTHS_DRIVEWAY : WIDTHS_WALK;
+}
+
+// Gate top-style images — shown in type+arch selector cards.
+// All images are Horizon (UAF-200) style, approved by Sarah 2026-04-25.
 var GATE_IMAGES = {
-  'walk-flat':     'assets/gate_types/walk_flat.png',     // source: Desktop/Fence styles/Walk Gates/horizonflat.png
-  'walk-arched':   'assets/gate_types/walk_arched.png',   // source: Desktop/Fence styles/Walk Gates/horizonarch.png
-  'driveway-flat': 'assets/gate_types/driveway_flat.png', // source: Downloads/flattopdouble.png
-  'driveway-arched':'assets/gate_types/driveway_arched.png', // source: .claude/image-cache/.../7.png (arched driveway 3D render)
-  // Drive Gate (single leaf) reuses walk images as placeholder — update if dedicated images become available
-  'drive-flat':    'assets/gate_types/walk_flat.png',
-  'drive-arched':  'assets/gate_types/walk_arched.png',
+  'walk-flat':      'assets/gate_types/walk_flat.png',
+  'walk-arched':    'assets/gate_types/walk_arched.png',
+  'driveway-flat':  'assets/gate_types/driveway_flat.png',
+  'driveway-arched':'assets/gate_types/driveway_arched.png',
 };
 
 var WIDTHS_WALK  = [36, 42, 48, 60, 72];
@@ -1085,7 +1089,7 @@ function SegmentCard(props) {
     el('div', { className: 'swc-tier-row' }, tierButtons),
     gatesOnSeg.length > 0 && el('div', { className: 'swc-gates' },
       gatesOnSeg.map(function(gate) {
-        var typeLabels = { walk: 'Walk gate', drive: 'Drive gate', driveway: 'Driveway gate' };
+        var typeLabels = { walk: 'Walk gate', driveway: 'Driveway gate' };
         return el('div', { key: gate.id, className: 'swc-gate-row' },
           el('span', { className: 'swc-gate-info' },
             (typeLabels[gate.type] || 'Gate') + ' · ' + gate.widthInches + '" · ' +
@@ -1230,8 +1234,7 @@ function el(tag, props) {
 }
 
 var GATE_TYPES = [
-  { id: 'walk', name: 'Walk Gate' },
-  { id: 'drive', name: 'Drive Gate' },
+  { id: 'walk',     name: 'Walk Gate' },
   { id: 'driveway', name: 'Driveway Gate' },
 ];
 var WIDTHS_WALK  = [36, 42, 48, 60, 72];
@@ -1579,7 +1582,7 @@ if (isDrawToolBuyer) {
       ? el('div', { className: 'qbg-readonly-none' }, 'No gates placed. You confirmed no gates during drawing.')
       : el('div', { className: 'qbg-readonly-list' },
           dtGates.map(function(gate, i) {
-            var typeLabels = { walk: 'Walk gate', drive: 'Drive gate', driveway: 'Driveway gate' };
+            var typeLabels = { walk: 'Walk gate', driveway: 'Driveway gate' };
             return el('div', { key: gate.id, className: 'qbg-readonly-card' },
               el('div', { className: 'qbg-readonly-card-info' },
                 el('div', { className: 'qbg-readonly-card-title' }, 'Gate ' + (i + 1) + ' — ' + (typeLabels[gate.type] || gate.type)),
@@ -1855,6 +1858,6 @@ git commit -m "test: E2E tests for segment wizard and gate placement flow"
 | Draw-tool buyer read-only gate summary in Step 3 | Task 9 |
 | Manufacturing payload: segmentTiers, gateCount, totalPanelFt | Task 10 |
 | `compassLabel` verified in segment data | Task 3 (already in buildAndComplete line 1856) |
-| Gate type names match existing GATE_TYPES | Tasks 4, 7 (walk/drive/driveway) |
+| Gate type names (walk/driveway only — no drive) | Tasks 4, 7, 9 |
 | `widthInches` field name consistency | Tasks 4, 7, 9 |
 | E2E integration tests | Task 11 |
