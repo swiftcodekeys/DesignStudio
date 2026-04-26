@@ -18,10 +18,10 @@ describe('computeTotalPanelFt', () => {
 });
 
 describe('makeDefaultGate', () => {
-  it('returns a walk gate with 36" default', () => {
+  it('returns a walk gate with 48" default', () => {
     var g = makeDefaultGate('gate-0', 'line-0', 1, 42, { lat: 42.45, lng: -83.05 });
     expect(g.type).toBe('walk');
-    expect(g.widthInches).toBe(36);
+    expect(g.widthInches).toBe(48);
     expect(g.top).toBe('flat');
     expect(g.swing).toBe('left');
     expect(g.id).toBe('gate-0');

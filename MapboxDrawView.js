@@ -1034,7 +1034,11 @@ function MapScreen(props) {
             }
           }
         });
-        if (bestLine && props.setGates && props.gateIdCounterRef) {
+        // Only place a gate if the click is within ~25 meters of a segment midpoint.
+        // Without this, every map click during gate step adds a gate to the nearest
+        // segment regardless of distance — causing phantom gates on random clicks.
+        var MAX_SNAP_DEG = 0.00023; // ~25 m; rejects clicks far from fence line
+        if (bestLine && Math.sqrt(bestDist) <= MAX_SNAP_DEG && props.setGates && props.gateIdCounterRef) {
           var segStart = bestLine.lineArr[bestSeg];
           var segEnd = bestLine.lineArr[bestSeg + 1];
           var segLenFt = totalFeet([segStart, segEnd]);
@@ -1047,7 +1051,7 @@ function MapScreen(props) {
             segmentLabel: segLabel,
             offsetFt: segLenFt / 2,
             latLng: { lat: clickLat, lng: clickLng },
-            type: 'walk', top: 'flat', swing: 'left', widthInches: 36,
+            type: 'walk', top: 'flat', swing: 'left', widthInches: 48,
             hinge: 'standard', latch: 'lokklatch',
           };
           props.setGates(function(prev) { return prev.concat([newGate]); });

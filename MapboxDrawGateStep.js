@@ -35,7 +35,7 @@ export function makeDefaultGate(id, segmentLineId, segmentIndex, offsetFt, latLn
     type: 'walk',
     top: 'flat',
     swing: 'left',
-    widthInches: 36,
+    widthInches: 48,
     hinge: 'standard',
     latch: 'lokklatch',
   };
