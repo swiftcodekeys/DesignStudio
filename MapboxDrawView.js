@@ -89,6 +89,25 @@ function markEarthIntroSeen() {
   } catch (e) {}
 }
 
+export function extractMapBoundsFromMap(map) {
+  if (!map) return null;
+  var b = map.getBounds();
+  return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+}
+
+export function extractVerticesFromLines(lines) {
+  var out = [];
+  (lines || []).forEach(function(line) {
+    var pts = line.points || [];
+    if (pts.length < 2) return;
+    var classified = classifyPostsPerVertex(pts, 15);
+    classified.forEach(function(v) {
+      if (v.type !== 'line') out.push({ lat: v.lat, lng: v.lng, type: v.type, lineId: line.id });
+    });
+  });
+  return out;
+}
+
 // ---------- Distance helpers ----------
 function distanceBetween(a, b) {
   // Haversine in feet
@@ -1877,6 +1896,8 @@ function MapboxDrawView(props) {
       // boundary between this line and the next.
       if (lineIdx < lines.length - 1) flatIdx++;
     }
+    var mapBounds = extractMapBoundsFromMap(mapInstanceRef.current);
+    var vertices = extractVerticesFromLines(outLines);
     var slopedPostCount = computeSlopedPostCount(allSegments, 6);
     // Each standalone drawn line (>=2 points) contributes 2 physical end
     // posts. Lines that don't have enough points to render don't.
@@ -1895,6 +1916,9 @@ function MapboxDrawView(props) {
       mapboxSnapshotUrl: snapshotUrl,
       source: 'auto',
       parcel: parcelData || null,
+      mapBounds: mapBounds,
+      vertices: vertices,
+      gates: [],
     };
 
     // Read postCap from saved design config (set by the 3D configurator before
@@ -1917,6 +1941,8 @@ function MapboxDrawView(props) {
       finialType: savedFinialType,
       totalFt: totalFt,
       corners: corners,
+      mapBounds: mapBounds,
+      gates: [],
     }).then(function(annotatedUrl) {
       data.annotatedSnapshotUrl = annotatedUrl;
       if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
