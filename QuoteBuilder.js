@@ -670,8 +670,8 @@ function QuoteBuilder(props) {
       )
     ),
 
-    // ---- Footer nav ----
-    React.createElement('div', { className: 'qb-footer' },
+    // ---- Footer nav (hidden on review step — review has its own CTAs) ----
+    step !== 5 && React.createElement('div', { className: 'qb-footer' },
       step > 0 ? React.createElement('button', {
         className: 'qb-back-btn',
         onClick: function() { setStep(step - 1); },
@@ -727,7 +727,7 @@ function QuoteBuilder(props) {
     ),
 
     // ---- Phone support ribbon (persistent, D2C phone-support positioning) ----
-    React.createElement('div', { className: 'qb-phone-ribbon' },
+    step !== 5 && React.createElement('div', { className: 'qb-phone-ribbon' },
       React.createElement(Phone, { size: 16, weight: 'fill', className: 'qb-phone-ribbon-icon' }),
       React.createElement('span', { className: 'qb-phone-ribbon-text' },
         'Need help? Call ',

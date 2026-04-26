@@ -598,7 +598,7 @@ function QuoteStep2_Layout(props) {
 
     // ---- Draw Tool Banner ----
     drawToolData ? (function(){
-      var runCount = drawToolData.segments ? drawToolData.segments.length : 1;
+      var runCount = drawToolData.lines ? drawToolData.lines.length : 1;
       var feet = Math.round(drawToolData.totalFeet || 0);
       return el('div', { className: 'qb-layout-draw-banner' },
         el(Check, { size: 16, weight: 'bold' }),

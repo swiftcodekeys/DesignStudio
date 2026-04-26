@@ -1052,6 +1052,7 @@ function MapScreen(props) {
             offsetFt: segLenFt / 2,
             latLng: { lat: clickLat, lng: clickLng },
             type: 'walk', top: 'flat', swing: 'left', widthInches: 48,
+            heightInches: props.fenceHeight || 48,
             hinge: 'standard', latch: 'lokklatch',
           };
           props.setGates(function(prev) { return prev.concat([newGate]); });
@@ -1749,6 +1750,15 @@ function MapboxDrawView(props) {
     try { localStorage.setItem('gv_slope_answer', ans); } catch (e) {}
   }
 
+  // Fence height from the 3D design studio — gates default to the same height.
+  var fenceHeight = (function() {
+    try {
+      var raw = window.localStorage && window.localStorage.getItem('gv_saved_design');
+      if (raw) { var p = JSON.parse(raw); if (p && p.height) return parseInt(p.height, 10) || 48; }
+    } catch (_) {}
+    return 48;
+  })();
+
   // Per-segment racking-tier user overrides. Keyed by segment index; absence
   // means "use auto-detected EPQS classification". Cleared when the user picks
   // the "Auto" option from the dropdown.
@@ -2070,12 +2080,14 @@ function MapboxDrawView(props) {
     // the buyer enters the draw tool). Fall back to flat cap if unavailable.
     var savedPostCap = 'pcf';
     var savedFinialType = null;
+    var savedHeight = 48;
     try {
       var rawSaved = window.localStorage && window.localStorage.getItem('gv_saved_design');
       if (rawSaved) {
         var parsedSaved = JSON.parse(rawSaved);
         if (parsedSaved && parsedSaved.postCap) savedPostCap = parsedSaved.postCap;
         if (parsedSaved && parsedSaved.finialType) savedFinialType = parsedSaved.finialType;
+        if (parsedSaved && parsedSaved.height) savedHeight = parseInt(parsedSaved.height, 10) || 48;
       }
     } catch (_) {}
 
@@ -2192,6 +2204,7 @@ function MapboxDrawView(props) {
         offsetFt:       bestLen / 2,
         latLng:         { lat: midLat, lng: midLng },
         type: 'walk', top: 'flat', swing: 'left', widthInches: 48,
+        heightInches: fenceHeight,
         hinge: 'standard', latch: 'lokklatch',
       }]);
     });
@@ -2319,6 +2332,7 @@ function MapboxDrawView(props) {
       showGateStepRef: showGateStepRef,
       setGates: setGates,
       gateIdCounterRef: gateIdCounterRef,
+      fenceHeight: fenceHeight,
     }),
 
     // Cinematic overlay rides on top of the live flyTo for first visits
@@ -2421,6 +2435,7 @@ function MapboxDrawView(props) {
         gates: gates,
         onGatesChange: setGates,
         onAddGate: handleAddGate,
+        fenceHeight: fenceHeight,
         onComplete: handleContinue,
         onSkip: function() { setGates([]); handleContinue(); },
       })

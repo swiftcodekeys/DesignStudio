@@ -173,7 +173,7 @@ export function calculateZoneQuote(config) {
   }
 
   // Flange covers
-  if (config.flangCovers && totalPosts > 0) {
+  if (config.flangeCovers && totalPosts > 0) {
     var flangeSize = postSpec.size.split('x')[0];
     var flangePrice = DECORATIVE_PRICING.flange[flangeSize] || 0;
     if (flangePrice > 0) {

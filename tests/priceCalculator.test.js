@@ -128,4 +128,92 @@ describe('calculateZoneQuote — racking surcharge', () => {
     expect(panelLine.qty).toBe(18);
     expect(panelLine.qty).not.toBe(19);
   });
+
+  it('adds flange cover line item when flangeCovers is true', function() {
+    var config = baseConfig({
+      flangeCovers: true,
+      ends: 2,
+      corners: 1,
+      gates: [{ type: 'walk', widthInches: 48 }],
+    });
+    var r = calculateZoneQuote(config);
+    var line = r.items.find(function(i) { return /Flange Covers/i.test(i.label); });
+    expect(line).toBeTruthy();
+    expect(line.total).toBeCloseTo(line.unitPrice * line.qty, 4);
+  });
+});
+
+describe('calculateZoneQuote — accent/scroll pricing (ACCENTS_PER_PANEL=2)', () => {
+  it('scrolls on 60ft fence = 10 panels × 2 = 20 scrolls at $79.25 each', function() {
+    var r = calculateZoneQuote(baseConfig({ scrolls: true }));
+    var scrollLine = r.items.find(function(i) { return /scroll/i.test(i.label); });
+    expect(scrollLine).toBeTruthy();
+    expect(scrollLine.qty).toBe(20);
+    expect(scrollLine.unitPrice).toBe(79.25);
+    expect(scrollLine.total).toBeCloseTo(20 * 79.25, 1);
+  });
+
+  it('scrolls total is NOT $49k+ (regression: was ACCENTS_PER_PANEL=16)', function() {
+    var r = calculateZoneQuote(baseConfig({ linearFeet: 221, scrolls: true }));
+    var scrollLine = r.items.find(function(i) { return /scroll/i.test(i.label); });
+    expect(scrollLine.total).toBeLessThan(10000); // was $49,452 with ACCENTS_PER_PANEL=16
+  });
+
+  it('butterflies: qty = panelCount × 2', function() {
+    var r = calculateZoneQuote(baseConfig({ butterflies: true }));
+    var line = r.items.find(function(i) { return /butter/i.test(i.label); });
+    expect(line).toBeTruthy();
+    expect(line.qty).toBe(20); // 10 panels × 2
+  });
+
+  it('no accents = no accent line items', function() {
+    var r = calculateZoneQuote(baseConfig());
+    var scrollLine = r.items.find(function(i) { return /scroll/i.test(i.label); });
+    expect(scrollLine).toBeFalsy();
+  });
+});
+
+describe('calculateZoneQuote — gate post pricing', () => {
+  it('1 walk gate adds 2 gate posts', function() {
+    var r = calculateZoneQuote(baseConfig({
+      gates: [{ type: 'walk', widthInches: 48, top: 'flat', swing: 'left', hinge: 'standard', latch: 'lokklatch' }],
+    }));
+    var gatePosts = r.items.find(function(i) { return /gate post/i.test(i.label); });
+    expect(gatePosts).toBeTruthy();
+    expect(gatePosts.qty).toBe(2);
+  });
+
+  it('2 gates = 4 gate posts', function() {
+    var gate = { type: 'walk', widthInches: 48, top: 'flat', swing: 'left', hinge: 'standard', latch: 'lokklatch' };
+    var r = calculateZoneQuote(baseConfig({ gates: [gate, gate] }));
+    var gatePosts = r.items.find(function(i) { return /gate post/i.test(i.label); });
+    expect(gatePosts.qty).toBe(4);
+  });
+
+  it('subtotal increases with gates vs no gates', function() {
+    var base = calculateZoneQuote(baseConfig());
+    var withGate = calculateZoneQuote(baseConfig({
+      gates: [{ type: 'walk', widthInches: 48, top: 'flat', swing: 'left', hinge: 'standard', latch: 'lokklatch' }],
+    }));
+    expect(withGate.subtotal).toBeGreaterThan(base.subtotal);
+  });
+});
+
+describe('calculateZoneQuote — style combos (no crash)', () => {
+  // haven tops out at 60"; all others go to 72"
+  var COMBOS = [
+    ['horizon', 48], ['horizon', 60], ['horizon', 72],
+    ['haven', 48], ['haven', 60],
+    ['charleston', 48], ['charleston', 60], ['charleston', 72],
+    ['vanguard', 48], ['vanguard', 60],
+    ['savannah', 48], ['savannah', 60],
+  ];
+  COMBOS.forEach(function(combo) {
+    var style = combo[0], height = combo[1];
+    it('style=' + style + ' height=' + height + ' returns positive subtotal', function() {
+      var r = calculateZoneQuote(baseConfig({ style: style, height: height }));
+      expect(r.subtotal).toBeGreaterThan(0);
+      expect(isNaN(r.subtotal)).toBe(false);
+    });
+  });
 });

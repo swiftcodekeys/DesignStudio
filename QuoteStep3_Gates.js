@@ -323,7 +323,15 @@ function QuoteStep3_Gates(props) {
         : el('div', { className: 'qbg-readonly-list' },
             dtGates.map(function(gate, i) {
               var typeLabels = { walk: 'Walk gate', driveway: 'Driveway gate' };
+              var gateImgKey = (gate.type || 'walk') + '-' + (gate.top || 'flat');
+              var gateImgSrc = {
+                'walk-flat': 'assets/gate_types/walk_flat.png',
+                'walk-arched': 'assets/gate_types/walk_arched.png',
+                'driveway-flat': 'assets/gate_types/driveway_flat.png',
+                'driveway-arched': 'assets/gate_types/driveway_arched.png',
+              }[gateImgKey];
               return el('div', { key: gate.id || i, className: 'qbg-readonly-card' },
+                gateImgSrc && el('img', { src: gateImgSrc, className: 'qbg-readonly-gate-img', alt: typeLabels[gate.type] || gate.type }),
                 el('div', { className: 'qbg-readonly-card-info' },
                   el('div', { className: 'qbg-readonly-card-title' },
                     'Gate ' + (i + 1) + ' — ' + (typeLabels[gate.type] || gate.type)
@@ -331,7 +339,7 @@ function QuoteStep3_Gates(props) {
                   el('div', { className: 'qbg-readonly-card-detail' },
                     gate.widthInches + '" · ' +
                     (gate.top === 'arched' ? 'Arched' : 'Straight') + ' · Swings ' + (gate.swing || 'left') +
-                    (gate.segmentLabel ? ' · ' + gate.segmentLabel + ' segment' : '')
+                    (gate.segmentLabel ? ' · ' + gate.segmentLabel + ' run' : '')
                   )
                 ),
                 el('button', {
