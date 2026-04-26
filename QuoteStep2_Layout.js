@@ -7,6 +7,8 @@ import InfoPopup from './InfoPopup';
 import { PRIVACY_RACKABLE } from './retailPricing';
 import { TIER_COLORS } from './tierColors.js';
 import { SLOPE_ANSWER_LABELS } from './slopeAnswers.js';
+import SegmentWizardCards from './SegmentWizardCards.js';
+import GateEditModal from './GateEditModal.js';
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -401,6 +403,18 @@ function QuoteStep2_Layout(props) {
   var rackingExpanded = rackingExpandedState[0];
   var setRackingExpanded = rackingExpandedState[1];
 
+  var confirmedStateVar = useState({});
+  var confirmedState = confirmedStateVar[0];
+  var setConfirmedState = confirmedStateVar[1];
+
+  var editingGateVar = useState(null);
+  var editingGate = editingGateVar[0];
+  var setEditingGate = editingGateVar[1];
+
+  var localGatesVar = useState(null);
+  var localGates = localGatesVar[0];
+  var setLocalGates = localGatesVar[1];
+
   // Initialize layout defaults
   var linearFeet = data.linearFeet || (drawToolData ? Math.round(drawToolData.totalFeet) : 100);
   var terrain = data.terrain || 'flat';
@@ -536,6 +550,42 @@ function QuoteStep2_Layout(props) {
     syncLayout({ runs: newRuns, linearFeet: newTotal });
   }
 
+  function handleTierSelect(segIndex, lineId, tier) {
+    var key = lineId + '-' + segIndex;
+    setConfirmedState(function(prev) {
+      var next = Object.assign({}, prev);
+      next[key] = true;
+      next[key + '-override'] = tier;
+      return next;
+    });
+    if (props.drawToolData && props.drawToolData.lines) {
+      var lines = props.drawToolData.lines.map(function(line) {
+        if (line.id !== lineId) return line;
+        return Object.assign({}, line, {
+          segments: line.segments.map(function(seg, i) {
+            if (i !== segIndex) return seg;
+            return Object.assign({}, seg, { userTierOverride: tier, userTierConfirmed: true, finalTier: tier });
+          }),
+        });
+      });
+      props.update({ confirmedSegmentLines: lines });
+    }
+  }
+
+  function handleGateEdit(gateId) {
+    var gatesArr = (localGates !== null ? localGates : (props.drawToolData && props.drawToolData.gates)) || [];
+    var gate = gatesArr.find(function(g) { return g.id === gateId; });
+    setEditingGate(gate || null);
+  }
+
+  function handleGateUpdate(updatedGate) {
+    var gatesArr = (localGates !== null ? localGates : (props.drawToolData && props.drawToolData.gates)) || [];
+    var newGates = gatesArr.map(function(g) { return g.id === updatedGate.id ? updatedGate : g; });
+    setLocalGates(newGates);
+    props.update({ gates: newGates });
+    setEditingGate(updatedGate);
+  }
+
   return el('div', { className: 'qs1-container' },
 
     // ---- Intro: reassure the buyer the drawing was captured ----
@@ -581,41 +631,71 @@ function QuoteStep2_Layout(props) {
       )
     ) : null,
 
-    // ---- Terrain (simple mode) ----
-    // Task 15: if SlopePopup already captured the buyer's terrain answer
-    // (data.slopeAnswer) AND the buyer hasn't asked to change it, render a
-    // read-only summary instead of re-presenting the 3-card pick grid.
-    // Direct-quote buyers (no slopeAnswer) still see the full picker.
-    !advancedMode ? el('div', { 'data-test': 'qb-terrain-section' },
-      (data.slopeAnswer && !terrainExpanded)
-        ? readOnlySummary({
-            title: 'Terrain',
-            eyebrow: 'Your answer from the draw step:',
-            valueLabel: SLOPE_ANSWER_LABELS[data.slopeAnswer] || data.slopeAnswer,
-            onChange: function() { setTerrainExpanded(true); },
-            changeLabel: 'Change',
-            testId: 'qb-terrain-readonly',
-          })
-        : el('div', null,
-            sectionHeader('Terrain', {
-              title: 'Terrain Type',
-              text: 'Flat terrain means no grade change along the fence line. Sloped means the ground rises or falls consistently. Mixed means some sections are flat and others are sloped.',
-            }),
-            el('div', { className: 'qb-layout-terrain-grid' },
-              TERRAIN_OPTIONS.map(function(t) {
-                return el('button', {
-                  key: t.id,
-                  className: 'qb-layout-terrain-card' + (terrain === t.id ? ' selected' : ''),
-                  onClick: function() { syncLayout({ terrain: t.id }); },
-                },
-                  React.createElement(t.icon, { size: 24, weight: 'duotone' }),
-                  el('div', { className: 'qb-layout-terrain-name' }, t.name),
-                  el('div', { className: 'qb-layout-terrain-desc' }, t.desc)
-                );
-              })
+    // ---- Terrain / Segment Wizard ----
+    !advancedMode ? (function() {
+      var drawLines = props.drawToolData && props.drawToolData.lines;
+      if (drawLines && drawLines.length > 0) {
+        var effectiveGates = localGates !== null ? localGates : (props.drawToolData.gates || []);
+        return el('div', { className: 'qsl-wizard-layout' },
+          el('div', { className: 'qsl-wizard-left' },
+            el('div', { className: 'qsl-wizard-img-label' }, 'Your drawing'),
+            props.drawToolData.annotatedSnapshotUrl
+              ? el('img', { src: props.drawToolData.annotatedSnapshotUrl, className: 'qsl-wizard-img', alt: 'Fence layout' })
+              : el('div', { className: 'qsl-wizard-img-placeholder' }, 'Map image unavailable'),
+            renderPostTotals(props.drawToolData, effectiveGates),
+            el('p', { className: 'qsl-post-caption' },
+              'Post locations are estimated for planning. Final cut list confirmed during order review.'
             )
-          )
-    ) : null,
+          ),
+          el('div', { className: 'qsl-wizard-right' },
+            React.createElement(SegmentWizardCards, {
+              lines: drawLines,
+              gates: effectiveGates,
+              confirmedState: confirmedState,
+              onTierSelect: handleTierSelect,
+              onGateEdit: handleGateEdit,
+              onContinue: props.onNext,
+            })
+          ),
+          editingGate ? React.createElement(GateEditModal, {
+            gate: editingGate,
+            onUpdate: handleGateUpdate,
+            onClose: function() { setEditingGate(null); },
+          }) : null
+        );
+      }
+      // Manual-entry buyer: existing terrain picker unchanged
+      return el('div', { 'data-test': 'qb-terrain-section' },
+        (data.slopeAnswer && !terrainExpanded)
+          ? readOnlySummary({
+              title: 'Terrain',
+              eyebrow: 'Your answer from the draw step:',
+              valueLabel: SLOPE_ANSWER_LABELS[data.slopeAnswer] || data.slopeAnswer,
+              onChange: function() { setTerrainExpanded(true); },
+              changeLabel: 'Change',
+              testId: 'qb-terrain-readonly',
+            })
+          : el('div', null,
+              sectionHeader('Terrain', {
+                title: 'Terrain Type',
+                text: 'Flat terrain means no grade change along the fence line. Sloped means the ground rises or falls consistently. Mixed means some sections are flat and others are sloped.',
+              }),
+              el('div', { className: 'qb-layout-terrain-grid' },
+                TERRAIN_OPTIONS.map(function(t) {
+                  return el('button', {
+                    key: t.id,
+                    className: 'qb-layout-terrain-card' + (terrain === t.id ? ' selected' : ''),
+                    onClick: function() { syncLayout({ terrain: t.id }); },
+                  },
+                    React.createElement(t.icon, { size: 24, weight: 'duotone' }),
+                    el('div', { className: 'qb-layout-terrain-name' }, t.name),
+                    el('div', { className: 'qb-layout-terrain-desc' }, t.desc)
+                  );
+                })
+              )
+            )
+      );
+    })() : null,
 
     // ---- Advanced Mode Toggle ----
     el('button', {
@@ -892,6 +972,43 @@ function QuoteStep2_Layout(props) {
         'Auto-calculated from your layout. Our team verifies before manufacturing.'
       )
     )
+  );
+}
+
+function allSegmentsConfirmedAcrossLines(lines, confirmedState) {
+  return (lines || []).every(function(line) {
+    return (line.segments || []).every(function(seg, i) {
+      return !!(confirmedState[line.id + '-' + i]);
+    });
+  });
+}
+
+function renderPostTotals(drawData, gates) {
+  var corners = drawData.corners || 0;
+  var ends = drawData.ends || 0;
+  var gatePosts = (gates || []).length * 2;
+  var linePosts = 0;
+  (drawData.lines || []).forEach(function(line) {
+    (line.segments || []).forEach(function(seg) {
+      linePosts += Math.max(0, Math.floor(seg.lengthFeet / 6) - 1);
+    });
+  });
+  var totalPanelFt = (drawData.totalFeet || 0) - (gates || []).reduce(function(s, g) {
+    return s + (g.widthInches || 36) / 12;
+  }, 0);
+  return el('div', { className: 'qsl-totals-grid' },
+    renderTotalCell('Panel ft', Math.round(totalPanelFt), null),
+    renderTotalCell('Corner', corners, null),
+    renderTotalCell('Line', linePosts, null),
+    renderTotalCell('End', ends, null),
+    renderTotalCell('Gate posts', gatePosts, gatePosts > 0 ? '#f59e0b' : null)
+  );
+}
+
+function renderTotalCell(label, value, color) {
+  return el('div', { className: 'qsl-total-cell', key: label },
+    el('div', { className: 'qsl-total-value', style: color ? { color: color } : null }, value),
+    el('div', { className: 'qsl-total-label' }, label)
   );
 }
 

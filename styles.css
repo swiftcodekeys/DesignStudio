@@ -7541,3 +7541,16 @@ html, body {
 .gem-select { width: 100%; padding: 7px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; background: var(--panel); }
 .gem-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gem-done { width: 100%; padding: 10px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px; }
+
+/* QuoteStep2_Layout wizard */
+.qsl-wizard-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 480px; }
+.qsl-wizard-left { padding: 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.qsl-wizard-right { overflow-y: auto; max-height: 600px; }
+.qsl-wizard-img-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-hint); }
+.qsl-wizard-img { width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+.qsl-wizard-img-placeholder { width: 100%; aspect-ratio: 4/3; background: var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-hint); }
+.qsl-totals-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.qsl-total-cell { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 6px; text-align: center; }
+.qsl-total-value { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.qsl-total-label { font-size: 9px; color: var(--text-hint); margin-top: 1px; }
+.qsl-post-caption { font-size: 10px; color: var(--text-hint); margin: 0; line-height: 1.4; }
