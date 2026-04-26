@@ -176,9 +176,9 @@ function QuoteStep4_Extras(props) {
             onChange: function(e) { update({ paintKit: e.target.checked }); },
           }),
           el('div', { className: 'qb-extras-acc-body' },
-            el('span', { className: 'qb-extras-acc-name' }, 'Touch-Up Paint Kit'),
+            el('span', { className: 'qb-extras-acc-name' }, 'Touch-Up Paint Kit — Grandview’s thank you'),
             el('span', { className: 'qb-extras-acc-desc' },
-              'Color-matched paint for installation scratches.'
+              'Color-matched paint for any installation nicks. On us.'
             )
           )
         )

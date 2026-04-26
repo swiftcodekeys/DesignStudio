@@ -998,7 +998,7 @@ function MapScreen(props) {
       } catch (e) { /* setFog unavailable on older mapbox-gl */ }
 
       var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var duration = cinematic && !prefersReduced ? 4200 : (prefersReduced ? 0 : 900);
+      var duration = cinematic && !prefersReduced ? 2100 : (prefersReduced ? 0 : 450);
       map.flyTo({
         center: [props.location.lng, props.location.lat],
         zoom: 20,
@@ -2163,6 +2163,40 @@ function MapboxDrawView(props) {
     map.triggerRepaint();
   }
 
+  // Place a gate on the longest segment — used by the "Add a gate" button
+  // so buyers don't have to figure out the click-on-map mechanic.
+  function handleAddGate() {
+    var bestLine = null, bestSeg = null, bestLen = 0;
+    lines.forEach(function(lineArr, lineIdx) {
+      for (var i = 0; i < lineArr.length - 1; i++) {
+        var len = totalFeet([lineArr[i], lineArr[i + 1]]);
+        if (len > bestLen) {
+          bestLen = len;
+          bestLine = { id: 'line-' + lineIdx, lineArr: lineArr };
+          bestSeg = i;
+        }
+      }
+    });
+    if (!bestLine) return;
+    var segStart = bestLine.lineArr[bestSeg];
+    var segEnd   = bestLine.lineArr[bestSeg + 1];
+    var midLng   = (segStart[0] + segEnd[0]) / 2;
+    var midLat   = (segStart[1] + segEnd[1]) / 2;
+    var id = 'gate-' + (gateIdCounterRef.current++);
+    setGates(function(prev) {
+      return prev.concat([{
+        id: id,
+        segmentLineId:  bestLine.id,
+        segmentIndex:   bestSeg,
+        segmentLabel:   compassBearing(segStart, segEnd),
+        offsetFt:       bestLen / 2,
+        latLng:         { lat: midLat, lng: midLng },
+        type: 'walk', top: 'flat', swing: 'left', widthInches: 48,
+        hinge: 'standard', latch: 'lokklatch',
+      }]);
+    });
+  }
+
   function handleToggleBreakdown() { setShowBreakdown(!showBreakdown); }
 
   function handleDeleteSegment(i) {
@@ -2386,6 +2420,7 @@ function MapboxDrawView(props) {
         totalFt: totalFt,
         gates: gates,
         onGatesChange: setGates,
+        onAddGate: handleAddGate,
         onComplete: handleContinue,
         onSkip: function() { setGates([]); handleContinue(); },
       })

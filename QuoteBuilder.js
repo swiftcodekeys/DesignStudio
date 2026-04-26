@@ -375,6 +375,7 @@ var DEFAULT_DATA = {
   privacyPostColor: 'textured-black',
   privacyPanelColor: 'textured-white',
   // Layout, gates, extras, shipping fields added by later steps
+  paintKit: true,  // Grandview includes this as a thank-you; default on
 };
 
 function QuoteBuilder(props) {

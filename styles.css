@@ -7477,8 +7477,10 @@ html, body {
 /* MapboxDrawGateStep */
 .mds-gate-step { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
 .mds-gate-step-header { }
-.mds-gate-step-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-.mds-gate-step-hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.mds-gate-step-eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--brand); font-weight: 700; margin-bottom: 4px; }
+.mds-gate-step-title { font-size: 17px; font-weight: 800; color: var(--text-primary); }
+.mds-gate-step-hint { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
+.mds-gate-add-btn { width: 100%; padding: 12px; border-radius: 8px; border: 2px dashed var(--brand); background: rgba(107,163,194,0.08); color: var(--brand); font-size: 14px; font-weight: 700; cursor: pointer; }
 .mds-gate-card { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 14px; }
 .mds-gate-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
 .mds-gate-card-title { font-size: 13px; font-weight: 700; }
@@ -7500,7 +7502,7 @@ html, body {
 .mds-gate-cta { width: 100%; padding: 11px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; }
 .mds-gate-skip { width: 100%; padding: 8px; border-radius: 8px; background: transparent; border: none; color: var(--text-hint); font-size: 12px; cursor: pointer; }
 .mds-gate-empty { font-size: 12px; color: var(--text-hint); text-align: center; padding: 16px; }
-.mds-gate-step-overlay { position: absolute; top: 0; right: 0; width: 340px; height: 100%; background: rgba(17,24,39,0.97); backdrop-filter: blur(12px); overflow-y: auto; z-index: 20; border-left: 1px solid rgba(255,255,255,0.08); }
+.mds-gate-step-overlay { position: absolute; top: 0; right: 0; width: 340px; bottom: 0; background: rgba(17,24,39,0.97); backdrop-filter: blur(12px); overflow-y: auto; z-index: 5; border-left: 1px solid rgba(255,255,255,0.08); }
 
 /* SegmentWizardCards */
 .swc-root { display: flex; flex-direction: column; gap: 8px; padding: 16px; }

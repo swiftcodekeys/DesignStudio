@@ -373,29 +373,9 @@ function QuoteStep6_Review(props) {
         el('span', { className: 'qb-review-subtotal-amount' }, fmt(subtotal))
       ),
 
-      // ---- Per-LF rate + total range (Task 3) ----
-      (function() {
-        var est = estimatePerFootRange(data);
-        if (!est) return null;
-        var lf = Number(data.linearFeet) || 0;
-        return el('div', { className: 'qb-review-estimate' },
-          el('div', { className: 'qb-review-estimate-row' },
-            el('span', null, 'Estimated per linear foot'),
-            el('span', { className: 'qb-review-estimate-value' },
-              fmtDollarsInt(est.low) + '\u2013' + fmtDollarsInt(est.high)
-            )
-          ),
-          lf > 0 ? el('div', { className: 'qb-review-estimate-row' },
-            el('span', null, 'Estimated range for ' + lf + ' ft of fence'),
-            el('span', { className: 'qb-review-estimate-value' },
-              fmtDollarsInt(est.low * lf) + '\u2013' + fmtDollarsInt(est.high * lf)
-            )
-          ) : null,
-          el('div', { className: 'qb-review-estimate-note' },
-            'Final pricing confirmed in your full quote.'
-          )
-        );
-      })()
+      el('div', { className: 'qb-review-estimate-note' },
+        'Final pricing confirmed in your quote \u2014 a Grandview rep reviews every order before it ships.'
+      )
     ),
 
     // ======== Verification Disclaimer ========
@@ -413,7 +393,7 @@ function QuoteStep6_Review(props) {
             props.onComplete(data, result);
           }
         },
-      }, 'Get Quote for ' + zoneName),
+      }, 'Have someone contact me about this build'),
       el('button', {
         className: 'qb-review-cta qb-review-cta--pay',
         onClick: function() {

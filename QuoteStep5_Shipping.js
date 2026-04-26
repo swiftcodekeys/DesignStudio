@@ -204,21 +204,6 @@ function QuoteStep5_Shipping(props) {
       })
     ),
 
-    // ---- Same as install site ----
-    el('div', { className: 'qb-ship-toggle-row' },
-      el('span', { className: 'qb-ship-toggle-label' }, 'Is this also the installation site?'),
-      el('div', { className: 'qs1-toggle-row' },
-        el('button', {
-          className: 'qs1-toggle' + (data.sameAsInstall !== false ? ' active' : ''),
-          onClick: function() { update({ sameAsInstall: true }); },
-        }, 'Yes'),
-        el('button', {
-          className: 'qs1-toggle' + (data.sameAsInstall === false ? ' active' : ''),
-          onClick: function() { update({ sameAsInstall: false }); },
-        }, 'Different Site')
-      )
-    ),
-
     // ---- Shipping Info ----
     el('div', { className: 'qs5-shipping-info' },
       el('div', { className: 'qs5-shipping-badge' },

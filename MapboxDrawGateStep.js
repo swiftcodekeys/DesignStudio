@@ -143,13 +143,17 @@ export default function MapboxDrawGateStep(props) {
 
   return el('div', { className: 'mds-gate-step' },
     el('div', { className: 'mds-gate-step-header' },
-      el('div', { className: 'mds-gate-step-title' }, 'Add gates'),
-      el('div', { className: 'mds-gate-step-hint' }, 'Click anywhere on your fence line to place a gate')
+      el('div', { className: 'mds-gate-step-eyebrow' }, 'Step 3 of 3'),
+      el('div', { className: 'mds-gate-step-title' }, 'Do you need any gates?'),
+      el('div', { className: 'mds-gate-step-hint' },
+        'Use the button below or click directly on your fence line to place a gate.'
+      )
     ),
-    el('div', { className: 'mds-gate-cards' },
-      gates.length === 0
-        ? el('div', { className: 'mds-gate-empty' }, 'No gates placed yet — click the fence line on the map')
-        : gates.map(renderGateCard)
+    el('button', { className: 'mds-gate-add-btn', onClick: props.onAddGate },
+      '+ Add a gate'
+    ),
+    gates.length > 0 && el('div', { className: 'mds-gate-cards' },
+      gates.map(renderGateCard)
     ),
     el('div', { className: 'mds-gate-footage' },
       el('div', { className: 'mds-gate-footage-row' },
@@ -163,7 +167,7 @@ export default function MapboxDrawGateStep(props) {
         el('span', null, 'Fence panels'), el('span', null, Math.round(panelFt) + ' ft')
       )
     ),
-    el('button', { className: 'mds-gate-cta', onClick: props.onComplete }, 'Done → Continue to Quote'),
-    el('button', { className: 'mds-gate-skip', onClick: props.onSkip }, 'No gates — skip this step')
+    el('button', { className: 'mds-gate-cta', onClick: props.onComplete }, 'Done — Continue to Quote →'),
+    el('button', { className: 'mds-gate-skip', onClick: props.onSkip }, 'No gates needed')
   );
 }
