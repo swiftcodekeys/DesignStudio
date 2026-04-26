@@ -7526,3 +7526,18 @@ html, body {
 .swc-cta-wrap { margin-top: 8px; }
 .swc-cta { width: 100%; padding: 11px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; }
 .swc-cta.disabled { background: rgba(59,130,246,0.25); color: rgba(255,255,255,0.4); cursor: not-allowed; }
+
+/* GateEditModal */
+.gem-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.gem-modal { background: var(--panel); border-radius: 12px; padding: 20px; width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.gem-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.gem-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.gem-close { background: transparent; border: none; font-size: 20px; color: var(--text-hint); cursor: pointer; line-height: 1; }
+.gem-field { margin-bottom: 10px; }
+.gem-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-hint); margin-bottom: 5px; }
+.gem-toggle-row { display: flex; gap: 4px; }
+.gem-toggle { flex: 1; padding: 7px 4px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; }
+.gem-toggle.active { background: rgba(59,130,246,0.15); color: #3b82f6; border-color: rgba(59,130,246,0.3); font-weight: 700; }
+.gem-select { width: 100%; padding: 7px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; background: var(--panel); }
+.gem-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gem-done { width: 100%; padding: 10px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px; }
