@@ -644,10 +644,10 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
     expect(container.querySelectorAll('.dy-segment-tier')[0].value).toBe('heavy-rackable');
   });
 
-  it('pre-draw slope popup gates the map until answered', () => {
-    // Clear the default slope answer set in beforeEach so this test exercises
-    // the pre-draw gate. Address has already been entered via initialLocation,
-    // so we're past the cold-start screen.
+  it('slope popup appears after Start Drawing, not before', () => {
+    // Popup now only shows when drawModeActive so buyers see their property
+    // before being asked about slope. On initial render (before Start Drawing
+    // is clicked) the popup should NOT block the map.
     localStorage.removeItem('gv_slope_answer');
     const { container } = render(
       <MapboxDrawView
@@ -655,9 +655,8 @@ describe('MapboxDrawView (pen-tool + morphing dock)', () => {
         initialLocation={{ lat: 42.6, lng: -83.9, address: '123 Main' }}
       />
     );
-    expect(container.querySelector('.mbx-slope-popup-overlay')).toBeTruthy();
-    // Map should not render yet. The dock is part of the map view.
-    expect(container.querySelector('.dy-dock')).toBeNull();
+    // Popup should NOT show on initial load — buyer hasn't clicked Start Drawing
+    expect(container.querySelector('.mbx-slope-popup-overlay')).toBeNull();
   });
 
   it('pre-draw slope answer flows into buildAndComplete output', async () => {

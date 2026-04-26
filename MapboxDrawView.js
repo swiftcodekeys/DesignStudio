@@ -590,6 +590,12 @@ function MorphingDock(props) {
     return '$' + Math.round(n).toLocaleString();
   }
 
+  // Compact version for tight dock display: $6,756 → $6.8k
+  function formatMoneyCompact(n) {
+    if (n >= 1000) return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return '$' + Math.round(n);
+  }
+
   // Pass 4: surface all three post types in the dock. Total is what the
   // buyer pays for; the sub-line breaks it down into end / corner / line
   // so the numbers match the colored markers on the map.
@@ -612,13 +618,7 @@ function MorphingDock(props) {
       React.createElement('div', { className: 'dy-stat-label' }, 'posts'),
       totalPosts > 0 && React.createElement('div', { className: 'dy-stat-sub' }, postBreakdown)
     ),
-    priceRange && React.createElement('div', { className: 'dy-stat' },
-      React.createElement('div', { className: 'dy-stat-num dy-stat-range' },
-        formatMoney(priceRange.low) + ' – ' + formatMoney(priceRange.high)
-      ),
-      React.createElement('div', { className: 'dy-stat-label' }, 'est. range'),
-      slopeChip
-    )
+    slopeChip
   );
 
   // "Start new line" appears only once the active line has a real segment
@@ -2220,10 +2220,10 @@ function MapboxDrawView(props) {
     );
   }
 
-  // Pre-draw slope question: gates the map until the customer answers.
-  // Order is address-entry → slope popup → map. "skip" is a valid answer
-  // meaning the user dismissed without picking a slope tier.
-  if (!slopeAnswer) {
+  // Slope question: shown after the buyer clicks "Start Drawing" and can
+  // see their property on the map. Showing it on mount (before the map
+  // zooms to the address) was confusing — they had no visual context.
+  if (drawModeActive && !slopeAnswer) {
     return React.createElement('div', { className: 'dy-container' },
       React.createElement(SlopePopup, {
         open: true,
