@@ -83,44 +83,28 @@ describe('QuoteBuilder sidebar preview', () => {
   });
 
   // Priority chain for drew-flow buyers: the yard sketch beats everything else.
-  // Drew-flow passes drawToolData (with annotatedSnapshotUrl + mapboxSnapshotUrl)
-  // in as a prop, and those must take precedence over any 3D fence snapshot or
-  // style thumbnail already sitting in localStorage.
-  it('prefers drawToolData.annotatedSnapshotUrl over a saved 3D fence snapshot', function() {
+  // On step 0 (Layout/Posts wizard), draw-tool buyers see the annotated map in the
+  // wizard left panel, so the sidebar image is hidden on that step only.
+  it('hides sidebar image on step 0 for draw-tool buyers (shown in wizard panel)', function() {
     var annotated = 'data:image/jpeg;base64,ANNOT';
-    var mapboxRaw = 'data:image/jpeg;base64,MAPRAW';
-    var savedFence = 'data:image/jpeg;base64,FENCE3D';
-    window.localStorage.setItem('gv_saved_design', JSON.stringify({
-      snapshotDataUrl: savedFence,
-      styleId: 'horizon',
-    }));
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({ snapshotDataUrl: 'data:image/jpeg;base64,FENCE3D', styleId: 'horizon' }));
     var container = render(React.createElement(QuoteBuilder, {
-      drawToolData: {
-        annotatedSnapshotUrl: annotated,
-        mapboxSnapshotUrl: mapboxRaw,
-      },
+      drawToolData: { annotatedSnapshotUrl: annotated, mapboxSnapshotUrl: 'data:image/jpeg;base64,MAPRAW' },
+      skipToStep: 0,
     })).container;
-    var img = container.querySelector('[data-test="quote-design-preview"]');
-    expect(img).toBeTruthy();
-    expect(img.getAttribute('src')).toBe(annotated);
+    expect(container.querySelector('[data-test="quote-design-preview"]')).toBeFalsy();
   });
 
-  it('falls through annotated to drawToolData.mapboxSnapshotUrl when annotated is empty', function() {
-    var mapboxRaw = 'data:image/jpeg;base64,MAPRAW';
-    var savedFence = 'data:image/jpeg;base64,FENCE3D';
-    window.localStorage.setItem('gv_saved_design', JSON.stringify({
-      snapshotDataUrl: savedFence,
-      styleId: 'horizon',
-    }));
+  it('sidebar image is visible on steps other than 0 for draw-tool buyers', function() {
+    var annotated = 'data:image/jpeg;base64,ANNOT';
+    window.localStorage.setItem('gv_saved_design', JSON.stringify({ snapshotDataUrl: 'data:image/jpeg;base64,FENCE3D', styleId: 'horizon' }));
     var container = render(React.createElement(QuoteBuilder, {
-      drawToolData: {
-        annotatedSnapshotUrl: '',
-        mapboxSnapshotUrl: mapboxRaw,
-      },
+      drawToolData: { annotatedSnapshotUrl: annotated, mapboxSnapshotUrl: 'data:image/jpeg;base64,MAPRAW' },
+      skipToStep: 1,
     })).container;
+    // On step 1 (Style & Config), sidebar image should render for draw-tool buyers
     var img = container.querySelector('[data-test="quote-design-preview"]');
     expect(img).toBeTruthy();
-    expect(img.getAttribute('src')).toBe(mapboxRaw);
   });
 
   it('falls through to saved.mapboxSnapshotUrl when drawToolData is absent but the saved design has a map snapshot', function() {

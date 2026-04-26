@@ -35,13 +35,15 @@ var FINIAL_FLAT_OPTIONS = [
 ];
 
 // ---- Accent options ----
+// Scrolls work with all ornamental styles.
 var ACCENT_ALL = [
-  { id: 'butterflies', name: 'Butterflies', image: 'gate_tool/th/th_acc_but.jpg', field: 'butterflies' },
-  { id: 'scrolls',     name: 'Scrolls',     image: 'gate_tool/th/th_acc_scr.jpg', field: 'scrolls'     },
+  { id: 'scrolls', name: 'Scrolls', image: 'gate_tool/th/th_acc_scr.jpg', field: 'scrolls' },
 ];
 
+// Circles and butterflies only visually work on spear-top styles (Charleston, Vanguard, Savannah).
 var ACCENT_SPEAR_ONLY = [
-  { id: 'circles', name: 'Circles', image: 'gate_tool/th/th_acc_cir.jpg', field: 'circles' },
+  { id: 'circles',     name: 'Circles',     image: 'gate_tool/th/th_acc_cir.jpg', field: 'circles'     },
+  { id: 'butterflies', name: 'Butterflies', image: 'gate_tool/th/th_acc_but.jpg', field: 'butterflies' },
 ];
 
 // ============================================================

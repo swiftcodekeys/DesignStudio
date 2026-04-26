@@ -697,8 +697,8 @@ function QuoteStep2_Layout(props) {
       );
     })() : null,
 
-    // ---- Advanced Mode Toggle ----
-    el('button', {
+    // ---- Advanced Mode Toggle (hidden for draw-tool buyers — terrain confirmed per run in wizard) ----
+    !props.drawToolData && el('button', {
       className: 'qb-layout-advanced-toggle',
       onClick: function() {
         var next = !advancedMode;
@@ -880,8 +880,9 @@ function QuoteStep2_Layout(props) {
       ) : null
     ) : null,
 
-    // ---- Layout Shape ----
-    sectionHeader('Layout Shape'),
+    // ---- Layout Shape (hidden for draw-tool buyers — post counts come from drawing) ----
+    !props.drawToolData && sectionHeader('Layout Shape'),
+    !props.drawToolData &&
     el('div', { className: 'qb-layout-shape-grid' },
       // 90-degree corners
       el('div', { className: 'qb-layout-shape-field' },

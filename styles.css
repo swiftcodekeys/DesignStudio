@@ -5804,11 +5804,15 @@ html, body {
   padding: 10px 14px;
 }
 
-/* Finial thumbnail grid */
+/* Finial / option thumbnail grid — flex so a single item centers naturally */
 .qb-extras-finial-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
+}
+.qb-extras-finial-grid .qb-extras-thumb-card {
+  flex: 0 0 80px;
 }
 .qb-extras-thumb-card {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -7545,8 +7549,8 @@ html, body {
 .gem-done { width: 100%; padding: 10px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px; }
 
 /* QuoteStep2_Layout wizard */
-.qsl-wizard-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 480px; }
-.qsl-wizard-left { padding: 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.qsl-wizard-layout { display: grid; grid-template-columns: 55% 45%; gap: 0; min-height: 520px; }
+.qsl-wizard-left { padding: 12px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 .qsl-wizard-right { overflow-y: auto; max-height: 600px; }
 .qsl-wizard-img-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-hint); }
 .qsl-wizard-img { width: 100%; border-radius: 8px; border: 1px solid var(--border); }
