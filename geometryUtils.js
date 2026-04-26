@@ -333,6 +333,7 @@ export function densifyPath(points, approxFeetPerSample) {
 
 // --- Geo to pixel projection ---
 // Project a lat/lng point to pixel coordinates within an image given geographic bounds.
+// Uses linear interpolation — accurate enough at residential scale (single property, < 1 km).
 export function projectToPixel(lat, lng, bounds, imageWidth, imageHeight) {
   if (!bounds) return null;
   var x = (lng - bounds.west) / (bounds.east - bounds.west) * imageWidth;
