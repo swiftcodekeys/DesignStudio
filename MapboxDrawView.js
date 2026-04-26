@@ -75,7 +75,7 @@ var AUTOSAVE_KEY = 'gv_draw_state';
 var AUTOSAVE_DEBOUNCE_MS = 2000;
 var EARTH_INTRO_ENABLED = process.env.EARTH_INTRO_ENABLED !== false && process.env.EARTH_INTRO_ENABLED !== 'false';
 var EARTH_INTRO_COOKIE = 'dy_seen';
-var EARTH_INTRO_DURATION_MS = 2400;
+var EARTH_INTRO_DURATION_MS = 4800; // ~2x slower for a smoother earth descent
 
 function hasSeenEarthIntro() {
   try {

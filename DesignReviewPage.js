@@ -46,6 +46,14 @@ function estimatePricing(saved) {
 
     var perFoot = (panelPrice / panelWidthFt) + (postPrice / panelWidthFt);
 
+    // Extras add to per-foot cost
+    var acc = saved.accessories || {};
+    var hasScrolls = !!saved.scrolls || !!acc.scr;
+    var hasBallCap = saved.postCap === 'pcb';
+    var extrasPerFt = 0;
+    if (hasScrolls) extrasPerFt += (2 * 79.25) / panelWidthFt;
+    if (hasBallCap) extrasPerFt += 7.50 / panelWidthFt;
+
     return {
         styleName: styleInfo.name,
         ultraModel: ultraModel,
@@ -53,7 +61,9 @@ function estimatePricing(saved) {
         panelPrice: panelPrice,
         panelWidthFt: panelWidthFt,
         postPrice: postPrice,
-        perLinearFoot: perFoot,
+        perLinearFoot: perFoot + extrasPerFt,
+        scrolls: hasScrolls,
+        ballCap: hasBallCap,
     };
 }
 
@@ -262,9 +272,6 @@ var DesignReviewPage = function(props) {
                         {pricing && (
                             <div className="bridge-pricing">
                                 <div className="bridge-pricing-title">PRICE ESTIMATE</div>
-                                <div className="bridge-pricing-subtitle">
-                                    Ultra retail, based on your selections
-                                </div>
                                 <table className="bridge-pricing-table">
                                     <thead>
                                         <tr>
@@ -275,15 +282,31 @@ var DesignReviewPage = function(props) {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>{pricing.styleName} Panel | {pricing.height}" ({pricing.ultraModel})</td>
+                                            <td>{pricing.styleName} Panel | {pricing.height}"</td>
                                             <td style={{ textAlign: 'right' }}>{pricing.panelWidthFt}' section</td>
                                             <td style={{ textAlign: 'right' }}>{fmt(pricing.panelPrice)}</td>
                                         </tr>
-                                        <tr>
-                                            <td>Residential Post | 2" sq</td>
-                                            <td style={{ textAlign: 'right' }}>each</td>
-                                            <td style={{ textAlign: 'right' }}>{fmt(pricing.postPrice)}</td>
-                                        </tr>
+                                        {pricing.postPrice > 0 && (
+                                            <tr>
+                                                <td>Posts (included)</td>
+                                                <td style={{ textAlign: 'right' }}>each</td>
+                                                <td style={{ textAlign: 'right' }}>{fmt(pricing.postPrice)}</td>
+                                            </tr>
+                                        )}
+                                        {pricing.scrolls && (
+                                            <tr>
+                                                <td>Scroll Accents</td>
+                                                <td style={{ textAlign: 'right' }}>per panel</td>
+                                                <td style={{ textAlign: 'right' }}>{fmt(2 * 79.25)}</td>
+                                            </tr>
+                                        )}
+                                        {pricing.ballCap && (
+                                            <tr>
+                                                <td>Ball Cap Upgrade</td>
+                                                <td style={{ textAlign: 'right' }}>per post</td>
+                                                <td style={{ textAlign: 'right' }}>{fmt(7.50)}</td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                     <tfoot>
                                         <tr>
@@ -293,7 +316,7 @@ var DesignReviewPage = function(props) {
                                     </tfoot>
                                 </table>
                                 <div className="bridge-pricing-note">
-                                    Gates, hardware, accessories, and shipping calculated in the next step.
+                                    Gates and shipping calculated in your quote.
                                 </div>
                             </div>
                         )}

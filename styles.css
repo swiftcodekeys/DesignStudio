@@ -672,9 +672,14 @@ html, body {
 
 /* --- Option Cards --- */
 .option-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
+}
+.option-row .opt-card {
+  flex: 0 0 calc(33% - 6px);
+  min-width: 70px;
 }
 .opt-card {
   width: auto;
