@@ -85,9 +85,6 @@ export default function MapboxDrawGateStep(props) {
         el('button', { className: 'mds-gate-remove', onClick: function() { removeGate(index); } }, 'Remove')
       ),
       imgSrc && el('img', { src: imgSrc, className: 'mds-gate-img', alt: gate.type + ' gate' }),
-      el('p', { className: 'mds-gate-style-note' },
-        'Your gate will be built to match your fence style. The images shown are representative — your actual gate will use the same picket design, rail spacing, and finish as your selected fence.'
-      ),
       el('div', { className: 'mds-gate-field' },
         el('div', { className: 'mds-gate-label' }, 'Gate type'),
         el('div', { className: 'mds-gate-toggle-row' },
@@ -99,6 +96,9 @@ export default function MapboxDrawGateStep(props) {
             }, gt.name);
           })
         )
+      ),
+      el('p', { className: 'mds-gate-style-note' },
+        'Your gate will be built to match your fence style. The images shown are representative — your actual gate will use the same picket design, rail spacing, and finish as your selected fence.'
       ),
       el('div', { className: 'mds-gate-field' },
         el('div', { className: 'mds-gate-label' }, 'Top style'),
