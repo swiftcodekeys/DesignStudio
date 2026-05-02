@@ -309,6 +309,55 @@ function buildSidebarSpecs(data) {
   return specs;
 }
 
+// Derive segment tiers, gate counts, and total panel footage from the
+// accumulated quote data and return an enriched payload object.
+// This is additive — all existing fields from `data` are preserved.
+// Called right before passing the final payload to props.onComplete so
+// Ultra Manufacturing gets accurate per-segment tier info and gate counts.
+function buildManufacturingPayload(data) {
+  // Derive segment tiers from confirmed lines (draw-tool buyers)
+  var segmentTiers = [];
+  var confirmedSlopedPostCount = data.slopedPostCount || 0;
+  if (data.confirmedSegmentLines) {
+    segmentTiers = [];
+    data.confirmedSegmentLines.forEach(function(line) {
+      (line.segments || []).forEach(function(seg) {
+        segmentTiers.push({
+          segmentId: line.id + '-' + seg.index,
+          finalTier: seg.finalTier || seg.rackingTier || 'unknown',
+          lengthFt: seg.lengthFeet || 0,
+        });
+      });
+    });
+    // Recompute slopedPostCount from confirmed tiers
+    confirmedSlopedPostCount = segmentTiers.reduce(function(sum, st) {
+      if (st.finalTier === 'rackable' || st.finalTier === 'heavy') {
+        return sum + Math.max(0, Math.floor(st.lengthFt / 6) - 1);
+      }
+      return sum;
+    }, 0);
+  }
+
+  // Gate payload fields
+  var effectiveGates = data.gates || [];
+  var gateCount = effectiveGates.length;
+  var gatePostCount = gateCount * 2;
+  var totalPanelFt = (data.totalFeet || 0) - effectiveGates.reduce(function(s, g) {
+    return s + (g.widthInches || 36) / 12;
+  }, 0);
+
+  var payload = Object.assign({}, data);
+  payload.segmentTiers = segmentTiers;
+  payload.slopedPostCount = confirmedSlopedPostCount;
+  payload.gateCount = gateCount;
+  payload.gates = effectiveGates.map(function(g) {
+    return { type: g.type, top: g.top, swing: g.swing, widthInches: g.widthInches };
+  });
+  payload.gatePostCount = gatePostCount;
+  payload.totalPanelFt = Math.max(0, totalPanelFt);
+  return payload;
+}
+
 var DEFAULT_DATA = {
   grade: 'residential',
   fenceType: 'ornamental',
@@ -326,6 +375,7 @@ var DEFAULT_DATA = {
   privacyPostColor: 'textured-black',
   privacyPanelColor: 'textured-white',
   // Layout, gates, extras, shipping fields added by later steps
+  paintKit: true,  // Grandview includes this as a thank-you; default on
 };
 
 function QuoteBuilder(props) {
@@ -517,7 +567,9 @@ function QuoteBuilder(props) {
 
       // ---- LEFT: Fixed sidebar with design snapshot + progressive spec list ----
       React.createElement('aside', { className: 'qb-sidebar' },
-        React.createElement('div', { className: 'qb-sidebar-image-wrap' },
+        // On step 0 (Layout/Posts wizard), draw-tool buyers see the annotated map in the
+        // left wizard panel — hide the smaller sidebar duplicate. All other steps show it.
+        !(props.drawToolData && step === 0) && React.createElement('div', { className: 'qb-sidebar-image-wrap' },
           previewSrc
             ? React.createElement('img', {
                 src: previewSrc,
@@ -555,21 +607,30 @@ function QuoteBuilder(props) {
             if (!est) return null;
             var fmt = function(n) { return '$' + Math.round(n).toLocaleString('en-US'); };
             var lf = Number(data.linearFeet) || 0;
+            var panelFt = est.panelWidthFt || 6;
+            // Add selected extras to the per-foot estimate so toggling them
+            // gives the buyer immediate cost feedback in the sidebar.
+            var extrasPerFt = 0;
+            if (data.scrolls)     extrasPerFt += (2 * 79.25) / panelFt;
+            if (data.circles)     extrasPerFt += (2 * 11.00) / panelFt;
+            if (data.butterflies) extrasPerFt += (2 * 17.00) / panelFt;
+            if (data.postCap === 'pcb') extrasPerFt += 7.50 / panelFt;
+            var low  = est.low  + extrasPerFt;
+            var high = est.high + extrasPerFt;
             var hasTotal = lf > 0;
-            var totalLow = hasTotal ? est.low * lf : 0;
-            var totalHigh = hasTotal ? est.high * lf : 0;
+            var extras = extrasPerFt > 0;
             return React.createElement('div', { className: 'qb-sidebar-estimate', 'data-test': 'qb-sidebar-estimate' },
               React.createElement('div', { className: 'qb-sidebar-estimate-label' }, 'Running estimate'),
               hasTotal
                 ? React.createElement('div', { className: 'qb-sidebar-estimate-total' },
-                    fmt(totalLow) + ' – ' + fmt(totalHigh)
+                    fmt(low * lf) + ' – ' + fmt(high * lf)
                   )
                 : React.createElement('div', { className: 'qb-sidebar-estimate-total qb-sidebar-estimate-perfoot' },
-                    fmt(est.low) + ' – ' + fmt(est.high) + '/ft'
+                    fmt(low) + ' – ' + fmt(high) + '/ft'
                   ),
               React.createElement('div', { className: 'qb-sidebar-estimate-note' },
                 hasTotal
-                  ? 'Panels + posts for ' + Math.round(lf) + ' ft. Gates and shipping added at checkout.'
+                  ? 'Panels + posts' + (extras ? ' + selected extras' : '') + ' for ' + Math.round(lf) + ' ft. Gates and shipping calculated at checkout.'
                   : 'Per linear foot. Enter footage to see your total.'
               )
             );
@@ -609,8 +670,8 @@ function QuoteBuilder(props) {
       )
     ),
 
-    // ---- Footer nav ----
-    React.createElement('div', { className: 'qb-footer' },
+    // ---- Footer nav (hidden on review step — review has its own CTAs) ----
+    step !== 5 && React.createElement('div', { className: 'qb-footer' },
       step > 0 ? React.createElement('button', {
         className: 'qb-back-btn',
         onClick: function() { setStep(step - 1); },
@@ -656,7 +717,7 @@ function QuoteBuilder(props) {
         onClick: function() {
           trackStepComplete(step, props.zoneId);
           if (step < 5) setStep(step + 1);
-          else if (props.onComplete) props.onComplete(data);
+          else if (props.onComplete) props.onComplete(buildManufacturingPayload(data));
         },
       },
         step < 5 ? 'Next' : 'Get Quote',
@@ -666,7 +727,7 @@ function QuoteBuilder(props) {
     ),
 
     // ---- Phone support ribbon (persistent, D2C phone-support positioning) ----
-    React.createElement('div', { className: 'qb-phone-ribbon' },
+    step !== 5 && React.createElement('div', { className: 'qb-phone-ribbon' },
       React.createElement(Phone, { size: 16, weight: 'fill', className: 'qb-phone-ribbon-icon' }),
       React.createElement('span', { className: 'qb-phone-ribbon-text' },
         'Need help? Call ',

@@ -61,10 +61,11 @@ export var DECORATIVE_PRICING = {
   },
 };
 
-// Finials per 6' panel section
+// Finials per 6' panel section (one per picket, ~15 pickets per 6' panel)
 export var FINIALS_PER_PANEL = 15;
-// Accent pieces per 6' panel section
-export var ACCENTS_PER_PANEL = 16;
+// Accent sets per 6' panel section — scrolls/circles/butterflies ship as a pair per panel
+// TODO: verify exact qty against Ultra price book; 2 per panel is conservative estimate
+export var ACCENTS_PER_PANEL = 2;
 
 // Panel length by grade
 export var PANEL_LENGTH_FT = { residential: 6, commercial: 6, industrial: 8 };

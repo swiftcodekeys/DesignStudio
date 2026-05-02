@@ -20,6 +20,7 @@ import { emailDrawSaveLink, checkForDrawResume } from './quoteSaver';
 import { classifyDrawnLine } from './epqsClient';
 import { buildAnnotatedSnapshot } from './legendOverlay';
 import SlopePopup from './SlopePopup';
+import MapboxDrawGateStep from './MapboxDrawGateStep.js';
 
 // OS-aware modifier key display. Mac shows ⌘, everyone else shows Ctrl.
 // The keyboard handler itself listens for both metaKey and ctrlKey so the
@@ -74,7 +75,7 @@ var AUTOSAVE_KEY = 'gv_draw_state';
 var AUTOSAVE_DEBOUNCE_MS = 2000;
 var EARTH_INTRO_ENABLED = process.env.EARTH_INTRO_ENABLED !== false && process.env.EARTH_INTRO_ENABLED !== 'false';
 var EARTH_INTRO_COOKIE = 'dy_seen';
-var EARTH_INTRO_DURATION_MS = 2400;
+var EARTH_INTRO_DURATION_MS = 4800; // ~2x slower for a smoother earth descent
 
 function hasSeenEarthIntro() {
   try {
@@ -87,6 +88,28 @@ function markEarthIntroSeen() {
     var oneYear = 60 * 60 * 24 * 365;
     document.cookie = EARTH_INTRO_COOKIE + '=1; path=/; max-age=' + oneYear + '; SameSite=Lax';
   } catch (e) {}
+}
+
+export function extractMapBoundsFromMap(map) {
+  if (!map) return null;
+  try {
+    var b = map.getBounds();
+    if (!b) return null;
+    return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+  } catch (_) { return null; }
+}
+
+export function extractVerticesFromLines(lines) {
+  var out = [];
+  (lines || []).forEach(function(line) {
+    var pts = line.points || [];
+    if (pts.length < 2) return;
+    var classified = classifyPostsPerVertex(pts, 15);
+    classified.forEach(function(v) {
+      if (v.type !== 'line') out.push({ lat: v.lat, lng: v.lng, type: v.type, lineId: line.id });
+    });
+  });
+  return out;
 }
 
 // ---------- Distance helpers ----------
@@ -435,7 +458,7 @@ function EmptyStateOverlay() {
     ),
     React.createElement('h1', { className: 'dy-empty-title' }, 'Sketch your fence line'),
     React.createElement('p', { className: 'dy-empty-sub' },
-      'Click to drop corners. Drag to adjust. Every measurement is verified on a free call before anything gets cut.'
+      'Click to drop corners. Drag to adjust. A Grandview rep verifies every measurement before your order goes to production.'
     )
   );
 }
@@ -567,6 +590,12 @@ function MorphingDock(props) {
     return '$' + Math.round(n).toLocaleString();
   }
 
+  // Compact version for tight dock display: $6,756 → $6.8k
+  function formatMoneyCompact(n) {
+    if (n >= 1000) return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return '$' + Math.round(n);
+  }
+
   // Pass 4: surface all three post types in the dock. Total is what the
   // buyer pays for; the sub-line breaks it down into end / corner / line
   // so the numbers match the colored markers on the map.
@@ -589,13 +618,7 @@ function MorphingDock(props) {
       React.createElement('div', { className: 'dy-stat-label' }, 'posts'),
       totalPosts > 0 && React.createElement('div', { className: 'dy-stat-sub' }, postBreakdown)
     ),
-    priceRange && React.createElement('div', { className: 'dy-stat' },
-      React.createElement('div', { className: 'dy-stat-num dy-stat-range' },
-        formatMoney(priceRange.low) + ' – ' + formatMoney(priceRange.high)
-      ),
-      React.createElement('div', { className: 'dy-stat-label' }, 'est. range'),
-      slopeChip
-    )
+    slopeChip
   );
 
   // "Start new line" appears only once the active line has a real segment
@@ -700,7 +723,7 @@ function MorphingDock(props) {
   if (showEpqsLoading) {
     ctaLabel = React.createElement('span', null, 'Calculating slope\u2026');
   } else if (showSlopeAck && slopeAck === 'unknown') {
-    ctaLabel = React.createElement('span', null, 'Slope unknown, you can still continue');
+    ctaLabel = React.createElement('span', null, "Slope not auto-detected — confirm it in the next step");
   } else if (showSlopeAck) {
     var friendly = slopeAck === 'flat' ? 'flat' : (slopeAck === 'heavy-rack' ? 'heavy rack' : 'rackable');
     ctaLabel = React.createElement('span', null, 'Slope detected: ' + friendly);
@@ -888,7 +911,7 @@ function MorphingDock(props) {
       React.createElement('span', { className: 'dy-legend-label' }, 'Line posts')
     ),
     React.createElement('span', { className: 'dy-legend-hint' },
-      "Turns under 10° don’t need a corner post. Panels flex through."
+      "Turns under 10° don’t need a corner post."
     )
   );
 
@@ -921,6 +944,8 @@ function MapScreen(props) {
   var setHoverPoint = props.setHoverPoint;
   var pointsRef = useRef(props.points);
   pointsRef.current = props.points;
+  var linesRef = useRef(props.lines || []);
+  linesRef.current = props.lines || [];
 
   // Task 3: drawModeActive gates the click handler so we don't drop a vertex
   // until the user explicitly opts in via "Start Drawing". We use a ref so the
@@ -973,17 +998,16 @@ function MapScreen(props) {
       } catch (e) { /* setFog unavailable on older mapbox-gl */ }
 
       var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var duration = cinematic && !prefersReduced ? 4200 : (prefersReduced ? 0 : 900);
+      var duration = cinematic && !prefersReduced ? EARTH_INTRO_DURATION_MS : (prefersReduced ? 0 : 600);
       map.flyTo({
         center: [props.location.lng, props.location.lat],
         zoom: 20,
         pitch: 0,
         duration: duration,
         essential: true,
-        // Cubic bezier imitating ease-out-quint — slow entry, fast middle,
-        // gentle settle onto the property. Default flyTo easing is ease-in-out
-        // which feels mechanical at high zoom deltas.
-        easing: function(t) { return 1 - Math.pow(1 - t, 5); },
+        // Smooth ease-in-out so the descent feels gradual from space, not
+        // a sudden deceleration drop. Ease-out-quint was too fast in the middle.
+        easing: function(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; },
       });
     });
 
@@ -991,6 +1015,59 @@ function MapScreen(props) {
     // Task 3: gate on drawModeActiveRef so the tool opens in pan/zoom-only mode
     // and only accepts vertex clicks after the user hits "Start Drawing".
     map.on('click', function(e) {
+      // Gate placement mode — intercept click before drawing logic
+      if (props.showGateStepRef && props.showGateStepRef.current) {
+        var clickLng = e.lngLat.lng;
+        var clickLat = e.lngLat.lat;
+        var bestLine = null, bestSeg = null, bestDist = Infinity;
+        var currentLines = linesRef.current;
+        currentLines.forEach(function(lineArr) {
+          for (var i = 0; i < lineArr.length - 1; i++) {
+            var midLng = (lineArr[i][0] + lineArr[i+1][0]) / 2;
+            var midLat = (lineArr[i][1] + lineArr[i+1][1]) / 2;
+            var d = Math.pow(clickLng - midLng, 2) + Math.pow(clickLat - midLat, 2);
+            if (d < bestDist) {
+              bestDist = d;
+              bestLine = { id: 'line-' + currentLines.indexOf(lineArr), lineArr: lineArr };
+              bestSeg = i;
+            }
+          }
+        });
+        // Only place a gate if the click is within ~25 meters of a segment midpoint.
+        // Without this, every map click during gate step adds a gate to the nearest
+        // segment regardless of distance — causing phantom gates on random clicks.
+        var MAX_SNAP_DEG = 0.00023; // ~25 m; rejects clicks far from fence line
+        if (bestLine && Math.sqrt(bestDist) <= MAX_SNAP_DEG && props.setGates && props.gateIdCounterRef) {
+          var segStart = bestLine.lineArr[bestSeg];
+          var segEnd = bestLine.lineArr[bestSeg + 1];
+          var segLenFt = totalFeet([segStart, segEnd]);
+          var segLabel = compassBearing(segStart, segEnd);
+          var id = 'gate-' + (props.gateIdCounterRef.current++);
+          var newGate = {
+            id: id,
+            segmentLineId: bestLine.id,
+            segmentIndex: bestSeg,
+            segmentLabel: segLabel,
+            offsetFt: segLenFt / 2,
+            latLng: { lat: clickLat, lng: clickLng },
+          };
+          props.setGates(function(prev) {
+            // Copy settings from last gate so each new gate matches what the buyer configured
+            var last = prev.length > 0 ? prev[prev.length - 1] : null;
+            return prev.concat([Object.assign(newGate, {
+              type:        last ? last.type        : 'walk',
+              top:         last ? last.top         : 'flat',
+              swing:       last ? last.swing       : 'left',
+              widthInches: last ? last.widthInches : 48,
+              heightInches: props.fenceHeight || 48,
+              hinge:       last ? last.hinge       : 'standard',
+              latch:       last ? last.latch       : 'lokklatch',
+            })]);
+          });
+        }
+        return; // don't add a fence point
+      }
+
       if (!drawModeActiveRef.current) return;
       if (e.originalEvent && e.originalEvent.target) {
         var t = e.originalEvent.target;
@@ -1170,6 +1247,88 @@ function MapScreen(props) {
     if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
     else mapRef.current.once && mapRef.current.once('style.load', apply);
   }, [props.lines]);
+
+  // Gate rectangle markers — one amber rectangle per placed gate, oriented
+  // along the fence line so buyers can see exactly where the gate opening is.
+  useEffect(function() {
+    if (!mapRef.current) return;
+    var gates = props.gates || [];
+    var linesArr = props.lines || [];
+
+    function buildGateFeatures() {
+      var features = [];
+      gates.forEach(function(gate) {
+        if (!gate.latLng) return;
+        var lat = gate.latLng.lat;
+        var lng = gate.latLng.lng;
+        var widthFt = (gate.widthInches || 48) / 12;
+
+        // Find the fence segment to get its bearing
+        var lineArr = linesArr[parseInt((gate.segmentLineId || '').replace('line-', ''), 10)];
+        var segIdx = gate.segmentIndex || 0;
+        var bearing = 0; // degrees, 0 = East
+        if (lineArr && lineArr[segIdx] && lineArr[segIdx + 1]) {
+          var dx = lineArr[segIdx + 1][0] - lineArr[segIdx][0];
+          var dy = lineArr[segIdx + 1][1] - lineArr[segIdx][1];
+          bearing = Math.atan2(dy, dx); // radians, in lng/lat space
+        }
+
+        // Convert feet to degrees (approximate at this latitude)
+        var ftPerDegLat = 364000;
+        var ftPerDegLng = ftPerDegLat * Math.cos(lat * Math.PI / 180);
+        var halfW = (widthFt / 2) / ftPerDegLng; // half gate width in lng degrees
+        var halfH = 1.5 / ftPerDegLat;            // fixed visual height ~1.5 ft
+
+        // Rectangle corners (unrotated: along lng axis)
+        var corners = [
+          [-halfW, -halfH], [halfW, -halfH],
+          [halfW,  halfH],  [-halfW,  halfH],
+        ];
+
+        // Rotate by fence bearing
+        var cos = Math.cos(bearing);
+        var sin = Math.sin(bearing);
+        var ring = corners.map(function(c) {
+          return [lng + c[0] * cos - c[1] * sin,
+                  lat + c[0] * sin + c[1] * cos];
+        });
+        ring.push(ring[0]); // close polygon
+
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [ring] },
+          properties: { id: gate.id, type: gate.type },
+        });
+      });
+      return { type: 'FeatureCollection', features: features };
+    }
+
+    function apply() {
+      var map = mapRef.current;
+      if (!map) return;
+      var data = buildGateFeatures();
+      if (map.getSource && map.getSource('dy-gates')) {
+        map.getSource('dy-gates').setData(data);
+      } else if (map.addSource) {
+        map.addSource('dy-gates', { type: 'geojson', data: data });
+        map.addLayer({
+          id: 'dy-gates-fill',
+          type: 'fill',
+          source: 'dy-gates',
+          paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.85 },
+        });
+        map.addLayer({
+          id: 'dy-gates-outline',
+          type: 'line',
+          source: 'dy-gates',
+          paint: { 'line-color': '#78350f', 'line-width': 2 },
+        });
+      }
+    }
+
+    if (mapRef.current.isStyleLoaded && mapRef.current.isStyleLoaded()) apply();
+    else mapRef.current.once && mapRef.current.once('style.load', apply);
+  }, [props.gates, props.lines]);
 
   // Pass 4 Task 5: colored post overlay. We build a single GeoJSON source
   // (`dy-posts`) that holds one Point feature per post (end / corner / line)
@@ -1599,6 +1758,15 @@ function MapboxDrawView(props) {
     try { localStorage.setItem('gv_slope_answer', ans); } catch (e) {}
   }
 
+  // Fence height from the 3D design studio — gates default to the same height.
+  var fenceHeight = (function() {
+    try {
+      var raw = window.localStorage && window.localStorage.getItem('gv_saved_design');
+      if (raw) { var p = JSON.parse(raw); if (p && p.height) return parseInt(p.height, 10) || 48; }
+    } catch (_) {}
+    return 48;
+  })();
+
   // Per-segment racking-tier user overrides. Keyed by segment index; absence
   // means "use auto-detected EPQS classification". Cleared when the user picks
   // the "Auto" option from the dropdown.
@@ -1628,6 +1796,23 @@ function MapboxDrawView(props) {
   var epqsOverallState = useState(null);
   var epqsOverall = epqsOverallState[0];
   var setEpqsOverall = epqsOverallState[1];
+
+  var showGateStepState = useState(false);
+  var showGateStep = showGateStepState[0];
+  var setShowGateStep = showGateStepState[1];
+  var showGateStepRef = useRef(false);
+  showGateStepRef.current = showGateStep;
+
+  // Gate question modal — "Do you need any gates?" shown before the placement panel
+  var showGateQuestionState = useState(false);
+  var showGateQuestion = showGateQuestionState[0];
+  var setShowGateQuestion = showGateQuestionState[1];
+
+  var gatesState = useState([]);
+  var gates = gatesState[0];
+  var setGates = gatesState[1];
+
+  var gateIdCounterRef = useRef(0);
 
   useEffect(function() {
     if (!points || points.length < 2) {
@@ -1703,7 +1888,9 @@ function MapboxDrawView(props) {
   }, []);
 
   // Derived values
-  var totalFt = totalFeet(points);
+  // Sum footage per-line so disconnected fence runs don't include the
+  // bridge distance between line endpoints in the total.
+  var totalFt = lines.reduce(function(sum, line) { return sum + totalFeet(line); }, 0);
   // P4.3: sum corners + linePosts per-line. Calling the helper once on the
   // flat `points` shim would count each cross-line "bridge" vertex as a
   // direction change (a corner it isn't) and would spread post estimation
@@ -1877,6 +2064,8 @@ function MapboxDrawView(props) {
       // boundary between this line and the next.
       if (lineIdx < lines.length - 1) flatIdx++;
     }
+    var mapBounds = extractMapBoundsFromMap(mapInstanceRef.current);
+    var vertices = extractVerticesFromLines(outLines);
     var slopedPostCount = computeSlopedPostCount(allSegments, 6);
     // Each standalone drawn line (>=2 points) contributes 2 physical end
     // posts. Lines that don't have enough points to render don't.
@@ -1895,18 +2084,23 @@ function MapboxDrawView(props) {
       mapboxSnapshotUrl: snapshotUrl,
       source: 'auto',
       parcel: parcelData || null,
+      mapBounds: mapBounds,
+      vertices: vertices,
+      gates: gates,
     };
 
     // Read postCap from saved design config (set by the 3D configurator before
     // the buyer enters the draw tool). Fall back to flat cap if unavailable.
     var savedPostCap = 'pcf';
     var savedFinialType = null;
+    var savedHeight = 48;
     try {
       var rawSaved = window.localStorage && window.localStorage.getItem('gv_saved_design');
       if (rawSaved) {
         var parsedSaved = JSON.parse(rawSaved);
         if (parsedSaved && parsedSaved.postCap) savedPostCap = parsedSaved.postCap;
         if (parsedSaved && parsedSaved.finialType) savedFinialType = parsedSaved.finialType;
+        if (parsedSaved && parsedSaved.height) savedHeight = parseInt(parsedSaved.height, 10) || 48;
       }
     } catch (_) {}
 
@@ -1917,6 +2111,8 @@ function MapboxDrawView(props) {
       finialType: savedFinialType,
       totalFt: totalFt,
       corners: corners,
+      mapBounds: mapBounds,
+      gates: gates,
     }).then(function(annotatedUrl) {
       data.annotatedSnapshotUrl = annotatedUrl;
       if (typeof window !== 'undefined') window.__DRAW_TOOL_DATA__ = data;
@@ -1930,6 +2126,17 @@ function MapboxDrawView(props) {
   }
 
   function handleContinue() {
+    // First click → ask "Do you need any gates?" before showing the panel
+    if (!showGateQuestion && !showGateStep) {
+      setShowGateQuestion(true);
+      return;
+    }
+    // Gate question "Yes" answered → now completing from gate panel
+    // Gate question "No" answered → skip straight here
+    setShowGateQuestion(false);
+    setShowGateStep(false);
+    showGateStepRef.current = false;
+
     if (!mapInstanceRef.current) {
       setDrawModeActive(false);
       buildAndComplete(null);
@@ -1980,6 +2187,47 @@ function MapboxDrawView(props) {
     // layer retrying after a network error), capture whatever is on the canvas.
     setTimeout(doCapture, 4000);
     map.triggerRepaint();
+  }
+
+  // Place a gate on the longest segment — used by the "Add a gate" button
+  // so buyers don't have to figure out the click-on-map mechanic.
+  function handleAddGate() {
+    var bestLine = null, bestSeg = null, bestLen = 0;
+    lines.forEach(function(lineArr, lineIdx) {
+      for (var i = 0; i < lineArr.length - 1; i++) {
+        var len = totalFeet([lineArr[i], lineArr[i + 1]]);
+        if (len > bestLen) {
+          bestLen = len;
+          bestLine = { id: 'line-' + lineIdx, lineArr: lineArr };
+          bestSeg = i;
+        }
+      }
+    });
+    if (!bestLine) return;
+    var segStart = bestLine.lineArr[bestSeg];
+    var segEnd   = bestLine.lineArr[bestSeg + 1];
+    var midLng   = (segStart[0] + segEnd[0]) / 2;
+    var midLat   = (segStart[1] + segEnd[1]) / 2;
+    var id = 'gate-' + (gateIdCounterRef.current++);
+    setGates(function(prev) {
+      // Copy settings from the last gate so subsequent gates match what the buyer configured
+      var last = prev.length > 0 ? prev[prev.length - 1] : null;
+      return prev.concat([{
+        id: id,
+        segmentLineId:  bestLine.id,
+        segmentIndex:   bestSeg,
+        segmentLabel:   compassBearing(segStart, segEnd),
+        offsetFt:       bestLen / 2,
+        latLng:         { lat: midLat, lng: midLng },
+        type:         last ? last.type         : 'walk',
+        top:          last ? last.top          : 'flat',
+        swing:        last ? last.swing        : 'left',
+        widthInches:  last ? last.widthInches  : 48,
+        heightInches: fenceHeight,
+        hinge:        last ? last.hinge        : 'standard',
+        latch:        last ? last.latch        : 'lokklatch',
+      }]);
+    });
   }
 
   function handleToggleBreakdown() { setShowBreakdown(!showBreakdown); }
@@ -2039,10 +2287,10 @@ function MapboxDrawView(props) {
     );
   }
 
-  // Pre-draw slope question: gates the map until the customer answers.
-  // Order is address-entry → slope popup → map. "skip" is a valid answer
-  // meaning the user dismissed without picking a slope tier.
-  if (!slopeAnswer) {
+  // Slope question: shown after the buyer clicks "Start Drawing" and can
+  // see their property on the map. Showing it on mount (before the map
+  // zooms to the address) was confusing — they had no visual context.
+  if (drawModeActive && !slopeAnswer) {
     return React.createElement('div', { className: 'dy-container' },
       React.createElement(SlopePopup, {
         open: true,
@@ -2070,19 +2318,25 @@ function MapboxDrawView(props) {
     });
   }
 
-  return React.createElement('div', { className: 'dy-container' },
-    // Top-overlay: address pill (always), save-for-later (when drawing)
+  // Slope pill label — shows answered slope or prompts user to answer
+  var slopePillLabel = (function() {
+    if (!slopeAnswer || slopeAnswer === 'skip') return 'Add slope info';
+    var labels = { flat: 'Flat', 'slight-slope': 'Slight slope', 'moderate-slope': 'Sloped', 'heavy-rack': 'Heavy slope' };
+    return labels[slopeAnswer] || ('Slope: ' + slopeAnswer);
+  })();
+  var showSlopePill = drawModeActive || points.length > 0;
+  var slopePillAnswered = slopeAnswer && slopeAnswer !== 'skip';
+
+  return React.createElement('div', { className: 'dy-container' + (showGateStep ? ' gate-step-active' : '') },
+    // Top-overlay: address pill (always), slope pill (after drawing starts), save-for-later
     React.createElement('div', { className: 'dy-top-overlay' },
       React.createElement(AddressPill, { location: location, onChangeAddress: handleAddress }),
-      points.length > 0 && React.createElement('button', {
-        className: 'dy-save-btn',
-        onClick: handleSaveForLater,
-        type: 'button',
-        title: 'Save this drawing to resume later',
-      },
-        React.createElement(FloppyDisk, { size: 14, weight: 'regular' }),
-        React.createElement('span', null, 'Save for later')
-      )
+      showSlopePill && React.createElement('button', {
+        className: 'dy-slope-pill' + (slopePillAnswered ? ' answered' : ''),
+        onClick: function() { setSlopeAnswer(null); },
+        title: 'Click to update slope answer',
+      }, slopePillLabel),
+      null // save-for-later removed: drawing autosaves locally (gv_draw_state)
     ),
 
     // Map canvas — passes cinematic flag so first visit flies from globe.
@@ -2101,6 +2355,10 @@ function MapboxDrawView(props) {
       cinematic: cinematic,
       setParcelData: setParcelData,
       drawModeActive: drawModeActive,
+      showGateStepRef: showGateStepRef,
+      setGates: setGates,
+      gateIdCounterRef: gateIdCounterRef,
+      fenceHeight: fenceHeight,
     }),
 
     // Cinematic overlay rides on top of the live flyTo for first visits
@@ -2152,11 +2410,9 @@ function MapboxDrawView(props) {
       React.createElement('span', null, 'Email sent. Click the link anytime to resume.')
     ),
 
-    // Save-for-later dialog
-    saveDialogOpen && React.createElement('div', {
-      className: 'dy-save-overlay',
-      onClick: function(e) { if (e.target === e.currentTarget) setSaveDialogOpen(false); },
-    },
+    // Save-for-later removed from draw tool \u2014 drawing autosaves to gv_draw_state.
+    // The QuoteBuilder footer still has save-for-later on the quote steps.
+    false && React.createElement('div', { className: 'dy-save-overlay' },
       React.createElement('form', { className: 'dy-save-dialog', onSubmit: submitSaveForLater },
         React.createElement('button', {
           type: 'button',
@@ -2164,17 +2420,12 @@ function MapboxDrawView(props) {
           onClick: function() { setSaveDialogOpen(false); },
           'aria-label': 'Close',
         }, React.createElement(X, { size: 18, weight: 'bold' })),
-        React.createElement('h3', null, 'Save your drawing'),
-        React.createElement('p', { className: 'dy-save-copy' },
-          'We\u2019ll email you a link so you can resume exactly where you left off, from any device.'
-        ),
         React.createElement('input', {
           type: 'email',
           placeholder: 'you@example.com',
           value: saveEmail,
           onChange: function(e) { setSaveEmail(e.target.value); },
           className: 'dy-save-input',
-          autoFocus: true,
           disabled: saveSending,
           required: true,
         }),
@@ -2193,6 +2444,46 @@ function MapboxDrawView(props) {
           }, saveSending ? 'Sending\u2026' : 'Email me the link')
         )
       )
+    ),
+
+    // ── "Do you need any gates?" question modal ──────────────────────────────
+    showGateQuestion && !showGateStep && React.createElement('div', { className: 'mds-gate-question-backdrop' },
+      React.createElement('div', { className: 'mds-gate-question-modal' },
+        React.createElement('div', { className: 'mds-gate-question-title' }, 'Do you need any gates?'),
+        React.createElement('div', { className: 'mds-gate-question-sub' },
+          'Walk gates, driveway gates, or any opening in your fence line.'
+        ),
+        React.createElement('button', {
+          className: 'mds-gate-question-yes',
+          onClick: function() {
+            setShowGateQuestion(false);
+            setShowGateStep(true);
+            showGateStepRef.current = true;
+          },
+        }, 'Yes — add gates'),
+        React.createElement('button', {
+          className: 'mds-gate-question-no',
+          onClick: function() {
+            setGates([]);
+            setShowGateQuestion(false);
+            handleContinue();
+          },
+        }, 'No gates needed')
+      )
+    ),
+
+    // ── Gate placement panel ─────────────────────────────────────────────────
+    showGateStep && React.createElement('div', { className: 'mds-gate-step-overlay' },
+      React.createElement(MapboxDrawGateStep, {
+        lines: lines,
+        totalFt: totalFt,
+        gates: gates,
+        onGatesChange: setGates,
+        onAddGate: handleAddGate,
+        fenceHeight: fenceHeight,
+        onComplete: handleContinue,
+        onSkip: function() { setGates([]); setShowGateStep(false); showGateStepRef.current = false; handleContinue(); },
+      })
     )
   );
 }

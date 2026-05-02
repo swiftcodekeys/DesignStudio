@@ -11,3 +11,15 @@ quiz/
 
 # Git worktrees
 .worktrees/
+
+# Build artifacts
+dist-quiz/
+test-results/
+test-results.txt
+verify_spec.txt
+
+# Tool caches
+.firecrawl/
+
+# Other repos / MVPs — kept locally for reference, not part of this codebase
+grandview_design_studio_mvp/

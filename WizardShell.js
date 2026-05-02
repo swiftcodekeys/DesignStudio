@@ -608,14 +608,17 @@ var WizardShell = function() {
                 ? cfg.color.displayName.toLowerCase().replace(/\s+/g, '-')
                 : (typeof cfg.color === 'string' ? cfg.color : '');
         }
-        return {
+        // Omit color when empty so hydrateFromSavedDesign() in QuoteBuilder
+        // can win from gv_fence_config — an empty string would override it.
+        var out = {
             style: cfg.styleId || '',
             height: parseInt(cfg.height, 10) || 48,
-            color: colorName,
             postCap: cfg.postCap || 'flat',
             pupType: cfg.pupType || null,
             finialType: cfg.finialType || cfg.finial || null,
         };
+        if (colorName) out.color = colorName;
+        return out;
     };
 
     // ---- QuoteBuilder completion handler ----

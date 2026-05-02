@@ -36,38 +36,52 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '');
 }
 
-// Parse a Mapbox geocoder placeName (e.g. "1600 Pennsylvania Ave NW,
-// Washington, DC 20500, United States") into street/city/state/zip parts.
-// Heuristic and tolerant: returns nulls for parts it can't confidently pull.
+// Full US state name → 2-letter abbreviation lookup
+var STATE_ABBR = {
+  alabama:'AL',alaska:'AK',arizona:'AZ',arkansas:'AR',california:'CA',colorado:'CO',
+  connecticut:'CT',delaware:'DE',florida:'FL',georgia:'GA',hawaii:'HI',idaho:'ID',
+  illinois:'IL',indiana:'IN',iowa:'IA',kansas:'KS',kentucky:'KY',louisiana:'LA',
+  maine:'ME',maryland:'MD',massachusetts:'MA',michigan:'MI',minnesota:'MN',
+  mississippi:'MS',missouri:'MO',montana:'MT',nebraska:'NE',nevada:'NV',
+  'new hampshire':'NH','new jersey':'NJ','new mexico':'NM','new york':'NY',
+  'north carolina':'NC','north dakota':'ND',ohio:'OH',oklahoma:'OK',oregon:'OR',
+  pennsylvania:'PA','rhode island':'RI','south carolina':'SC','south dakota':'SD',
+  tennessee:'TN',texas:'TX',utah:'UT',vermont:'VT',virginia:'VA',washington:'WA',
+  'west virginia':'WV',wisconsin:'WI',wyoming:'WY','district of columbia':'DC',
+};
+
+// Parse a Mapbox geocoder placeName into street/city/state/zip.
+// Handles both "MI 48197" and "Michigan 48197" formats.
 function parseMapboxPlaceName(placeName) {
   if (!placeName || typeof placeName !== 'string') return null;
   var parts = placeName.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-  // Drop trailing country component
-  while (parts.length && /^(united states|usa|us)$/i.test(parts[parts.length - 1])) {
-    parts.pop();
-  }
+  while (parts.length && /^(united states|usa|us)$/i.test(parts[parts.length - 1])) parts.pop();
   if (parts.length === 0) return null;
   var last = parts.pop();
-  var stateZipMatch = last.match(/^([A-Za-z]{2})\s+([\d-]+)$/);
-  var state = '';
-  var zip = '';
-  var cityFromLast = '';
-  if (stateZipMatch) {
-    state = stateZipMatch[1].toUpperCase();
-    zip = stateZipMatch[2];
+  var state = '', zip = '', cityFromLast = '';
+  // "MI 48197" — 2-letter state + zip
+  var m2 = last.match(/^([A-Za-z]{2})\s+([\d-]+)$/);
+  // "Michigan 48197" — full state name + zip
+  var mFull = last.match(/^([A-Za-z ]+?)\s+([\d]{5}(?:-\d{4})?)$/);
+  if (m2) {
+    state = m2[1].toUpperCase(); zip = m2[2];
+  } else if (mFull && STATE_ABBR[mFull[1].toLowerCase()]) {
+    state = STATE_ABBR[mFull[1].toLowerCase()]; zip = mFull[2];
+  } else if (/^\d{5}(-\d{4})?$/.test(last)) {
+    zip = last;
   } else {
-    // Sometimes the last token is just the zip or just the city.
-    if (/^\d{5}(-\d{4})?$/.test(last)) zip = last;
-    else cityFromLast = last;
+    // Last token is just city/state — try to extract zip from it
+    var zipInLast = last.match(/(\d{5}(?:-\d{4})?)/);
+    if (zipInLast) zip = zipInLast[1];
+    // Try to find state in last token
+    Object.keys(STATE_ABBR).forEach(function(name) {
+      if (last.toLowerCase().indexOf(name) !== -1) state = STATE_ABBR[name];
+    });
+    if (!state) { var abbrMatch = last.match(/\b([A-Z]{2})\b/); if (abbrMatch) state = abbrMatch[1]; }
+    if (!zip && !state) cityFromLast = last;
   }
   var city = parts.length ? parts.pop() : cityFromLast;
-  var street = parts.join(', ');
-  return {
-    street: street || '',
-    city: city || '',
-    state: state,
-    zip: zip,
-  };
+  return { street: parts.join(', '), city: city || '', state: state, zip: zip };
 }
 
 function readDrawAddressFromStorage() {
@@ -204,33 +218,33 @@ function QuoteStep5_Shipping(props) {
       })
     ),
 
-    // ---- Same as install site ----
-    el('div', { className: 'qb-ship-toggle-row' },
-      el('span', { className: 'qb-ship-toggle-label' }, 'Is this also the installation site?'),
-      el('div', { className: 'qs1-toggle-row' },
-        el('button', {
-          className: 'qs1-toggle' + (data.sameAsInstall !== false ? ' active' : ''),
-          onClick: function() { update({ sameAsInstall: true }); },
-        }, 'Yes'),
-        el('button', {
-          className: 'qs1-toggle' + (data.sameAsInstall === false ? ' active' : ''),
-          onClick: function() { update({ sameAsInstall: false }); },
-        }, 'Different Site')
-      )
-    ),
-
-    // ---- Shipping Info ----
-    el('div', { className: 'qs5-shipping-info' },
-      el('div', { className: 'qs5-shipping-badge' },
-        el('span', { className: 'qs5-shipping-quoted' },
-          React.createElement(Package, { size: 18, weight: 'duotone' }),
-          ' Shipping will be quoted separately'
+    // ---- Shipping Info (auto-calculated from order size) ----
+    (function() {
+      // Free LTL freight threshold: $2,000 order minimum.
+      // Buffer: add $500 so borderline orders still get charged — Grandview
+      // covers freight only when the order comfortably clears the minimum.
+      var FREIGHT_FREE_THRESHOLD = 2500; // $2,000 min + $500 buffer
+      var FREIGHT_ESTIMATE = 299;
+      var lf = Number(data.linearFeet) || 0;
+      // Rough subtotal: use linear footage × $28/ft as a conservative proxy
+      var roughSubtotal = lf * 28;
+      var isFreeFreight = roughSubtotal >= FREIGHT_FREE_THRESHOLD;
+      return el('div', { className: 'qs5-shipping-info' },
+        el('div', { className: 'qs5-shipping-badge' },
+          el('span', { className: 'qs5-shipping-quoted' + (isFreeFreight ? ' qs5-shipping-free' : '') },
+            React.createElement(Package, { size: 18, weight: 'duotone' }),
+            isFreeFreight
+              ? ' Free LTL freight — your order qualifies!'
+              : ' LTL freight: ~$' + FREIGHT_ESTIMATE + ' (confirmed at order review)'
+          )
+        ),
+        el('p', { className: 'qs5-shipping-note' },
+          isFreeFreight
+            ? 'Grandview ships your order free via LTL. A rep will confirm the delivery window.'
+            : 'Aluminum fence ships via LTL freight. Exact freight is confirmed before your order ships.'
         )
-      ),
-      el('p', { className: 'qs5-shipping-note' },
-        'Aluminum fence ships via LTL freight. Our team will provide a shipping quote with your order confirmation.'
-      )
-    ),
+      );
+    })(),
 
     // ---- Contact Info ----
     sectionHeader('Contact Information'),

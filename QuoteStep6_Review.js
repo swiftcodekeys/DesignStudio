@@ -146,18 +146,8 @@ function QuoteStep6_Review(props) {
         src: annotatedSnapshotUrl,
         alt: 'Annotated fence layout',
         className: 'qs6-annotated-snapshot-img',
-      }),
-      el('p', { className: 'qs6-annotated-snapshot-caption' },
-        'This is the fence we will manufacture. Review carefully. This is what your order is built against.'
-      )
+      })
     ) : null,
-
-    // ======== CYA #3: Measurement responsibility card ========
-    React.createElement('div', { className: 'qs6-cya-card' },
-      React.createElement('h4', null, 'Before you continue'),
-      React.createElement('p', null,
-        'This quote assumes your measurements are accurate. Slope, obstacles, and utilities are yours to verify before install. A Grandview rep personally reviews every order within 24 hours.')
-    ),
 
     // ======== Selections Summary ========
     // Order matches the QB step order (post-reorder 2026-04-21): Layout first,
@@ -373,29 +363,9 @@ function QuoteStep6_Review(props) {
         el('span', { className: 'qb-review-subtotal-amount' }, fmt(subtotal))
       ),
 
-      // ---- Per-LF rate + total range (Task 3) ----
-      (function() {
-        var est = estimatePerFootRange(data);
-        if (!est) return null;
-        var lf = Number(data.linearFeet) || 0;
-        return el('div', { className: 'qb-review-estimate' },
-          el('div', { className: 'qb-review-estimate-row' },
-            el('span', null, 'Estimated per linear foot'),
-            el('span', { className: 'qb-review-estimate-value' },
-              fmtDollarsInt(est.low) + '\u2013' + fmtDollarsInt(est.high)
-            )
-          ),
-          lf > 0 ? el('div', { className: 'qb-review-estimate-row' },
-            el('span', null, 'Estimated range for ' + lf + ' ft of fence'),
-            el('span', { className: 'qb-review-estimate-value' },
-              fmtDollarsInt(est.low * lf) + '\u2013' + fmtDollarsInt(est.high * lf)
-            )
-          ) : null,
-          el('div', { className: 'qb-review-estimate-note' },
-            'Final pricing confirmed in your full quote.'
-          )
-        );
-      })()
+      el('div', { className: 'qb-review-estimate-note' },
+        'Final pricing confirmed in your quote \u2014 a Grandview rep reviews every order before it ships.'
+      )
     ),
 
     // ======== Verification Disclaimer ========
@@ -405,22 +375,24 @@ function QuoteStep6_Review(props) {
     ),
 
     // ======== CTA ========
-    el('div', { className: 'qb-review-cta-row' },
-      el('button', {
-        className: 'qb-review-cta qb-review-cta--secondary',
-        onClick: function() {
-          if (props.onComplete) {
-            props.onComplete(data, result);
-          }
-        },
-      }, 'Get Quote for ' + zoneName),
+    el('div', { className: 'qb-review-cta-wrap' },
       el('button', {
         className: 'qb-review-cta qb-review-cta--pay',
         onClick: function() {
           var quoteObj = buildQuoteForCheckout(data, result, zoneName, props.annotatedSnapshotUrl);
           nav('/checkout', { state: { quote: quoteObj } });
         },
-      }, 'Pay & Reserve →')
+      }, 'Pay & Reserve →'),
+      el('button', {
+        className: 'qb-review-cta qb-review-cta--secondary',
+        onClick: function() {
+          if (props.onComplete) props.onComplete(data, result);
+        },
+      }, 'Have someone contact me about this'),
+      props.onBack && el('button', {
+        className: 'qb-review-back',
+        onClick: props.onBack,
+      }, '← Back to design')
     )
   );
 }

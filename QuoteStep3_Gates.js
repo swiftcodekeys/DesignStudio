@@ -1,9 +1,10 @@
 // QuoteStep3_Gates.js — Gates step for QuoteBuilder
 // React.createElement, var, function declarations, vanilla CSS
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash, Plus, ArrowsLeftRight, Warning, ShieldCheck, DoorOpen } from '@phosphor-icons/react';
 import InfoPopup from './InfoPopup';
+import GateEditModal from './GateEditModal.js';
 
 // ---- Helpers ----
 function el(tag, props) {
@@ -21,9 +22,8 @@ function sectionHeader(title, infoProps) {
 
 // ---- Constants ----
 var GATE_TYPES = [
-  { id: 'walk',   name: 'Walk Gate',   desc: 'Person or mower access', range: '36\u201372\u2033', image: 'assets/ifence_previews/gates/standard_3.png' },
-  { id: 'drive',  name: 'Drive Gate',  desc: 'Vehicle access',          range: '72\u2013144\u2033', image: 'assets/ifence_previews/gates/standard_3.png' },
-  { id: 'double', name: 'Double Drive', desc: 'Two leaves meet in center', range: '72\u2013144\u2033', image: 'assets/ifence_previews/gates/arched_4.png' },
+  { id: 'walk',     name: 'Walk Gate',     desc: 'Person or mower access',       range: '36\u201372\u2033',   image: 'assets/gate_types/walk_flat.png' },
+  { id: 'driveway', name: 'Driveway Gate', desc: 'Double-leaf, meets in center',  range: '72\u2013144\u2033',  image: 'assets/gate_types/driveway_flat.png' },
 ];
 
 var WIDTHS_WALK   = [36, 42, 48, 60, 72];
@@ -33,7 +33,7 @@ var WIDTHS_DRIVE  = [72, 84, 96, 120, 144];
 var HINGE_OPTIONS = [
   { id: 'standard',           name: 'Standard',              price: 33.50, unit: '/pair', info: 'Heavy-duty steel hinges, field adjustable' },
   { id: 'truclose',           name: 'TruClose Self-Closing',  price: 95.50, unit: '/pair', info: 'Polymer self-closing hinge. Required for pool code compliance' },
-  { id: 'ultra-adjustable',   name: 'Ultra Adjustable',        price: 333.50, unit: '/pair', info: 'Tension-adjustable, 3-way alignment. Requires 4\u00d74 posts.' },
+  { id: 'ultra-adjustable',   name: 'Heavy Duty Adjustable',   price: 333.50, unit: '/pair', info: 'Tension-adjustable, 3-way alignment. Requires 4\u00d74 posts.' },
 ];
 
 var LATCH_OPTIONS = [
@@ -64,6 +64,10 @@ function QuoteStep3_Gates(props) {
   var update = props.update;
   var poolCompliance = props.poolCompliance;
   var isPool = poolCompliance && poolCompliance.poolBarrier;
+
+  var editingGateVar = useState(null);
+  var editingGate = editingGateVar[0];
+  var setEditingGate = editingGateVar[1];
 
   var gates = data.gates || [];
 
@@ -125,9 +129,9 @@ function QuoteStep3_Gates(props) {
   // ---- Per-Gate Card ----
   function renderGateCard(gate, index) {
     var widths = widthsForType(gate.type);
-    var isDouble = gate.type === 'double';
+    var isDriveway = gate.type === 'driveway';
     var isArched = gate.top === 'arched';
-    var wideThreshold = isDouble ? 144 : 72;
+    var wideThreshold = isDriveway ? 144 : 72;
     var needsUFrame = gate.widthInches > wideThreshold;
 
     // Pool lockout: state is corrected by the useEffect-like block above, so just read from gate
@@ -285,8 +289,8 @@ function QuoteStep3_Gates(props) {
         )
       ),
 
-      // Double gate drop rod note
-      isDouble ? el('div', { className: 'qb-gates-droprod' },
+      // Driveway gate drop rod note
+      isDriveway ? el('div', { className: 'qb-gates-droprod' },
         'Drop rod auto-included ($39.25)'
       ) : null
     );
@@ -303,19 +307,58 @@ function QuoteStep3_Gates(props) {
     );
   }
 
-  // ---- Estate / Cantilever callout ----
-  function renderEstateCallout() {
-    return el('div', { className: 'qb-gates-estate-card' },
-      React.createElement(DoorOpen, { size: 24 }),
-      el('div', { className: 'qb-gates-estate-body' },
-        el('div', { className: 'qb-gates-estate-title' }, 'Estate or Cantilever Gate?'),
-        el('div', { className: 'qb-gates-estate-text' },
-          'Custom order. Preview in the 3D Design Studio or call (855) FENCE-30'
-        ),
-        el('div', { className: 'qb-gates-estate-note' },
-          'Cantilever gates carry a 5-year limited warranty (not lifetime)'
-        )
-      )
+  // Estate/Cantilever callout removed — was discouraging buyers
+
+  // Draw-tool buyers: show read-only gate summary with edit capability
+  var isDrawToolBuyer = !!(props.drawToolData && props.drawToolData.lines);
+  if (isDrawToolBuyer) {
+    var dtGates = props.drawToolData.gates || [];
+    return el('div', { className: 'qbg-readonly' },
+      el('div', { className: 'qbg-readonly-header' },
+        el('div', { className: 'qbg-readonly-title' }, 'Your gates'),
+        el('div', { className: 'qbg-readonly-sub' }, 'Placed during drawing. Edit any gate below.')
+      ),
+      dtGates.length === 0
+        ? el('div', { className: 'qbg-readonly-none' }, 'No gates placed. You confirmed no gates during drawing.')
+        : el('div', { className: 'qbg-readonly-list' },
+            dtGates.map(function(gate, i) {
+              var typeLabels = { walk: 'Walk gate', driveway: 'Driveway gate' };
+              var gateImgKey = (gate.type || 'walk') + '-' + (gate.top || 'flat');
+              var gateImgSrc = {
+                'walk-flat': 'assets/gate_types/walk_flat.png',
+                'walk-arched': 'assets/gate_types/walk_arched.png',
+                'driveway-flat': 'assets/gate_types/driveway_flat.png',
+                'driveway-arched': 'assets/gate_types/driveway_arched.png',
+              }[gateImgKey];
+              return el('div', { key: gate.id || i, className: 'qbg-readonly-card' },
+                gateImgSrc && el('img', { src: gateImgSrc, className: 'qbg-readonly-gate-img', alt: typeLabels[gate.type] || gate.type }),
+                el('div', { className: 'qbg-readonly-card-info' },
+                  el('div', { className: 'qbg-readonly-card-title' },
+                    'Gate ' + (i + 1) + ' — ' + (typeLabels[gate.type] || gate.type)
+                  ),
+                  el('div', { className: 'qbg-readonly-card-detail' },
+                    gate.widthInches + '" · ' +
+                    (gate.top === 'arched' ? 'Arched' : 'Straight') + ' · Swings ' + (gate.swing || 'left') +
+                    (gate.segmentLabel ? ' · ' + gate.segmentLabel + ' run' : '')
+                  )
+                ),
+                el('button', {
+                  className: 'qbg-readonly-edit',
+                  onClick: function() { setEditingGate(gate); },
+                }, 'Edit')
+              );
+            })
+          ),
+      editingGate ? React.createElement(GateEditModal, {
+        gate: editingGate,
+        onUpdate: function(updated) {
+          var newGates = dtGates.map(function(g) { return g.id === updated.id ? updated : g; });
+          props.update({ gates: newGates });
+          setEditingGate(updated);
+        },
+        onClose: function() { setEditingGate(null); },
+      }) : null,
+      el('button', { className: 'qbg-readonly-next', onClick: props.onNext }, 'Continue →')
     );
   }
 
@@ -326,8 +369,7 @@ function QuoteStep3_Gates(props) {
       sectionHeader('Your Gates'),
       gates.map(function(gate, i) { return renderGateCard(gate, i); })
     ) : null,
-    renderAddGate(),
-    renderEstateCallout()
+    renderAddGate()
   );
 }
 

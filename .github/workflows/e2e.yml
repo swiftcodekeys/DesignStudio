@@ -1,0 +1,70 @@
+name: E2E Tests
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright + Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Derive Cloudflare Pages preview URL
+        id: cf-url
+        run: |
+          # Use PR head branch if this is a PR, otherwise use the push branch
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          # Cloudflare slugs: lowercase, / → -, truncate to 28 chars, strip trailing -
+          SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|[/._]|-|g' | cut -c1-28 | sed 's/-$//')
+          PREVIEW_URL="https://${SLUG}.designstudio-csy.pages.dev"
+          echo "url=${PREVIEW_URL}" >> $GITHUB_OUTPUT
+          echo "Branch: $BRANCH → Slug: $SLUG"
+          echo "Preview URL: $PREVIEW_URL"
+
+      - name: Wait for Cloudflare deployment to go live
+        run: |
+          URL="${{ steps.cf-url.outputs.url }}"
+          echo "Polling $URL (up to 6 min)..."
+          for i in $(seq 1 24); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Live after ~$((i * 15))s"
+              exit 0
+            fi
+            echo "  Attempt $i/24: HTTP $STATUS — retrying in 15s"
+            sleep 15
+          done
+          echo "ERROR: $URL did not respond 200 within 6 minutes"
+          echo "Check the Cloudflare Pages dashboard for the actual preview URL"
+          exit 1
+
+      - name: Run all E2E tests
+        env:
+          BASE_URL: ${{ steps.cf-url.outputs.url }}
+        run: npx playwright test e2e/ --reporter=list
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

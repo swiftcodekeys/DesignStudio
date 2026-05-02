@@ -37,7 +37,13 @@ var ColorTab = function(props) {
         var rect = event.currentTarget.getBoundingClientRect();
         var src = COLOR_PREVIEWS[colorId];
         if (!src) return;
-        setPopup({ src: src, name: name, position: { top: rect.top - 40, left: rect.left - 104 } });
+        var POPUP_W = 130;
+        var proposedLeft = rect.left - POPUP_W + 16; // default: popup to left of swatch
+        // Flip right if popup would overflow left edge
+        if (proposedLeft < 8) proposedLeft = rect.right + 8;
+        // Flip left if popup would overflow right edge
+        if (proposedLeft + POPUP_W > window.innerWidth - 8) proposedLeft = rect.left - POPUP_W - 8;
+        setPopup({ src: src, name: name, position: { top: rect.top - 40, left: proposedLeft } });
     };
 
     var handleMouseLeave = function() { setPopup(null); };

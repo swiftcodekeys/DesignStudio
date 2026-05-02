@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments, computeSlopedPostCount, classifyPostsPerVertex, computeLinePostPositions } from '../geometryUtils.js';
+import { simplifyRDP, angleBetween, splitPolygonIntoSides, compassBearing, densifyPath, computeSampleStepCount, aggregateClassificationsForUserSegments, computeSlopedPostCount, classifyPostsPerVertex, computeLinePostPositions, projectToPixel } from '../geometryUtils.js';
 
 describe('simplifyRDP', () => {
   it('passes through points below threshold', () => {
@@ -292,5 +292,31 @@ describe('computeLinePostPositions (Pass 4 Task 5)', () => {
     var dLng = lenFt / (FEET_PER_DEG_LAT * Math.cos(42.5 * Math.PI / 180));
     var r = computeLinePostPositions([[0, 42.5], [dLng, 42.5]], 8);
     expect(r.length).toBe(4);
+  });
+});
+
+describe('projectToPixel', () => {
+  var bounds = { north: 42.5, south: 42.4, east: -83.0, west: -83.1 };
+
+  it('projects NW corner to (0, 0)', () => {
+    var p = projectToPixel(42.5, -83.1, bounds, 400, 300);
+    expect(p.x).toBeCloseTo(0, 1);
+    expect(p.y).toBeCloseTo(0, 1);
+  });
+
+  it('projects SE corner to (imageWidth, imageHeight)', () => {
+    var p = projectToPixel(42.4, -83.0, bounds, 400, 300);
+    expect(p.x).toBeCloseTo(400, 1);
+    expect(p.y).toBeCloseTo(300, 1);
+  });
+
+  it('projects center to (imageWidth/2, imageHeight/2)', () => {
+    var p = projectToPixel(42.45, -83.05, bounds, 400, 300);
+    expect(p.x).toBeCloseTo(200, 1);
+    expect(p.y).toBeCloseTo(150, 1);
+  });
+
+  it('returns null when bounds is null', () => {
+    expect(projectToPixel(42.45, -83.05, null, 400, 300)).toBeNull();
   });
 });

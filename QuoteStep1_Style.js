@@ -62,7 +62,7 @@ function isHavenFamily(id) { return POOL_HAVEN_FAMILY.indexOf(id) >= 0; }
 
 // ---- Heights per grade ----
 var HEIGHTS_BY_GRADE = {
-  residential: [36, 42, 48, 54, 60, 72],
+  residential: [48, 54, 60, 72],
   commercial:  [48, 60, 72],
   industrial:  [48, 60, 72, 84, 96, 108, 120],
 };

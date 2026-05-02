@@ -229,7 +229,7 @@ describe('MorphingDock Task 5: slope-calculated acknowledgment', () => {
     expect(cta.textContent).not.toMatch(/Slope detected/);
   });
 
-  it('unknown classification shows the "Slope unknown, you can still continue" label', () => {
+  it('unknown classification shows the "Slope not auto-detected" label', () => {
     const { container, rerender } = render(React.createElement(
       MorphingDock,
       makeReadyProps({ epqsLoading: true, epqsOverall: null })
@@ -241,7 +241,7 @@ describe('MorphingDock Task 5: slope-calculated acknowledgment', () => {
       ));
     });
     const cta = container.querySelector('.dy-dock-cta');
-    expect(cta.textContent).toMatch(/Slope unknown, you can still continue/);
+    expect(cta.textContent).toMatch(/Slope not auto-detected/);
   });
 
   it('persistent slope chip renders "Slope: rackable" when epqsOverall="rackable"', () => {

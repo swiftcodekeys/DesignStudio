@@ -39,6 +39,7 @@ function makeCtxStub() {
     save: vi.fn(),
     restore: vi.fn(),
     roundRect: vi.fn(),
+    setLineDash: vi.fn(),
   };
 }
 
@@ -144,5 +145,42 @@ describe('buildAnnotatedSnapshot', () => {
       postCap: 'pcb', totalFt: 100, corners: 0,
     });
     expect(typeof result).toBe('string');
+  });
+});
+
+describe('buildAnnotatedSnapshot with post markers', () => {
+  var mockBounds = { north: 42.5, south: 42.4, east: -83.0, west: -83.1 };
+  var mockLines = [{
+    id: 'line-0',
+    points: [[-83.1, 42.45], [-83.0, 42.45]],
+    segments: [{
+      index: 0, rackingTier: 'standard', lengthFeet: 80, rackingSource: 'auto',
+      compassLabel: 'East', start: [-83.1, 42.45], end: [-83.0, 42.45], color: '#eab308',
+    }],
+  }];
+  var mockGates = [{
+    id: 'gate-0', segmentLineId: 'line-0', segmentIndex: 0,
+    offsetFt: 20, latLng: { lat: 42.45, lng: -83.06 },
+    type: 'walk', top: 'flat', swing: 'left', widthInches: 36,
+  }];
+
+  beforeEach(function() { vi.clearAllMocks(); });
+
+  it('calls arc for a gate marker when mapBounds and gates provided', async () => {
+    await buildAnnotatedSnapshot(null, mockLines, {
+      mapBounds: mockBounds,
+      gates: mockGates,
+      postCap: 'pcf', finialType: null, totalFt: 80, corners: 0,
+    });
+    expect(ctxStub.arc.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it('calls fillRect for corner post squares when mapBounds provided', async () => {
+    await buildAnnotatedSnapshot(null, mockLines, {
+      mapBounds: mockBounds,
+      gates: [],
+      postCap: 'pcf', finialType: null, totalFt: 80, corners: 0,
+    });
+    expect(ctxStub.fillRect.mock.calls.length).toBeGreaterThan(0);
   });
 });
