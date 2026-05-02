@@ -2336,15 +2336,7 @@ function MapboxDrawView(props) {
         onClick: function() { setSlopeAnswer(null); },
         title: 'Click to update slope answer',
       }, slopePillLabel),
-      points.length > 0 && !showGateQuestion && !showGateStep && React.createElement('button', {
-        className: 'dy-save-btn',
-        onClick: handleSaveForLater,
-        type: 'button',
-        title: 'Save this drawing to resume later',
-      },
-        React.createElement(FloppyDisk, { size: 14, weight: 'regular' }),
-        React.createElement('span', null, 'Save for later')
-      )
+      null // save-for-later removed: drawing autosaves locally (gv_draw_state)
     ),
 
     // Map canvas — passes cinematic flag so first visit flies from globe.
@@ -2418,11 +2410,9 @@ function MapboxDrawView(props) {
       React.createElement('span', null, 'Email sent. Click the link anytime to resume.')
     ),
 
-    // Save-for-later dialog
-    saveDialogOpen && React.createElement('div', {
-      className: 'dy-save-overlay',
-      onClick: function(e) { if (e.target === e.currentTarget) setSaveDialogOpen(false); },
-    },
+    // Save-for-later removed from draw tool \u2014 drawing autosaves to gv_draw_state.
+    // The QuoteBuilder footer still has save-for-later on the quote steps.
+    false && React.createElement('div', { className: 'dy-save-overlay' },
       React.createElement('form', { className: 'dy-save-dialog', onSubmit: submitSaveForLater },
         React.createElement('button', {
           type: 'button',
@@ -2430,17 +2420,12 @@ function MapboxDrawView(props) {
           onClick: function() { setSaveDialogOpen(false); },
           'aria-label': 'Close',
         }, React.createElement(X, { size: 18, weight: 'bold' })),
-        React.createElement('h3', null, 'Save your drawing'),
-        React.createElement('p', { className: 'dy-save-copy' },
-          'We\u2019ll email you a link so you can resume exactly where you left off, from any device.'
-        ),
         React.createElement('input', {
           type: 'email',
           placeholder: 'you@example.com',
           value: saveEmail,
           onChange: function(e) { setSaveEmail(e.target.value); },
           className: 'dy-save-input',
-          autoFocus: true,
           disabled: saveSending,
           required: true,
         }),
